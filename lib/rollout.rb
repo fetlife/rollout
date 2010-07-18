@@ -8,6 +8,10 @@ class Rollout
     @redis.sadd(key(feature), group)
   end
 
+  def deactivate(feature, group)
+    @redis.srem(key(feature), group)
+  end
+
   def define_group(group, &block)
     @groups[group.to_s] = block
   end
