@@ -27,7 +27,7 @@ describe "Rollout" do
     end
 
     it "evaluates to true no matter what" do
-      @rollout.should be_active(:chat, stub(:id => nil))
+      @rollout.should be_active(:chat, stub(:id => 0))
     end
   end
 
@@ -58,7 +58,7 @@ describe "Rollout" do
     end
 
     it "removes all of the groups" do
-      @rollout.should_not be_active(:chat, stub(:id => nil))
+      @rollout.should_not be_active(:chat, stub(:id => 0))
     end
 
     it "removes all of the users" do
@@ -93,6 +93,16 @@ describe "Rollout" do
 
     it "remains active for other active users" do
       @rollout.should be_active(:chat, stub(:id => 24))
+    end
+  end
+
+  describe "activating a feature for a percentage of users" do
+    before do
+      @rollout.activate_percentage(:chat, 20)
+    end
+
+    it "activates the feature for that percentage of the users" do
+      (1..120).select { |id| @rollout.active?(:chat, stub(:id => id)) }.length.should == 24
     end
   end
 end
