@@ -7,7 +7,7 @@ Conditionally rollout features to certain users with redis.
 Initialize a rollout object. I assign it to a global var.
 
   $redis   = Redis.new
-  $rollout = Rollout.new(redis)
+  $rollout = Rollout.new($redis)
 
 Check whether a feature is active for a particular user:
   
