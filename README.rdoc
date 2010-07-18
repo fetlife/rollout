@@ -1,6 +1,73 @@
 = rollout
 
-Description goes here.
+Conditionally rollout features to certain users with redis.
+
+== How it works
+
+Initialize a rollout object. I assign it to a global var.
+
+  $redis   = Redis.new
+  $rollout = Rollout.new(redis)
+
+Check whether a feature is active for a particular user:
+  
+  $rollout.active?(:chat, User.first) # => true/false
+
+You can activate features using a number of different mechanisms.
+
+== Groups
+
+Rollout ships with one group by default: "all", which does exactly what it sounds like. 
+
+You can activate the all group for the chat feature like this:
+
+  $rollout.activate_group(:chat, :all)
+
+You might also want to define your own groups. We have one for our caretakers:
+
+  $rollout.define_group(:chat) do |user|
+    user.caretaker?
+  end
+
+You can activate multiple groups per feature.
+
+Deactivate groups like this:
+
+  $rollout.deactivate_group(:chat, :all)
+
+== Specific Users
+
+You might want to let a specific user into a beta test or something. If that user isn't part of an existing group, you can let them in specifically:
+  
+  $rollout.activate_user(:chat, @user)
+
+Deactivate them like this:
+
+  $rollout.deactivate_user(:chat, @user)
+
+== User Percentages
+
+If you're rolling out a new feature, you might want to test the waters by slowly letting in a percentage of your users.
+
+  $rollout.activate_percentage(:chat, 20)
+
+The algorithm for determining which users get let in is this:
+
+  user.id % (100 / percentage) == 0
+
+So, for 20%, it's every 5th user.
+
+Deactivate all percentages like this:
+
+  $rollout.deactivate_percentage(:chat)
+
+== Feature is broken
+
+Deactivate everybody at once:
+
+  $rollout.deactivate_all
+
+For some of our less stable features, we are actually measuring the error rate using redis, and deactivating them automatically when it raises above a certain threshold. It's pretty cool.
 
 == Note on Patches/Pull Requests
  
@@ -14,4 +81,4 @@ Description goes here.
 
 == Copyright
 
-Copyright (c) 2010 James Golick. See LICENSE for details.
+Copyright (c) 2010 James Golick, Protose, Inc. See LICENSE for details.
