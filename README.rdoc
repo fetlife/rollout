@@ -2,6 +2,10 @@
 
 Conditionally roll out features with redis.
 
+== Install it
+
+  gem install rollout
+
 == How it works
 
 Initialize a rollout object. I assign it to a global var.
