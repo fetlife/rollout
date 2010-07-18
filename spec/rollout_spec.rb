@@ -53,11 +53,16 @@ describe "Rollout" do
       @rollout.define_group(:fivesonly) { |user| user.id == 5 }
       @rollout.activate_group(:chat, :all)
       @rollout.activate_group(:chat, :fivesonly)
+      @rollout.activate_user(:chat, stub(:id => 51))
       @rollout.deactivate_all(:chat)
     end
 
     it "removes all of the groups" do
       @rollout.should_not be_active(:chat, stub(:id => nil))
+    end
+
+    it "removes all of the users" do
+      @rollout.should_not be_active(:chat, stub(:id => 51))
     end
   end
 
