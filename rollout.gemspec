@@ -5,13 +5,13 @@
 
 Gem::Specification.new do |s|
   s.name = %q{rollout}
-  s.version = "0.1.0"
+  s.version = "0.1.1"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["James Golick"]
   s.date = %q{2010-07-17}
   s.description = %q{Conditionally roll out features with redis.}
-  s.email = %q{james@giraffesoft.ca}
+  s.email = %q{jamesgoick@gmail.com}
   s.extra_rdoc_files = [
     "LICENSE",
      "README.rdoc"
@@ -24,11 +24,12 @@ Gem::Specification.new do |s|
      "Rakefile",
      "VERSION",
      "lib/rollout.rb",
+     "rollout.gemspec",
      "spec/rollout_spec.rb",
      "spec/spec.opts",
      "spec/spec_helper.rb"
   ]
-  s.homepage = %q{http://github.com/giraffesoft/rollout}
+  s.homepage = %q{http://github.com/jamesgolick/rollout}
   s.rdoc_options = ["--charset=UTF-8"]
   s.require_paths = ["lib"]
   s.rubygems_version = %q{1.3.7}
