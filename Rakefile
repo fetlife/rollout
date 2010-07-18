@@ -7,8 +7,8 @@ begin
     gem.name = "rollout"
     gem.summary = %Q{Conditionally roll out features with redis.}
     gem.description = %Q{Conditionally roll out features with redis.}
-    gem.email = "james@giraffesoft.ca"
-    gem.homepage = "http://github.com/giraffesoft/rollout"
+    gem.email = "jamesgoick@gmail.com"
+    gem.homepage = "http://github.com/jamesgolick/rollout"
     gem.authors = ["James Golick"]
     gem.add_development_dependency "rspec", "1.2.9"
     gem.add_development_dependency "bourne", "1.0.0"
