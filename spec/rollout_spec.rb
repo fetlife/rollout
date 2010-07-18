@@ -47,4 +47,17 @@ describe "Rollout" do
       @rollout.should be_active(:chat, stub(:id => 5))
     end
   end
+
+  describe "deactivating a feature completely" do
+    before do
+      @rollout.define_group(:fivesonly) { |user| user.id == 5 }
+      @rollout.activate(:chat, :all)
+      @rollout.activate(:chat, :fivesonly)
+      @rollout.deactivate(:chat)
+    end
+
+    it "removes all of the groups" do
+      @rollout.should_not be_active(:chat, nil)
+    end
+  end
 end
