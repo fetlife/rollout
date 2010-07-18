@@ -25,7 +25,7 @@ You can activate the all group for the chat feature like this:
 
 You might also want to define your own groups. We have one for our caretakers:
 
-  $rollout.define_group(:chat) do |user|
+  $rollout.define_group(:caretakers) do |user|
     user.caretaker?
   end
 
