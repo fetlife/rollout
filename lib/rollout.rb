@@ -20,6 +20,10 @@ class Rollout
     @redis.sadd(user_key(feature), user.id)
   end
 
+  def deactivate_user(feature, user)
+    @redis.srem(user_key(feature), user.id)
+  end
+
   def define_group(group, &block)
     @groups[group.to_s] = block
   end
