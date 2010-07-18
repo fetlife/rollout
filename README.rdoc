@@ -59,7 +59,7 @@ The algorithm for determining which users get let in is this:
 
   user.id % (100 / percentage) == 0
 
-So, for 20%, it's every 5th user.
+So, for 20%, it's every 5th user. The drawback to this strategy is that as you change the percentage, the feature will turn on and off for different users. It would be cool to fix that, but I'm not sure how. Patches welcome.
 
 Deactivate all percentages like this:
 
