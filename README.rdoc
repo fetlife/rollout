@@ -71,7 +71,7 @@ Deactivate everybody at once:
 
   $rollout.deactivate_all
 
-For some of our less stable features, we are actually measuring the error rate using redis, and deactivating them automatically when it raises above a certain threshold. It's pretty cool.
+For some of our less stable features, we are actually measuring the error rate using redis, and deactivating them automatically when it raises above a certain threshold. It's pretty cool. See http://github.com/jamesgolick/degrade for the failure detection code.
 
 == Note on Patches/Pull Requests
  
