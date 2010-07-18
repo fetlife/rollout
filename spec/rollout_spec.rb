@@ -9,7 +9,7 @@ describe "Rollout" do
   describe "when a group is activated" do
     before do
       @rollout.define_group(:fivesonly) { |user| user.id == 5 }
-      @rollout.activate(:chat, :fivesonly)
+      @rollout.activate_group(:chat, :fivesonly)
     end
 
     it "the feature is active for users for which the block evaluates to true" do
@@ -23,7 +23,7 @@ describe "Rollout" do
 
   describe "the default all group" do
     before do
-      @rollout.activate(:chat, :all)
+      @rollout.activate_group(:chat, :all)
     end
 
     it "evaluates to true no matter what" do
@@ -34,9 +34,9 @@ describe "Rollout" do
   describe "deactivating a group" do
     before do
       @rollout.define_group(:fivesonly) { |user| user.id == 5 }
-      @rollout.activate(:chat, :all)
-      @rollout.activate(:chat, :fivesonly)
-      @rollout.deactivate(:chat, :all)
+      @rollout.activate_group(:chat, :all)
+      @rollout.activate_group(:chat, :fivesonly)
+      @rollout.deactivate_group(:chat, :all)
     end
 
     it "deactivates the rules for that group" do
@@ -51,8 +51,8 @@ describe "Rollout" do
   describe "deactivating a feature completely" do
     before do
       @rollout.define_group(:fivesonly) { |user| user.id == 5 }
-      @rollout.activate(:chat, :all)
-      @rollout.activate(:chat, :fivesonly)
+      @rollout.activate_group(:chat, :all)
+      @rollout.activate_group(:chat, :fivesonly)
       @rollout.deactivate_all(:chat)
     end
 

@@ -4,11 +4,11 @@ class Rollout
     @groups = {"all" => lambda { |user| true }}
   end
 
-  def activate(feature, group)
+  def activate_group(feature, group)
     @redis.sadd(key(feature), group)
   end
 
-  def deactivate(feature, group)
+  def deactivate_group(feature, group)
     @redis.srem(key(feature), group)
   end
 
