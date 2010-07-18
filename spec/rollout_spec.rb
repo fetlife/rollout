@@ -27,7 +27,7 @@ describe "Rollout" do
     end
 
     it "evaluates to true no matter what" do
-      @rollout.should be_active(:chat, nil)
+      @rollout.should be_active(:chat, stub(:id => nil))
     end
   end
 
@@ -57,7 +57,21 @@ describe "Rollout" do
     end
 
     it "removes all of the groups" do
-      @rollout.should_not be_active(:chat, nil)
+      @rollout.should_not be_active(:chat, stub(:id => nil))
+    end
+  end
+
+  describe "activating a specific user" do
+    before do
+      @rollout.activate_user(:chat, stub(:id => 42))
+    end
+
+    it "is active for that user" do
+      @rollout.should be_active(:chat, stub(:id => 42))
+    end
+
+    it "remains inactive for other users" do
+      @rollout.should_not be_active(:chat, stub(:id => 24))
     end
   end
 end
