@@ -57,9 +57,9 @@ If you're rolling out a new feature, you might want to test the waters by slowly
 
 The algorithm for determining which users get let in is this:
 
-  user.id % (100 / percentage) == 0
+  user.id % 10 < percentage / 10
 
-So, for 20%, it's every 5th user. The drawback to this strategy is that as you change the percentage, the feature will turn on and off for different users. It would be cool to fix that, but I'm not sure how. Patches welcome.
+So, for 20%, users 0, 1, 10, 11, 20, 21, etc would be allowed in. Those users would remain in as the percentage increases.
 
 Deactivate all percentages like this:
 

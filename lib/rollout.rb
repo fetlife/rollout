@@ -73,6 +73,6 @@ class Rollout
       percentage = @redis.get(percentage_key(feature))
       return false if percentage.nil?
 
-      user.id % (100 / percentage.to_i) == 0
+      user.id % 10 < percentage.to_i / 10
     end
 end
