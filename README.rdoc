@@ -73,6 +73,18 @@ Deactivate everybody at once:
 
 For some of our less stable features, we are actually measuring the error rate using redis, and deactivating them automatically when it raises above a certain threshold. It's pretty cool. See http://github.com/jamesgolick/degrade for the failure detection code.
 
+== Namespacing
+
+Rollout separates its keys from other keys on the Redis server using the "feature" keyspace.
+
+You can namespace keys further to support multiple environments by using the [redis-namespace][http://github.com/defunkt/redis-namespace] gem.
+
+  $ns = Redis::Namespace.new(Rails.env, :redis => $redis)
+  $rollout = Rollout.new($ns)
+  $rollout.activate_group(:chat, :all)
+  
+This example would use the "development:feature:chat:groups" key.
+
 == Note on Patches/Pull Requests
  
 * Fork the project.
