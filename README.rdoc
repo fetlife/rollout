@@ -77,7 +77,7 @@ For some of our less stable features, we are actually measuring the error rate u
 
 Rollout separates its keys from other keys on the Redis server using the "feature" keyspace.
 
-You can namespace keys further to support multiple environments by using the [redis-namespace][http://github.com/defunkt/redis-namespace] gem.
+You can namespace keys further to support multiple environments by using the redis-namespace](http://github.com/defunkt/redis-namespace) gem.
 
   $ns = Redis::Namespace.new(Rails.env, :redis => $redis)
   $rollout = Rollout.new($ns)
