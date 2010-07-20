@@ -62,7 +62,7 @@ class Rollout
     end
 
     def user_in_active_group?(feature, user)
-      @redis.smembers(group_key(feature)).any? { |group| @groups[group].call(user) }
+      @redis.smembers(group_key(feature)).any? { |group| @groups.key?(group) && @groups[group].call(user) }
     end
 
     def user_active?(feature, user)
