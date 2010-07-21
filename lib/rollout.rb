@@ -44,6 +44,10 @@ class Rollout
     @redis.del(percentage_key(feature))
   end
 
+  def group_members(feature)
+    @redis.smembers(group_key(feature)) || []
+  end
+
   private
     def key(name)
       "feature:#{name}"
@@ -62,7 +66,7 @@ class Rollout
     end
 
     def user_in_active_group?(feature, user)
-      @redis.smembers(group_key(feature)).any? { |group| @groups.key?(group) && @groups[group].call(user) }
+      group_members(feature).any? { |group| @groups.key?(group) && @groups[group].call(user) }
     end
 
     def user_active?(feature, user)
