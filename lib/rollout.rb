@@ -44,6 +44,10 @@ class Rollout
     @redis.del(percentage_key(feature))
   end
 
+  def user_members(feature)
+    @redis.smembers(user_key(feature)) || []
+  end
+
   def group_members(feature)
     @redis.smembers(group_key(feature)) || []
   end

@@ -129,13 +129,27 @@ describe "Rollout" do
 
   describe "#group_members" do
     it "defaults to empty array" do
-      @rollout.group_members(:foobar).should == []
+      @rollout.group_members(:empty_feature).should == []
     end
 
     it "returns members if any" do
       @rollout.define_group(:fivesonly) { |user| user.id == 5 }
       @rollout.activate_group(:chat, :fivesonly)
       @rollout.group_members(:chat).should == ['fivesonly']
+    end
+  end
+
+  describe "#user_members" do
+    before do
+      @rollout.activate_user(:chat, stub(:id => 42))
+    end
+
+    it "defaults to empty array" do
+      @rollout.user_members(:empty_feature).should == []
+    end
+
+    it "returns ids if any" do
+      @rollout.user_members(:chat).should == ['42']
     end
   end
 end
