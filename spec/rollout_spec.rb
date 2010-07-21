@@ -152,4 +152,15 @@ describe "Rollout" do
       @rollout.user_members(:chat).should == ['42']
     end
   end
+  
+  describe "#percentage" do
+    it "defaults to nil" do
+      @rollout.percentage(:empty_feature).should be_nil
+    end
+    
+    it "returns percentage if any" do
+      @rollout.activate_percentage(:chat, 50)
+      @rollout.percentage(:chat).should == 50
+    end
+  end
 end

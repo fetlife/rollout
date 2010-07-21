@@ -52,6 +52,11 @@ class Rollout
     @redis.smembers(group_key(feature)) || []
   end
 
+  def percentage(feature)
+    percentage = @redis.get(percentage_key(feature))
+    percentage && percentage.to_i
+  end
+
   private
     def key(name)
       "feature:#{name}"
@@ -78,7 +83,7 @@ class Rollout
     end
 
     def user_within_active_percentage?(feature, user)
-      percentage = @redis.get(percentage_key(feature))
+      percentage = percentage(feature)
       return false if percentage.nil?
 
       user.id % 10 < percentage.to_i / 10
