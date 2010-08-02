@@ -85,6 +85,10 @@ You can namespace keys further to support multiple environments by using the htt
   
 This example would use the "development:feature:chat:groups" key.
 
+== Implementations in other languages
+
+  * Python: http://github.com/asenchi/proclaim
+
 == Note on Patches/Pull Requests
  
 * Fork the project.
