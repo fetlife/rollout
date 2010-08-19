@@ -19,7 +19,7 @@ describe "Rollout" do
     it "is not active for users for which the block evaluates to false" do
       @rollout.should_not be_active(:chat, stub(:id => 1))
     end
-    
+
     it "is not active if a group is found in Redis but not defined in Rollout" do
       @rollout.activate_group(:chat, :fake)
       @rollout.should_not be_active(:chat, stub(:id => 1))
@@ -124,6 +124,43 @@ describe "Rollout" do
 
     it "becomes inactivate for all users" do
       @rollout.should_not be_active(:chat, stub(:id => 24))
+    end
+  end
+
+  describe "#group_members" do
+    it "defaults to empty array" do
+      @rollout.group_members(:empty_feature).should == []
+    end
+
+    it "returns members if any" do
+      @rollout.define_group(:fivesonly) { |user| user.id == 5 }
+      @rollout.activate_group(:chat, :fivesonly)
+      @rollout.group_members(:chat).should == ['fivesonly']
+    end
+  end
+
+  describe "#user_members" do
+    before do
+      @rollout.activate_user(:chat, stub(:id => 42))
+    end
+
+    it "defaults to empty array" do
+      @rollout.user_members(:empty_feature).should == []
+    end
+
+    it "returns ids if any" do
+      @rollout.user_members(:chat).should == ['42']
+    end
+  end
+  
+  describe "#percentage" do
+    it "defaults to nil" do
+      @rollout.percentage(:empty_feature).should be_nil
+    end
+    
+    it "returns percentage if any" do
+      @rollout.activate_percentage(:chat, 50)
+      @rollout.percentage(:chat).should == 50
     end
   end
 end
