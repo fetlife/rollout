@@ -1,4 +1,7 @@
 class Rollout
+  
+  attr_accessor :redis, :groups
+  
   def initialize(redis)
     @redis  = redis
     @groups = {"all" => lambda { |user| true }}
