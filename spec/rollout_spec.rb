@@ -19,7 +19,7 @@ describe "Rollout" do
     it "is not active for users for which the block evaluates to false" do
       @rollout.should_not be_active(:chat, stub(:id => 1))
     end
-    
+
     it "is not active if a group is found in Redis but not defined in Rollout" do
       @rollout.activate_group(:chat, :fake)
       @rollout.should_not be_active(:chat, stub(:id => 1))
@@ -112,9 +112,30 @@ describe "Rollout" do
     end
 
     it "activates the feature for that percentage of the users" do
-      (1..120).select { |id| @rollout.active?(:chat, stub(:id => id)) }.length.should == 24
+      (1..120).select { |id| @rollout.active?(:chat, stub(:id => id)) }.length.should == 39
     end
   end
+
+  describe "activating a feature for a percentage of users" do
+    before do
+      @rollout.activate_percentage(:chat, 20)
+    end
+
+    it "activates the feature for that percentage of the users" do
+      (1..200).select { |id| @rollout.active?(:chat, stub(:id => id)) }.length.should == 40
+    end
+  end
+
+  describe "activating a feature for a percentage of users" do
+    before do
+      @rollout.activate_percentage(:chat, 5)
+    end
+
+    it "activates the feature for that percentage of the users" do
+      (1..100).select { |id| @rollout.active?(:chat, stub(:id => id)) }.length.should == 5
+    end
+  end
+
 
   describe "deactivating the percentage of users" do
     before do
