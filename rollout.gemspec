@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{rollout}
-  s.version = "0.2.1"
+  s.version = "0.3.0"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["James Golick"]
-  s.date = %q{2010-10-15}
+  s.date = %q{2010-11-01}
   s.description = %q{Conditionally roll out features with redis.}
   s.email = %q{jamesgoick@gmail.com}
   s.extra_rdoc_files = [
