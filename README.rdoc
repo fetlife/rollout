@@ -19,6 +19,8 @@ Check whether a feature is active for a particular user:
 
 If `nil` is passed in as a user, `active?` will always return false.
 
+You can omit the second argument to easily check wether a feature is activated for all users.
+
 You can activate features using a number of different mechanisms.
 
 == Groups
