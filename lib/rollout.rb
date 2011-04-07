@@ -31,9 +31,10 @@ class Rollout
   end
 
   def active?(feature, user)
-    user_in_active_group?(feature, user) ||
-      user_active?(feature, user) ||
-        user_within_active_percentage?(feature, user)
+    !user.nil? &&
+      (user_in_active_group?(feature, user) ||
+        user_active?(feature, user) ||
+          user_within_active_percentage?(feature, user))
   end
 
   def activate_percentage(feature, percentage)
