@@ -12,6 +12,10 @@ class Rollout
     @redis.srem(group_key(feature), group)
   end
 
+  def activate_all(feature)
+    self.activate_percentage(feature, 100)
+  end
+
   def deactivate_all(feature)
     @redis.del(group_key(feature))
     @redis.del(user_key(feature))

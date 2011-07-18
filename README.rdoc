@@ -65,11 +65,19 @@ Deactivate all percentages like this:
 
   $rollout.deactivate_percentage(:chat)
 
+== Give it to everyone
+
+Activate everyone at once:
+
+  $rollout.activate_all(:chat)
+
+This just calls +activate_percentage+ for that feature with 100%.
+
 == Feature is broken
 
 Deactivate everybody at once:
 
-  $rollout.deactivate_all
+  $rollout.deactivate_all(:chat)
 
 For some of our less stable features, we are actually measuring the error rate using redis, and deactivating them automatically when it raises above a certain threshold. It's pretty cool. See http://github.com/jamesgolick/degrade for the failure detection code.
 
