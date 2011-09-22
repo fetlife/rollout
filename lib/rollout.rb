@@ -18,6 +18,14 @@ class Rollout
     @redis.del(percentage_key(feature))
   end
 
+  def activate_for_all(feature)
+    activate_group(feature, :all)
+  end
+
+  def deactivate_for_all(feature)
+    deactivate_group(feature, :all)
+  end
+
   def activate_user(feature, user)
     @redis.sadd(user_key(feature), user.id)
   end
@@ -30,10 +38,14 @@ class Rollout
     @groups[group.to_s] = block
   end
 
-  def active?(feature, user)
-    user_in_active_group?(feature, user) ||
-      user_active?(feature, user) ||
-        user_within_active_percentage?(feature, user)
+  def active?(feature, user=:all)
+    if user == :all
+      feature_active_for_all?(feature)
+    else
+      user_in_active_group?(feature, user) ||
+        user_active?(feature, user) ||
+          user_within_active_percentage?(feature, user)
+    end
   end
 
   def activate_percentage(feature, percentage)
@@ -61,8 +73,14 @@ class Rollout
       "#{key(name)}:percentage"
     end
 
+    def feature_active_for_all?(feature)
+      @redis.sismember(group_key(feature), :all)
+    end
+
     def user_in_active_group?(feature, user)
-      (@redis.smembers(group_key(feature)) || []).any? { |group| @groups.key?(group) && @groups[group].call(user) }
+      (@redis.smembers(group_key(feature)) || []).any? do |group|
+        @groups.key?(group) && @groups[group].call(user)
+      end
     end
 
     def user_active?(feature, user)

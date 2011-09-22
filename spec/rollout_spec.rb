@@ -14,6 +14,7 @@ describe "Rollout" do
 
     it "the feature is active for users for which the block evaluates to true" do
       @rollout.should be_active(:chat, stub(:id => 5))
+      @rollout.should_not be_active(:chat)
     end
 
     it "is not active for users for which the block evaluates to false" do
@@ -33,6 +34,25 @@ describe "Rollout" do
 
     it "evaluates to true no matter what" do
       @rollout.should be_active(:chat, stub(:id => 0))
+    end
+
+    it "doesn't need a user" do
+      @rollout.should be_active(:chat)
+      @rollout.should_not be_active(:leaderboard)
+    end
+  end
+
+  describe "activating for all users" do
+    it "activates for the :all group" do
+      @rollout.activate_for_all(:chat)
+      @rollout.should be_active(:chat)
+    end
+  end
+
+  describe "deactivating for all users" do
+    it "deactivates for the :all group" do
+      @rollout.deactivate_for_all(:chat)
+      @rollout.should_not be_active(:chat)
     end
   end
 
