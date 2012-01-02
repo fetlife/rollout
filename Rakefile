@@ -1,25 +1,6 @@
 require 'rubygems'
 require 'rake'
 
-begin
-  require 'jeweler'
-  Jeweler::Tasks.new do |gem|
-    gem.name = "rollout"
-    gem.summary = %Q{Conditionally roll out features with redis.}
-    gem.description = %Q{Conditionally roll out features with redis.}
-    gem.email = "jamesgoick@gmail.com"
-    gem.homepage = "http://github.com/jamesgolick/rollout"
-    gem.authors = ["James Golick"]
-    gem.add_development_dependency "rspec", "1.2.9"
-    gem.add_development_dependency "bourne", "1.0.0"
-    gem.add_development_dependency "redis", "0.1"
-    # gem is a Gem::Specification... see http://www.rubygems.org/read/chapter/20 for additional settings
-  end
-  Jeweler::GemcutterTasks.new
-rescue LoadError
-  puts "Jeweler (or a dependency) not available. Install it with: gem install jeweler"
-end
-
 require 'spec/rake/spectask'
 Spec::Rake::SpecTask.new(:spec) do |spec|
   spec.libs << 'lib' << 'spec'
@@ -32,7 +13,7 @@ Spec::Rake::SpecTask.new(:rcov) do |spec|
   spec.rcov = true
 end
 
-task :spec => :check_dependencies
+#task :spec => :check_dependencies
 
 task :default => :spec
 
