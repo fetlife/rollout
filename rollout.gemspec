@@ -33,18 +33,18 @@ Gem::Specification.new do |gem|
     gem.specification_version = 3
 
     if Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.2.0') then
-      gem.add_runtime_dependency(%q<redis>, ["= 0.1"])
-      gem.add_development_dependency(%q<rspec>, ["= 1.2.9"])
-      gem.add_development_dependency(%q<bourne>, ["= 1.0.0"])
+      gem.add_runtime_dependency(%q<redis>, ["~> 2.2.2"])
+      gem.add_development_dependency(%q<rspec>, ["~> 2.7"])
+      gem.add_development_dependency(%q<simplecov>, ["~> 0.5.4"])
     else
-      gem.add_dependency(%q<rspec>, ["= 1.2.9"])
-      gem.add_dependency(%q<bourne>, ["= 1.0.0"])
-      gem.add_dependency(%q<redis>, ["= 0.1"])
+      gem.add_dependency(%q<redis>, ["~> 2.2.2"])
+      gem.add_dependency(%q<rspec>, ["~> 2.7"])
+      gem.add_dependency(%q<simplecov>, ["~> 0.5.4"])
     end
   else
-    gem.add_dependency(%q<rspec>, ["= 1.2.9"])
-    gem.add_dependency(%q<bourne>, ["= 1.0.0"])
-    gem.add_dependency(%q<redis>, ["= 0.1"])
+    gem.add_dependency(%q<redis>, ["~> 2.2.2"])
+    gem.add_dependency(%q<rspec>, ["~> 2.7"])
+    gem.add_dependency(%q<simplecov>, ["~> 0.5.4"])
   end
 end
 
