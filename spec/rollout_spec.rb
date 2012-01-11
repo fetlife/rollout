@@ -147,4 +147,18 @@ describe "Rollout" do
       @rollout.should_not be_active(:chat, stub(:id => 24))
     end
   end
+
+  describe "#active?" do
+    before do
+      @rollout.activate_group(:chat, :all)
+    end
+
+    it "should always reject `nil' users" do
+      @rollout.active?(:chat, nil).should be_false
+    end
+
+    it "should default the second argument to `:all'" do
+      @rollout.active?(:chat).should be_true
+    end
+  end
 end
