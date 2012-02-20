@@ -44,6 +44,14 @@ class Rollout
     @redis.del(percentage_key(feature))
   end
 
+  def info(feature)
+    {
+      :percentage => (active_percentage(feature) || 0).to_i,
+      :groups => active_groups(feature).map { |g| g.to_sym },
+      :users => active_user_ids(feature)
+    }
+  end
+
   private
     def key(name)
       "feature:#{name}"
@@ -61,8 +69,22 @@ class Rollout
       "#{key(name)}:percentage"
     end
 
+    def active_groups(feature)
+      @redis.smembers(group_key(feature)) || []
+    end
+
+    def active_user_ids(feature)
+      @redis.smembers(user_key(feature)).map { |id| id.to_i }
+    end
+
+    def active_percentage(feature)
+      @redis.get(percentage_key(feature))
+    end
+
     def user_in_active_group?(feature, user)
-      (@redis.smembers(group_key(feature)) || []).any? { |group| @groups.key?(group) && @groups[group].call(user) }
+      active_groups(feature).any? do |group|
+        @groups.key?(group) && @groups[group].call(user)
+      end
     end
 
     def user_active?(feature, user)
@@ -70,7 +92,7 @@ class Rollout
     end
 
     def user_within_active_percentage?(feature, user)
-      percentage = @redis.get(percentage_key(feature))
+      percentage = active_percentage(feature)
       return false if percentage.nil?
       user.id % 100 < percentage.to_i
     end
