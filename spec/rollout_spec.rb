@@ -1,4 +1,4 @@
-require File.expand_path(File.dirname(__FILE__) + '/spec_helper')
+require 'spec_helper'
 
 describe "Rollout" do
   before do
@@ -167,9 +167,6 @@ describe "Rollout" do
     end
 
     describe "without a percentage set" do
-      before do
-      end
-
       it "the percentage defaults to 0" do
         @rollout.info(:chat).should == {
           :percentage => 0,
