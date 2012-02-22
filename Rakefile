@@ -16,7 +16,6 @@ begin
     gem.add_development_dependency "redis", "2.2.2"
     gem.add_development_dependency "rdoc", "2.4.2"
     gem.add_development_dependency "jeweler", "1.8.3"
-    gem.add_development_dependency "rcov", "1.0.0"
     # gem is a Gem::Specification... see http://www.rubygems.org/read/chapter/20 for additional settings
   end
   Jeweler::GemcutterTasks.new
@@ -26,11 +25,6 @@ end
 
 RSpec::Core::RakeTask.new(:spec) do |spec|
   spec.pattern = FileList['spec/**/*_spec.rb']
-end
-
-RSpec::Core::RakeTask.new(:rcov) do |spec|
-  spec.pattern = FileList['spec/**/*_spec.rb']
-  spec.rcov = true
 end
 
 task :default => :spec
