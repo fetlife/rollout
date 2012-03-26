@@ -88,6 +88,10 @@ describe "Rollout" do
     it "remains inactive for other users" do
       @rollout.should_not be_active(:chat, stub(:id => 24))
     end
+
+    it "is not active if the user is nil" do
+      @rollout.should_not be_active(:chat, nil)
+    end
   end
 
   describe "deactivating a specific user" do
