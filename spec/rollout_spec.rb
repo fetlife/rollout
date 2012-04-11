@@ -149,6 +149,19 @@ describe "Rollout" do
   end
 
   describe "#info" do
+    describe "when feature is nil" do
+      before do
+        @rollout.active?(:chat, stub(:id => 42))
+        @rollout.active?(:test, stub(:id => 42))
+        @rollout.active?(:foo, stub(:id => 42))
+        @rollout.active?(:bar, stub(:id => 42))
+      end
+      
+      it "returns a list of all features" do
+        @rollout.info[:features].should include(:chat, :test, :foo, :bar)
+      end
+    end
+    
     describe "with a percentage set" do
       before do
         @rollout.activate_percentage(:chat, 10)
