@@ -89,6 +89,14 @@ This example would use the "development:feature:chat:groups" key.
 
 * Python: http://github.com/asenchi/proclaim
 
+== Development Setup
+
+  brew install redis
+  redis-server
+  gem install bundler
+  bundle install
+  rake
+
 == Note on Patches/Pull Requests
  
 * Fork the project.

@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["James Golick"]
-  s.date = "2012-02-20"
+  s.date = "2012-02-22"
   s.description = "Conditionally roll out features with redis."
   s.email = "jamesgoick@gmail.com"
   s.extra_rdoc_files = [
@@ -18,6 +18,8 @@ Gem::Specification.new do |s|
   ]
   s.files = [
     ".document",
+    "Gemfile",
+    "Gemfile.lock",
     "LICENSE",
     "README.rdoc",
     "Rakefile",
@@ -30,25 +32,106 @@ Gem::Specification.new do |s|
   ]
   s.homepage = "http://github.com/jamesgolick/rollout"
   s.require_paths = ["lib"]
-  s.rubygems_version = "1.8.10"
+  s.rubygems_version = "1.8.17"
   s.summary = "Conditionally roll out features with redis."
 
   if s.respond_to? :specification_version then
     s.specification_version = 3
 
     if Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.2.0') then
-      s.add_development_dependency(%q<rspec>, ["= 1.2.9"])
+      s.add_runtime_dependency(%q<rollout>, [">= 0"])
       s.add_development_dependency(%q<bourne>, ["= 1.0.0"])
-      s.add_development_dependency(%q<redis>, ["= 0.1"])
+      s.add_development_dependency(%q<bourne>, ["= 1.0.0"])
+      s.add_development_dependency(%q<rdoc>, ["= 2.4.2"])
+      s.add_development_dependency(%q<jeweler>, ["= 1.8.3"])
+      s.add_development_dependency(%q<rspec>, ["~> 2.8.0"])
+      s.add_development_dependency(%q<bourne>, ["= 1.0.0"])
+      s.add_development_dependency(%q<redis>, ["= 2.2.2"])
+      s.add_development_dependency(%q<rdoc>, ["= 2.4.2"])
+      s.add_development_dependency(%q<jeweler>, ["= 1.8.3"])
+      s.add_development_dependency(%q<rspec>, ["~> 2.8.0"])
+      s.add_development_dependency(%q<bourne>, ["= 1.0.0"])
+      s.add_development_dependency(%q<redis>, ["= 2.2.2"])
+      s.add_development_dependency(%q<rdoc>, ["= 2.4.2"])
+      s.add_development_dependency(%q<jeweler>, ["= 1.8.3"])
+      s.add_development_dependency(%q<rspec>, ["~> 2.8.0"])
+      s.add_development_dependency(%q<bourne>, ["= 1.0.0"])
+      s.add_development_dependency(%q<redis>, ["= 2.2.2"])
+      s.add_development_dependency(%q<rdoc>, ["= 2.4.2"])
+      s.add_development_dependency(%q<jeweler>, ["= 1.8.3"])
+      s.add_development_dependency(%q<rspec>, ["~> 2.8.0"])
+      s.add_development_dependency(%q<bourne>, ["= 1.0.0"])
+      s.add_development_dependency(%q<redis>, ["= 2.2.2"])
+      s.add_development_dependency(%q<rdoc>, ["= 2.4.2"])
+      s.add_development_dependency(%q<jeweler>, ["= 1.8.3"])
+      s.add_development_dependency(%q<rspec>, ["~> 2.8.0"])
+      s.add_development_dependency(%q<bourne>, ["= 1.0.0"])
+      s.add_development_dependency(%q<redis>, ["= 2.2.2"])
+      s.add_development_dependency(%q<rdoc>, ["= 2.4.2"])
+      s.add_development_dependency(%q<jeweler>, ["= 1.8.3"])
     else
-      s.add_dependency(%q<rspec>, ["= 1.2.9"])
+      s.add_dependency(%q<rollout>, [">= 0"])
       s.add_dependency(%q<bourne>, ["= 1.0.0"])
-      s.add_dependency(%q<redis>, ["= 0.1"])
+      s.add_dependency(%q<bourne>, ["= 1.0.0"])
+      s.add_dependency(%q<rdoc>, ["= 2.4.2"])
+      s.add_dependency(%q<jeweler>, ["= 1.8.3"])
+      s.add_dependency(%q<rspec>, ["~> 2.8.0"])
+      s.add_dependency(%q<bourne>, ["= 1.0.0"])
+      s.add_dependency(%q<redis>, ["= 2.2.2"])
+      s.add_dependency(%q<rdoc>, ["= 2.4.2"])
+      s.add_dependency(%q<jeweler>, ["= 1.8.3"])
+      s.add_dependency(%q<rspec>, ["~> 2.8.0"])
+      s.add_dependency(%q<bourne>, ["= 1.0.0"])
+      s.add_dependency(%q<redis>, ["= 2.2.2"])
+      s.add_dependency(%q<rdoc>, ["= 2.4.2"])
+      s.add_dependency(%q<jeweler>, ["= 1.8.3"])
+      s.add_dependency(%q<rspec>, ["~> 2.8.0"])
+      s.add_dependency(%q<bourne>, ["= 1.0.0"])
+      s.add_dependency(%q<redis>, ["= 2.2.2"])
+      s.add_dependency(%q<rdoc>, ["= 2.4.2"])
+      s.add_dependency(%q<jeweler>, ["= 1.8.3"])
+      s.add_dependency(%q<rspec>, ["~> 2.8.0"])
+      s.add_dependency(%q<bourne>, ["= 1.0.0"])
+      s.add_dependency(%q<redis>, ["= 2.2.2"])
+      s.add_dependency(%q<rdoc>, ["= 2.4.2"])
+      s.add_dependency(%q<jeweler>, ["= 1.8.3"])
+      s.add_dependency(%q<rspec>, ["~> 2.8.0"])
+      s.add_dependency(%q<bourne>, ["= 1.0.0"])
+      s.add_dependency(%q<redis>, ["= 2.2.2"])
+      s.add_dependency(%q<rdoc>, ["= 2.4.2"])
+      s.add_dependency(%q<jeweler>, ["= 1.8.3"])
     end
   else
-    s.add_dependency(%q<rspec>, ["= 1.2.9"])
+    s.add_dependency(%q<rollout>, [">= 0"])
     s.add_dependency(%q<bourne>, ["= 1.0.0"])
-    s.add_dependency(%q<redis>, ["= 0.1"])
+    s.add_dependency(%q<bourne>, ["= 1.0.0"])
+    s.add_dependency(%q<rdoc>, ["= 2.4.2"])
+    s.add_dependency(%q<jeweler>, ["= 1.8.3"])
+    s.add_dependency(%q<rspec>, ["~> 2.8.0"])
+    s.add_dependency(%q<bourne>, ["= 1.0.0"])
+    s.add_dependency(%q<redis>, ["= 2.2.2"])
+    s.add_dependency(%q<rdoc>, ["= 2.4.2"])
+    s.add_dependency(%q<jeweler>, ["= 1.8.3"])
+    s.add_dependency(%q<rspec>, ["~> 2.8.0"])
+    s.add_dependency(%q<bourne>, ["= 1.0.0"])
+    s.add_dependency(%q<redis>, ["= 2.2.2"])
+    s.add_dependency(%q<rdoc>, ["= 2.4.2"])
+    s.add_dependency(%q<jeweler>, ["= 1.8.3"])
+    s.add_dependency(%q<rspec>, ["~> 2.8.0"])
+    s.add_dependency(%q<bourne>, ["= 1.0.0"])
+    s.add_dependency(%q<redis>, ["= 2.2.2"])
+    s.add_dependency(%q<rdoc>, ["= 2.4.2"])
+    s.add_dependency(%q<jeweler>, ["= 1.8.3"])
+    s.add_dependency(%q<rspec>, ["~> 2.8.0"])
+    s.add_dependency(%q<bourne>, ["= 1.0.0"])
+    s.add_dependency(%q<redis>, ["= 2.2.2"])
+    s.add_dependency(%q<rdoc>, ["= 2.4.2"])
+    s.add_dependency(%q<jeweler>, ["= 1.8.3"])
+    s.add_dependency(%q<rspec>, ["~> 2.8.0"])
+    s.add_dependency(%q<bourne>, ["= 1.0.0"])
+    s.add_dependency(%q<redis>, ["= 2.2.2"])
+    s.add_dependency(%q<rdoc>, ["= 2.4.2"])
+    s.add_dependency(%q<jeweler>, ["= 1.8.3"])
   end
 end
 
