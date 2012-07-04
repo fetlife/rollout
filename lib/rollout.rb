@@ -88,12 +88,13 @@ class Rollout
     end
 
     def user_active?(feature, user)
-      @redis.sismember(user_key(feature), user.id)
+      @redis.sismember(user_key(feature), user.id) if user
     end
 
     def user_within_active_percentage?(feature, user)
       percentage = active_percentage(feature)
       return false if percentage.nil?
+      return false if user.nil?
       user.id % 100 < percentage.to_i
     end
 end
