@@ -167,10 +167,7 @@ describe "Rollout" do
     end
 
     describe "without a percentage set" do
-      before do
-      end
-
-      it "the percentage defaults to 0" do
+      it "uses 0 as the default percentage" do
         @rollout.info(:chat).should == {
           :percentage => 0,
           :groups => [],
