@@ -60,6 +60,7 @@ describe "Rollout" do
       @rollout.activate_group(:chat, :fivesonly)
       @rollout.activate_user(:chat, stub(:id => 51))
       @rollout.activate_percentage(:chat, 100)
+      @rollout.activate_globally(:chat)
       @rollout.deactivate_all(:chat)
     end
 
@@ -73,6 +74,10 @@ describe "Rollout" do
 
     it "removes the percentage" do
       @rollout.should_not be_active(:chat, stub(:id => 24))
+    end
+
+    it "removes globally" do
+      @rollout.should_not be_active(:chat)
     end
   end
 
@@ -103,6 +108,16 @@ describe "Rollout" do
 
     it "remains active for other active users" do
       @rollout.should be_active(:chat, stub(:id => 24))
+    end
+  end
+
+  describe "activating a feature globally" do
+    before do
+      @rollout.activate_globally(:chat)
+    end
+
+    it "activates the feature" do
+      @rollout.should be_active(:chat)
     end
   end
 
@@ -145,6 +160,17 @@ describe "Rollout" do
 
     it "becomes inactivate for all users" do
       @rollout.should_not be_active(:chat, stub(:id => 24))
+    end
+  end
+
+  describe "deactivating the feature globally" do
+    before do
+      @rollout.activate_globally(:chat)
+      @rollout.deactivate_globally(:chat)
+    end
+
+    it "becomes inactivate" do
+      @rollout.should_not be_active(:chat)
     end
   end
 
