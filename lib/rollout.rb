@@ -5,11 +5,11 @@ class Rollout
   end
 
   def activate_globally(feature)
-    @redis.sadd(global_key(feature), feature)
+    @redis.sadd(global_key, feature)
   end
 
   def deactivate_globally(feature)
-    @redis.srem(global_key(feature), feature)
+    @redis.srem(global_key, feature)
   end
 
   def activate_group(feature, group)
@@ -61,8 +61,9 @@ class Rollout
   def info(feature)
     {
       :percentage => (active_percentage(feature) || 0).to_i,
-      :groups => active_groups(feature).map { |g| g.to_sym },
-      :users => active_user_ids(feature)
+      :groups     => active_groups(feature).map { |g| g.to_sym },
+      :users      => active_user_ids(feature),
+      :global     => active_global_features
     }
   end
 
@@ -83,7 +84,7 @@ class Rollout
       "#{key(name)}:percentage"
     end
 
-    def global_key(name)
+    def global_key
       "feature:__global__"
     end
 
@@ -95,12 +96,16 @@ class Rollout
       @redis.smembers(user_key(feature)).map { |id| id.to_i }
     end
 
+    def active_global_features
+      @redis.smembers(global_key) || []
+    end
+
     def active_percentage(feature)
       @redis.get(percentage_key(feature))
     end
 
     def active_globally?(feature)
-      @redis.sismember(global_key(feature), feature)
+      @redis.sismember(global_key, feature)
     end
 
     def user_in_active_group?(feature, user)

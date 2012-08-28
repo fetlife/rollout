@@ -180,14 +180,16 @@ describe "Rollout" do
         @rollout.activate_percentage(:chat, 10)
         @rollout.activate_group(:chat, :caretakers)
         @rollout.activate_group(:chat, :greeters)
+        @rollout.activate_globally(:signup)
         @rollout.activate_user(:chat, stub(:id => 42))
       end
 
       it "returns info about all the activations" do
         @rollout.info(:chat).should == {
           :percentage => 10,
-          :groups => [:greeters, :caretakers],
-          :users => [42]
+          :groups     => [:greeters, :caretakers],
+          :users      => [42],
+          :global     => %w(signup)
         }
       end
     end
@@ -199,8 +201,9 @@ describe "Rollout" do
       it "the percentage defaults to 0" do
         @rollout.info(:chat).should == {
           :percentage => 0,
-          :groups => [],
-          :users => []
+          :groups     => [],
+          :users      => [],
+          :global     => []
         }
       end
     end
