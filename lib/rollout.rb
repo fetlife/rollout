@@ -58,13 +58,19 @@ class Rollout
     @redis.del(percentage_key(feature))
   end
 
-  def info(feature)
-    {
-      :percentage => (active_percentage(feature) || 0).to_i,
-      :groups     => active_groups(feature).map { |g| g.to_sym },
-      :users      => active_user_ids(feature),
-      :global     => active_global_features
-    }
+  def info(feature = nil)
+    if feature
+      {
+        :percentage => (active_percentage(feature) || 0).to_i,
+        :groups     => active_groups(feature).map { |g| g.to_sym },
+        :users      => active_user_ids(feature),
+        :global     => active_global_features
+      }
+    else
+      {
+        :global     => active_global_features
+      }
+    end
   end
 
   private
@@ -97,7 +103,7 @@ class Rollout
     end
 
     def active_global_features
-      @redis.smembers(global_key) || []
+      (@redis.smembers(global_key) || []).map(&:to_sym)
     end
 
     def active_percentage(feature)
