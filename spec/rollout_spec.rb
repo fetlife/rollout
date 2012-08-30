@@ -60,6 +60,7 @@ describe "Rollout" do
       @rollout.activate_group(:chat, :fivesonly)
       @rollout.activate_user(:chat, stub(:id => 51))
       @rollout.activate_percentage(:chat, 100)
+      @rollout.activate_globally(:chat)
       @rollout.deactivate_all(:chat)
     end
 
@@ -73,6 +74,10 @@ describe "Rollout" do
 
     it "removes the percentage" do
       @rollout.should_not be_active(:chat, stub(:id => 24))
+    end
+
+    it "removes globally" do
+      @rollout.should_not be_active(:chat)
     end
   end
 
@@ -103,6 +108,16 @@ describe "Rollout" do
 
     it "remains active for other active users" do
       @rollout.should be_active(:chat, stub(:id => 24))
+    end
+  end
+
+  describe "activating a feature globally" do
+    before do
+      @rollout.activate_globally(:chat)
+    end
+
+    it "activates the feature" do
+      @rollout.should be_active(:chat)
     end
   end
 
@@ -148,33 +163,58 @@ describe "Rollout" do
     end
   end
 
+  describe "deactivating the feature globally" do
+    before do
+      @rollout.activate_globally(:chat)
+      @rollout.deactivate_globally(:chat)
+    end
+
+    it "becomes inactivate" do
+      @rollout.should_not be_active(:chat)
+    end
+  end
+
   describe "#info" do
+    context "global features" do
+      let(:features) { [:signup, :chat, :table] }
+
+      before do
+        features.each do |f|
+          @rollout.activate_globally(f)
+        end
+      end
+
+      it "returns all global features" do
+        @rollout.info.should eq({ :global => features.reverse })
+      end
+    end
+
     describe "with a percentage set" do
       before do
         @rollout.activate_percentage(:chat, 10)
         @rollout.activate_group(:chat, :caretakers)
         @rollout.activate_group(:chat, :greeters)
+        @rollout.activate_globally(:signup)
         @rollout.activate_user(:chat, stub(:id => 42))
       end
 
       it "returns info about all the activations" do
         @rollout.info(:chat).should == {
           :percentage => 10,
-          :groups => [:greeters, :caretakers],
-          :users => [42]
+          :groups     => [:greeters, :caretakers],
+          :users      => [42],
+          :global     => [:signup]
         }
       end
     end
 
     describe "without a percentage set" do
-      before do
-      end
-
       it "the percentage defaults to 0" do
         @rollout.info(:chat).should == {
           :percentage => 0,
-          :groups => [],
-          :users => []
+          :groups     => [],
+          :users      => [],
+          :global     => []
         }
       end
     end
