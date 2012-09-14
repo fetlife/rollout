@@ -1,5 +1,3 @@
-gem "rspec"
-gem "rake"
-gem "bourne"
-gem "mocha"
-gem "redis"
+source :rubygems
+
+gemspec
