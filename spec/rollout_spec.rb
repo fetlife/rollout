@@ -151,6 +151,15 @@ describe "Rollout" do
     end
   end
 
+  describe "activating a feature for all users" do
+    before do
+      @rollout.activate_all(:chat)
+    end
+
+    it "activates the feature for 100% of users" do
+      (1..100).select { |id| @rollout.active?(:chat, stub(:id => id)) }.length.should == 100
+    end
+  end
 
   describe "deactivating the percentage of users" do
     before do
