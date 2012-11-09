@@ -1,3 +1,5 @@
+require "rollout/legacy"
+
 class Rollout
   def initialize(redis)
     @redis  = redis
