@@ -1,78 +1,149 @@
 require "rollout/legacy"
 
 class Rollout
+  class Feature
+    attr_reader :name, :groups, :users, :percentage
+    attr_writer :percentage
+
+    def initialize(name, string = nil)
+      @name = name
+      if string
+        raw_percentage,raw_users,raw_groups = string.split("|")
+        @percentage = raw_percentage.to_i
+        @users = (raw_users || "").split(",").map(&:to_i)
+        @groups = (raw_groups || "").split(",").map(&:to_sym)
+      else
+        clear
+      end
+    end
+
+    def serialize
+      "#{@percentage}|#{@users.join(",")}|#{@groups.join(",")}"
+    end
+
+    def add_user(user)
+      @users << user.id unless @users.include?(user.id)
+    end
+
+    def remove_user(user)
+      @users.delete(user.id)
+    end
+
+    def add_group(group)
+      @groups << group unless @groups.include?(group)
+    end
+
+    def remove_group(group)
+      @groups.delete(group)
+    end
+
+    def clear
+      @groups = []
+      @users = []
+      @percentage = 0
+    end
+
+    def active?(rollout, user)
+      if user.nil?
+        @percentage == 100
+      else
+        user_in_percentage?(user) ||
+          user_in_active_users?(user) ||
+            user_in_active_group?(user, rollout)
+      end
+    end
+
+    private
+      def user_in_percentage?(user)
+        user.id % 100 < @percentage
+      end
+
+      def user_in_active_users?(user)
+        @users.include?(user.id)
+      end
+
+      def user_in_active_group?(user, rollout)
+        @groups.any? do |g|
+          rollout.active_in_group?(g, user)
+        end
+      end
+  end
+
   def initialize(redis)
     @redis  = redis
-    @groups = {"all" => lambda { |user| true }}
+    @groups = {:all => lambda { |user| true }}
   end
 
   def activate_globally(feature)
-    @redis.sadd(global_key, feature)
+    with_feature(feature) do |f|
+      f.percentage = 100
+    end
   end
 
   def deactivate_globally(feature)
-    @redis.srem(global_key, feature)
+    with_feature(feature) do |f|
+      f.clear
+    end
   end
 
   def activate_group(feature, group)
-    @redis.sadd(group_key(feature), group)
+    with_feature(feature) do |f|
+      f.add_group(group)
+    end
   end
 
   def deactivate_group(feature, group)
-    @redis.srem(group_key(feature), group)
+    with_feature(feature) do |f|
+      f.remove_group(group)
+    end
   end
 
   def deactivate_all(feature)
-    @redis.del(group_key(feature))
-    @redis.del(user_key(feature))
-    @redis.del(percentage_key(feature))
-    deactivate_globally(feature)
+    with_feature(feature) do |f|
+      f.clear
+    end
   end
 
   def activate_user(feature, user)
-    @redis.sadd(user_key(feature), user.id)
+    with_feature(feature) do |f|
+      f.add_user(user)
+    end
   end
 
   def deactivate_user(feature, user)
-    @redis.srem(user_key(feature), user.id)
+    with_feature(feature) do |f|
+      f.remove_user(user)
+    end
   end
 
   def define_group(group, &block)
-    @groups[group.to_s] = block
+    @groups[group] = block
   end
 
   def active?(feature, user = nil)
-    if user
-      active_globally?(feature) ||
-        user_in_active_group?(feature, user) ||
-          user_active?(feature, user) ||
-            user_within_active_percentage?(feature, user)
-    else
-      active_globally?(feature)
-    end
+    feature = get(feature)
+    feature.active?(self, user)
   end
 
   def activate_percentage(feature, percentage)
-    @redis.set(percentage_key(feature), percentage)
+    with_feature(feature) do |f|
+      f.percentage = percentage
+    end
   end
 
   def deactivate_percentage(feature)
-    @redis.del(percentage_key(feature))
+    with_feature(feature) do |f|
+      f.percentage = 0
+    end
   end
 
-  def info(feature = nil)
-    if feature
-      {
-        :percentage => (active_percentage(feature) || 0).to_i,
-        :groups     => active_groups(feature).map { |g| g.to_sym },
-        :users      => active_user_ids(feature),
-        :global     => active_global_features
-      }
-    else
-      {
-        :global     => active_global_features
-      }
-    end
+  def active_in_group?(group, user)
+    f = @groups[group]
+    f && f.call(user)
+  end
+
+  def get(feature)
+    Feature.new(feature, @redis.get(key(feature)))
   end
 
   private
@@ -80,55 +151,13 @@ class Rollout
       "feature:#{name}"
     end
 
-    def group_key(name)
-      "#{key(name)}:groups"
+    def with_feature(feature)
+      f = get(feature)
+      yield(f)
+      save(f)
     end
 
-    def user_key(name)
-      "#{key(name)}:users"
-    end
-
-    def percentage_key(name)
-      "#{key(name)}:percentage"
-    end
-
-    def global_key
-      "feature:__global__"
-    end
-
-    def active_groups(feature)
-      @redis.smembers(group_key(feature)) || []
-    end
-
-    def active_user_ids(feature)
-      @redis.smembers(user_key(feature)).map { |id| id.to_i }
-    end
-
-    def active_global_features
-      (@redis.smembers(global_key) || []).map(&:to_sym)
-    end
-
-    def active_percentage(feature)
-      @redis.get(percentage_key(feature))
-    end
-
-    def active_globally?(feature)
-      @redis.sismember(global_key, feature)
-    end
-
-    def user_in_active_group?(feature, user)
-      active_groups(feature).any? do |group|
-        @groups.key?(group) && @groups[group].call(user)
-      end
-    end
-
-    def user_active?(feature, user)
-      @redis.sismember(user_key(feature), user.id)
-    end
-
-    def user_within_active_percentage?(feature, user)
-      percentage = active_percentage(feature)
-      return false if percentage.nil?
-      user.id % 100 < percentage.to_i
+    def save(feature)
+      @redis.set(key(feature.name), feature.serialize)
     end
 end

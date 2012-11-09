@@ -174,49 +174,25 @@ describe "Rollout" do
     end
   end
 
-  describe "#info" do
-    context "global features" do
-      let(:features) { [:signup, :chat, :table] }
-
-      before do
-        features.each do |f|
-          @rollout.activate_globally(f)
-        end
-      end
-
-      it "returns all global features" do
-        @rollout.info.should eq({ :global => features.reverse })
-      end
+  describe "#get" do
+    before do
+      @rollout.activate_percentage(:chat, 10)
+      @rollout.activate_group(:chat, :caretakers)
+      @rollout.activate_group(:chat, :greeters)
+      @rollout.activate_globally(:signup)
+      @rollout.activate_user(:chat, stub(:id => 42))
     end
 
-    describe "with a percentage set" do
-      before do
-        @rollout.activate_percentage(:chat, 10)
-        @rollout.activate_group(:chat, :caretakers)
-        @rollout.activate_group(:chat, :greeters)
-        @rollout.activate_globally(:signup)
-        @rollout.activate_user(:chat, stub(:id => 42))
-      end
+    it "returns the feature object" do
+      feature = @rollout.get(:chat)
+      feature.groups.should == [:caretakers, :greeters]
+      feature.percentage.should == 10
+      feature.users.should == [42]
 
-      it "returns info about all the activations" do
-        @rollout.info(:chat).should == {
-          :percentage => 10,
-          :groups     => [:greeters, :caretakers],
-          :users      => [42],
-          :global     => [:signup]
-        }
-      end
-    end
-
-    describe "without a percentage set" do
-      it "defaults to 0" do
-        @rollout.info(:chat).should == {
-          :percentage => 0,
-          :groups     => [],
-          :users      => [],
-          :global     => []
-        }
-      end
+      feature = @rollout.get(:signup)
+      feature.groups.should be_empty
+      feature.users.should be_empty
+      feature.percentage.should == 100
     end
   end
 end
