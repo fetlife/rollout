@@ -152,9 +152,17 @@ class Rollout
     Feature.new(feature, @redis.get(key(feature)))
   end
 
+  def features
+    @redis.smembers(features_key).map(&:to_sym)
+  end
+
   private
     def key(name)
       "feature:#{name}"
+    end
+
+    def features_key
+      "feature:__features__"
     end
 
     def with_feature(feature)
@@ -165,5 +173,6 @@ class Rollout
 
     def save(feature)
       @redis.set(key(feature.name), feature.serialize)
+      @redis.sadd(features_key, feature.name)
     end
 end

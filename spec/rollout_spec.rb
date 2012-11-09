@@ -174,6 +174,11 @@ describe "Rollout" do
     end
   end
 
+  it "keeps a list of features" do
+    @rollout.activate_globally(:chat)
+    @rollout.features.should be_include(:chat)
+  end
+
   describe "#get" do
     before do
       @rollout.activate_percentage(:chat, 10)
