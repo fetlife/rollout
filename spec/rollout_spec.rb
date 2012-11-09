@@ -188,6 +188,11 @@ describe "Rollout" do
       feature.groups.should == [:caretakers, :greeters]
       feature.percentage.should == 10
       feature.users.should == [42]
+      feature.to_hash.should == {
+        :groups => [:caretakers, :greeters],
+        :percentage => 10,
+        :users => [42]
+      }
 
       feature = @rollout.get(:signup)
       feature.groups.should be_empty
