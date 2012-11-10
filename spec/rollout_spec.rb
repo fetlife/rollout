@@ -213,7 +213,7 @@ describe "Rollout" do
       @legacy.activate_user(:chat, stub(:id => 42))
       @legacy.activate_user(:chat, stub(:id => 24))
       @legacy.activate_group(:chat, :dope_people)
-      @rollout = Rollout.new(@redis, :legacy => true)
+      @rollout = Rollout.new(@redis, :migrate => true)
     end
 
     it "imports the settings from the legacy rollout once" do

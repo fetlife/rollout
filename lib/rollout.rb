@@ -78,7 +78,7 @@ class Rollout
   def initialize(redis, opts = {})
     @redis  = redis
     @groups = {:all => lambda { |user| true }}
-    @legacy = Legacy.new(@redis) if opts[:legacy]
+    @legacy = Legacy.new(@redis) if opts[:migrate]
   end
 
   def activate_globally(feature)
@@ -151,7 +151,7 @@ class Rollout
 
   def get(feature)
     string = @redis.get(key(feature))
-    if string || !legacy?
+    if string || !migrate?
       Feature.new(feature, string)
     else
       info = @legacy.info(feature)
@@ -188,7 +188,7 @@ class Rollout
       @redis.sadd(features_key, feature.name)
     end
 
-    def legacy?
+    def migrate?
       @legacy
     end
 end
