@@ -81,13 +81,13 @@ class Rollout
     @legacy = Legacy.new(@storage) if opts[:migrate]
   end
 
-  def activate_globally(feature)
+  def activate(feature)
     with_feature(feature) do |f|
       f.percentage = 100
     end
   end
 
-  def deactivate_globally(feature)
+  def deactivate(feature)
     with_feature(feature) do |f|
       f.clear
     end

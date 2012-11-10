@@ -60,7 +60,7 @@ describe "Rollout" do
       @rollout.activate_group(:chat, :fivesonly)
       @rollout.activate_user(:chat, stub(:id => 51))
       @rollout.activate_percentage(:chat, 100)
-      @rollout.activate_globally(:chat)
+      @rollout.activate(:chat)
       @rollout.deactivate_all(:chat)
     end
 
@@ -113,7 +113,7 @@ describe "Rollout" do
 
   describe "activating a feature globally" do
     before do
-      @rollout.activate_globally(:chat)
+      @rollout.activate(:chat)
     end
 
     it "activates the feature" do
@@ -165,8 +165,8 @@ describe "Rollout" do
 
   describe "deactivating the feature globally" do
     before do
-      @rollout.activate_globally(:chat)
-      @rollout.deactivate_globally(:chat)
+      @rollout.activate(:chat)
+      @rollout.deactivate(:chat)
     end
 
     it "becomes inactivate" do
@@ -175,7 +175,7 @@ describe "Rollout" do
   end
 
   it "keeps a list of features" do
-    @rollout.activate_globally(:chat)
+    @rollout.activate(:chat)
     @rollout.features.should be_include(:chat)
   end
 
@@ -184,7 +184,7 @@ describe "Rollout" do
       @rollout.activate_percentage(:chat, 10)
       @rollout.activate_group(:chat, :caretakers)
       @rollout.activate_group(:chat, :greeters)
-      @rollout.activate_globally(:signup)
+      @rollout.activate(:signup)
       @rollout.activate_user(:chat, stub(:id => 42))
     end
 
