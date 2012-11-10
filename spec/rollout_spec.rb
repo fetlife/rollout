@@ -205,4 +205,30 @@ describe "Rollout" do
       feature.percentage.should == 100
     end
   end
+
+  describe "migration mode" do
+    before do
+      @legacy = Rollout::Legacy.new(@redis)
+      @legacy.activate_percentage(:chat, 12)
+      @legacy.activate_user(:chat, stub(:id => 42))
+      @legacy.activate_user(:chat, stub(:id => 24))
+      @legacy.activate_group(:chat, :dope_people)
+      @rollout = Rollout.new(@redis, :legacy => true)
+    end
+
+    it "imports the settings from the legacy rollout once" do
+      @rollout.get(:chat).to_hash.should == {
+        :percentage => 12,
+        :users => [24, 42],
+        :groups => [:dope_people]
+      }
+      @legacy.deactivate_all(:chat)
+      @rollout.get(:chat).to_hash.should == {
+        :percentage => 12,
+        :users => [24, 42],
+        :groups => [:dope_people]
+      }
+      @redis.get("feature:chat").should_not be_nil
+    end
+  end
 end
