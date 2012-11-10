@@ -71,7 +71,7 @@ Deactivate everybody at once:
 
   $rollout.deactivate_all(:chat)
 
-For some of our less stable features, we are actually measuring the error rate using redis, and deactivating them automatically when it raises above a certain threshold. It's pretty cool. See http://github.com/jamesgolick/degrade for the failure detection code.
+For many of our features, we keep track of error rates using redis, and deactivate them automatically when a threshold is reached to prevent service failures from cascading. See http://github.com/jamesgolick/degrade for the failure detection code.
 
 == Namespacing
 
