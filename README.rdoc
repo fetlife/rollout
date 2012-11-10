@@ -63,7 +63,7 @@ Deactivate them like this:
 
 == User Percentages
 
-If you're rolling out a new feature, you might want to test the waters by slowly letting in a percentage of your users.
+If you're rolling out a new feature, you might want to test the waters by slowly enabling it for a percentage of your users.
 
   $rollout.activate_percentage(:chat, 20)
 
