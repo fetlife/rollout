@@ -26,7 +26,7 @@ class Rollout
     end
 
     def remove_user(user)
-      @users.delete(user.id)
+      @users.delete(user.id.to_i)
     end
 
     def add_group(group)

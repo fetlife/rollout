@@ -100,8 +100,10 @@ describe "Rollout" do
   describe "deactivating a specific user" do
     before do
       @rollout.activate_user(:chat, stub(:id => 42))
+      @rollout.activate_user(:chat, stub(:id => 4242))
       @rollout.activate_user(:chat, stub(:id => 24))
       @rollout.deactivate_user(:chat, stub(:id => 42))
+      @rollout.deactivate_user(:chat, stub(:id => "4242"))
     end
 
     it "that user should no longer be active" do
@@ -109,7 +111,7 @@ describe "Rollout" do
     end
 
     it "remains active for other active users" do
-      @rollout.should be_active(:chat, stub(:id => 24))
+      @rollout.get(:chat).users.should == [24]
     end
   end
 
