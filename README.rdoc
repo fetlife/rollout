@@ -1,10 +1,12 @@
 = rollout
 
-Conditionally roll out features with redis.
+Feature flippers.
 
 == MAKE SURE TO READ THIS: 2.0 Changes and Migration Path
 
-  As of rollout-2.x, only one redis key is used per feature for performance reasons. The data format is `percentage|user_id,user_id,...|group,_group...`. This has the effect of making concurrent feature modifications unsafe, but in practice, I doubt this will actually be a problem.
+  As of rollout-2.x, only one key is used per feature for performance reasons. The data format is `percentage|user_id,user_id,...|group,_group...`. This has the effect of making concurrent feature modifications unsafe, but in practice, I doubt this will actually be a problem.
+
+  This also has the effect of rollout no longer being dependent on redis. Just give it something that responds to `set(key,value)` and `get(key)`
 
   If you have been using the 1.x format, you can initialize Rollout with `:migrate => true` and it'll do its best to automatically migrate your old features to the new format. There will be some performance impact, but it should be limited and short-lived since each feature only needs to get migrated once.
 
@@ -85,9 +87,9 @@ For many of our features, we keep track of error rates using redis, and deactiva
 
 == Namespacing
 
-Rollout separates its keys from other keys on the Redis server using the "feature" keyspace.
+Rollout separates its keys from other keys in the data store using the "feature" keyspace.
 
-You can namespace keys further to support multiple environments by using the http://github.com/defunkt/redis-namespace gem.
+If you're using redis, you can namespace keys further to support multiple environments by using the http://github.com/defunkt/redis-namespace gem.
 
   $ns = Redis::Namespace.new(Rails.env, :redis => $redis)
   $rollout = Rollout.new($ns)
