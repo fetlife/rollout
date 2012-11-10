@@ -75,10 +75,10 @@ class Rollout
       end
   end
 
-  def initialize(redis, opts = {})
-    @redis  = redis
+  def initialize(storage, opts = {})
+    @storage  = storage
     @groups = {:all => lambda { |user| true }}
-    @legacy = Legacy.new(@redis) if opts[:migrate]
+    @legacy = Legacy.new(@storage) if opts[:migrate]
   end
 
   def activate_globally(feature)
@@ -150,7 +150,7 @@ class Rollout
   end
 
   def get(feature)
-    string = @redis.get(key(feature))
+    string = @storage.get(key(feature))
     if string || !migrate?
       Feature.new(feature, string)
     else
@@ -165,7 +165,7 @@ class Rollout
   end
 
   def features
-    @redis.smembers(features_key).map(&:to_sym)
+    (@storage.get(features_key) || "").split(",").map(&:to_sym)
   end
 
   private
@@ -184,8 +184,8 @@ class Rollout
     end
 
     def save(feature)
-      @redis.set(key(feature.name), feature.serialize)
-      @redis.sadd(features_key, feature.name)
+      @storage.set(key(feature.name), feature.serialize)
+      @storage.set(features_key, (features + [feature.name]).join(","))
     end
 
     def migrate?
