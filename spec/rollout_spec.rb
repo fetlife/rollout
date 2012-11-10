@@ -40,8 +40,10 @@ describe "Rollout" do
     before do
       @rollout.define_group(:fivesonly) { |user| user.id == 5 }
       @rollout.activate_group(:chat, :all)
+      @rollout.activate_group(:chat, :some)
       @rollout.activate_group(:chat, :fivesonly)
       @rollout.deactivate_group(:chat, :all)
+      @rollout.deactivate_group(:chat, "some")
     end
 
     it "deactivates the rules for that group" do
@@ -49,7 +51,7 @@ describe "Rollout" do
     end
 
     it "leaves the other groups active" do
-      @rollout.should be_active(:chat, stub(:id => 5))
+      @rollout.get(:chat).groups.should == [:fivesonly]
     end
   end
 

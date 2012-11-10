@@ -34,7 +34,7 @@ class Rollout
     end
 
     def remove_group(group)
-      @groups.delete(group)
+      @groups.delete(group.to_sym)
     end
 
     def clear
