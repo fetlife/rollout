@@ -91,4 +91,4 @@ This example would use the "development:feature:chat:groups" key.
 
 == Copyright
 
-Copyright (c) 2010 James Golick, Protose, Inc. See LICENSE for details.
+Copyright (c) 2010 James Golick, BitLove, Inc. See LICENSE for details.
