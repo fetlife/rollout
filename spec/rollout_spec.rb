@@ -61,7 +61,7 @@ describe "Rollout" do
       @rollout.activate_user(:chat, stub(:id => 51))
       @rollout.activate_percentage(:chat, 100)
       @rollout.activate(:chat)
-      @rollout.deactivate_all(:chat)
+      @rollout.deactivate(:chat)
     end
 
     it "removes all of the groups" do

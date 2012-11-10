@@ -81,7 +81,7 @@ Deactivate all percentages like this:
 
 Deactivate everybody at once:
 
-  $rollout.deactivate_all(:chat)
+  $rollout.deactivate(:chat)
 
 For many of our features, we keep track of error rates using redis, and deactivate them automatically when a threshold is reached to prevent service failures from cascading. See http://github.com/jamesgolick/degrade for the failure detection code.
 

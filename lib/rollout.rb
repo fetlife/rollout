@@ -105,12 +105,6 @@ class Rollout
     end
   end
 
-  def deactivate_all(feature)
-    with_feature(feature) do |f|
-      f.clear
-    end
-  end
-
   def activate_user(feature, user)
     with_feature(feature) do |f|
       f.add_user(user)
