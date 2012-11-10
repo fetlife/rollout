@@ -4,7 +4,7 @@ Feature flippers.
 
 == MAKE SURE TO READ THIS: 2.0 Changes and Migration Path
 
-As of rollout-2.x, only one key is used per feature for performance reasons. The data format is `percentage|user_id,user_id,...|group,_group...`. This has the effect of making concurrent feature modifications unsafe, but in practice, I doubt this will actually be a problem.
+As of rollout-2.x, only one key is used per feature for performance reasons. The data format is <tt>percentage|user_id,user_id,...|group,_group...</tt>. This has the effect of making concurrent feature modifications unsafe, but in practice, I doubt this will actually be a problem.
 
 This also has the effect of rollout no longer being dependent on redis. Just give it something that responds to `set(key,value)` and `get(key)`
 
