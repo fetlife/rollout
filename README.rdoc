@@ -29,6 +29,10 @@ Check whether a feature is active for a particular user:
   
   $rollout.active?(:chat, User.first) # => true/false
 
+Check whether a feature is active globally:
+
+  $rollout.active?(:chat)
+
 You can activate features using a number of different mechanisms.
 
 == Groups
@@ -76,6 +80,8 @@ So, for 20%, users 0, 1, 10, 11, 20, 21, etc would be allowed in. Those users wo
 Deactivate all percentages like this:
 
   $rollout.deactivate_percentage(:chat)
+
+_Note that activating a feature for 100% of users will also make it active "globally". That is when calling Rollout#active? without a user object._
 
 == Feature is broken
 
