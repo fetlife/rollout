@@ -103,6 +103,13 @@ If you're using redis, you can namespace keys further to support multiple enviro
   
 This example would use the "development:feature:chat:groups" key.
 
+== misc/check_rollout.rb
+
+In our infrastructure, rollout obviously allows us to progressively enable new features but we also use it to automatically disable features and services that break or fail to prevent them from causing cascading failures and wiping out our entire system.
+
+When a feature reaches "maturity" - in other words, expected to be at 100% rollout all the time - we use check_rollout.rb to setup nagios alerts on the rollouts so that we get paged if one of them gets disabled.
+
+
 == Implementations in other languages
 
 * Python: http://github.com/asenchi/proclaim
