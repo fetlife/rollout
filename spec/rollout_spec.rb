@@ -145,7 +145,7 @@ describe "Rollout" do
     end
 
     it "activates the feature for that percentage of the users" do
-      (1..120).select { |id| @rollout.active?(:chat, stub(:id => id)) }.length.should == 39
+      (1..120).select { |id| @rollout.active?(:chat, stub(:id => id)) }.length.should be_within(1).of(20)
     end
   end
 
@@ -155,7 +155,7 @@ describe "Rollout" do
     end
 
     it "activates the feature for that percentage of the users" do
-      (1..200).select { |id| @rollout.active?(:chat, stub(:id => id)) }.length.should == 40
+      (1..200).select { |id| @rollout.active?(:chat, stub(:id => id)) }.length.should be_within(5).of(40)
     end
   end
 
@@ -165,7 +165,7 @@ describe "Rollout" do
     end
 
     it "activates the feature for that percentage of the users" do
-      (1..100).select { |id| @rollout.active?(:chat, stub(:id => id)) }.length.should == 5
+      (1..100).select { |id| @rollout.active?(:chat, stub(:id => id)) }.length.should be_within(2).of(5)
     end
   end
 
