@@ -151,8 +151,8 @@ class Rollout
       info = @legacy.info(feature)
       f = Feature.new(feature)
       f.percentage = info[:percentage]
-      f.groups = info[:groups]
-      f.users = info[:users]
+      f.groups = info[:groups].map { |g| g.to_sym }
+      f.users = info[:users].map { |u| u.to_s }
       save(f)
       f
     end

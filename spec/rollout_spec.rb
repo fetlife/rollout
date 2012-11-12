@@ -97,6 +97,20 @@ describe "Rollout" do
     end
   end
 
+  describe "activating a specific user with a string id" do
+    before do
+      @rollout.activate_user(:chat, stub(:id => 'user-72'))
+    end
+
+    it "is active for that user" do
+      @rollout.should be_active(:chat, stub(:id => 'user-72'))
+    end
+
+    it "remains inactive for other users" do
+      @rollout.should_not be_active(:chat, stub(:id => 'user-12'))
+    end
+  end
+
   describe "deactivating a specific user" do
     before do
       @rollout.activate_user(:chat, stub(:id => 42))
@@ -111,7 +125,7 @@ describe "Rollout" do
     end
 
     it "remains active for other active users" do
-      @rollout.get(:chat).users.should == [24]
+      @rollout.get(:chat).users.should == %w(24)
     end
   end
 
@@ -196,11 +210,11 @@ describe "Rollout" do
       feature = @rollout.get(:chat)
       feature.groups.should == [:caretakers, :greeters]
       feature.percentage.should == 10
-      feature.users.should == [42]
+      feature.users.should == %w(42)
       feature.to_hash.should == {
         :groups => [:caretakers, :greeters],
         :percentage => 10,
-        :users => [42]
+        :users => %w(42)
       }
 
       feature = @rollout.get(:signup)
@@ -223,13 +237,13 @@ describe "Rollout" do
     it "imports the settings from the legacy rollout once" do
       @rollout.get(:chat).to_hash.should == {
         :percentage => 12,
-        :users => [24, 42],
+        :users => %w(24 42),
         :groups => [:dope_people]
       }
       @legacy.deactivate_all(:chat)
       @rollout.get(:chat).to_hash.should == {
         :percentage => 12,
-        :users => [24, 42],
+        :users => %w(24 42),
         :groups => [:dope_people]
       }
       @redis.get("feature:chat").should_not be_nil
