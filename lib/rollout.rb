@@ -1,4 +1,5 @@
 require "rollout/legacy"
+require "zlib"
 
 class Rollout
   class Feature
@@ -61,7 +62,7 @@ class Rollout
 
     private
       def user_in_percentage?(user)
-        user.id % 100 < @percentage
+        Zlib.crc32(user.id.to_s) % 100 < @percentage
       end
 
       def user_in_active_users?(user)
