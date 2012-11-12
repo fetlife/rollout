@@ -119,7 +119,7 @@ class Rollout
   end
 
   def define_group(group, &block)
-    @groups[group] = block
+    @groups[group.to_sym] = block
   end
 
   def active?(feature, user = nil)
@@ -140,7 +140,7 @@ class Rollout
   end
 
   def active_in_group?(group, user)
-    f = @groups[group]
+    f = @groups[group.to_sym]
     f && f.call(user)
   end
 
