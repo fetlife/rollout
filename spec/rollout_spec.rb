@@ -169,6 +169,20 @@ describe "Rollout" do
     end
   end
 
+  describe "activating a feature for a group as a string" do
+    before do
+      @rollout.define_group(:admins) { |user| user.id == 5 }
+      @rollout.activate_group(:chat, 'admins')
+    end
+
+    it "the feature is active for users for which the block evaluates to true" do
+      @rollout.should be_active(:chat, stub(:id => 5))
+    end
+
+    it "is not active for users for which the block evaluates to false" do
+      @rollout.should_not be_active(:chat, stub(:id => 1))
+    end
+  end
 
   describe "deactivating the percentage of users" do
     before do
