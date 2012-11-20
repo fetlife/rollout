@@ -180,7 +180,9 @@ class Rollout
 
     def save(feature)
       @storage.set(key(feature.name), feature.serialize)
-      @storage.set(features_key, (features + [feature.name]).join(","))
+      if !features.include?(feature.name)
+        @storage.set(features_key, (features + [feature.name]).join(","))
+      end
     end
 
     def migrate?
