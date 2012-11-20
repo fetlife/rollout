@@ -211,6 +211,11 @@ describe "Rollout" do
     @rollout.features.should be_include(:chat)
   end
 
+  it "keeps a distinct list of features" do
+    2.times { @rollout.activate(:chat) }
+    @rollout.features.select { |x| x == :chat }.size.should == 1
+  end
+
   describe "#get" do
     before do
       @rollout.activate_percentage(:chat, 10)
