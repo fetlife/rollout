@@ -180,7 +180,7 @@ class Rollout
 
     def save(feature)
       @storage.set(key(feature.name), feature.serialize)
-      if !features.include?(feature.name)
+      if !features.include?(feature.name.to_sym)
         @storage.set(features_key, (features + [feature.name]).join(","))
       end
     end
