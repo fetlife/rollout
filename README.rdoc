@@ -18,9 +18,15 @@ If you'd prefer to continue to use the old layout in redis, <tt>Rollout::Legacy<
 
   gem install rollout
 
+=== Using redis
+
+  gem install redis-rb
+
 == How it works
 
 Initialize a rollout object. I assign it to a global var.
+
+  require 'redis'
 
   $redis   = Redis.new
   $rollout = Rollout.new($redis)
@@ -102,6 +108,33 @@ If you're using redis, you can namespace keys further to support multiple enviro
   $rollout.activate_group(:chat, :all)
   
 This example would use the "development:feature:chat:groups" key.
+
+== Using YAML store instead of Redis
+
+  require 'yaml/store'
+
+  class RolloutManager
+    attr_accessor :config_path, :store
+
+    def initialize
+      self.config_path = Rails.root.join('config', 'features.yml').to_s
+      self.store = YAML::Store.new config_path
+    end
+
+    def get(key)
+      store.transaction(true) do
+        store[key]
+      end
+    end
+
+    def set(key, value)
+      store.transaction do
+        store[key] = value
+      end
+    end
+  end
+
+  $rollout = Rollout.new(RolloutManager.new)
 
 == misc/check_rollout.rb
 
