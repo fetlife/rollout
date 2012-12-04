@@ -206,9 +206,17 @@ describe "Rollout" do
     end
   end
 
-  it "keeps a list of features" do
-    @rollout.activate(:chat)
-    @rollout.features.should be_include(:chat)
+  describe "keeps a list of features" do
+    it "saves the feature" do
+      @rollout.activate(:chat)
+      @rollout.features.should be_include(:chat)
+    end
+
+    it "does not contain doubles" do
+      @rollout.activate(:chat)
+      @rollout.activate(:chat)
+      @rollout.features.size.should == 1
+    end
   end
 
   describe "#get" do
