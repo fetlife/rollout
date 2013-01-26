@@ -107,7 +107,7 @@ In your code you can check if an IP is activated for a feature like this:
 
 Of course the global deactivating of a feature works for IP Addresses as well.
 
-*Attention*::
+*Attention*
 
 As the algorithm for percentage converts the IP Address to the int representative and does a modulus 100. 
 
