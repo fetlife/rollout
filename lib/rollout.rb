@@ -40,7 +40,7 @@ class Rollout
     end
 
     def add_ip(ip)
-      @ips << ip.to_sym unless @ips.include?(ip.to_sym)
+      @ips << ip.to_sym unless @ips.include?(ip.to_s)
     end
 
     def remove_ip(ip)
