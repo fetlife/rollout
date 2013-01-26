@@ -9,17 +9,18 @@ class Rollout
     def initialize(name, string = nil)
       @name = name
       if string
-        raw_percentage,raw_users,raw_groups = string.split("|")
+        raw_percentage,raw_users,raw_groups,raw_ips = string.split("|")
         @percentage = raw_percentage.to_i
         @users = (raw_users || "").split(",").map(&:to_s)
         @groups = (raw_groups || "").split(",").map(&:to_sym)
+        @ips = (raw_ips || "").split(",").map(&:to_s)
       else
         clear
       end
     end
 
     def serialize
-      "#{@percentage}|#{@users.join(",")}|#{@groups.join(",")}"
+      "#{@percentage}|#{@users.join(",")}|#{@groups.join(",")}|#{@ips.join(",")}"
     end
 
     def add_user(user)
