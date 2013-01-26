@@ -107,6 +107,12 @@ In your code you can check if an IP is activated for a feature like this:
 
 Of course the global deactivating of a feature works for IP Addresses as well.
 
+*Attention*::
+
+As the algorithm for percentage converts the IP Address to the int representative and does a modulus 100. 
+
+Practialy it means that not all visitors accessing your webpage have IP Addresses following each other and the optimum percentage will not be achieved. But it's kind of the best effort to come very close to the percentage.
+
 == Feature is broken
 
 Deactivate everybody at once:
