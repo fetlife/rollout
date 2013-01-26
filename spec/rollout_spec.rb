@@ -211,6 +211,39 @@ describe "Rollout" do
     @rollout.features.should be_include(:chat)
   end
 
+
+  describe "feature should be active for defined ips" do
+    before do
+      @rollout.activate_ip(:chat, "127.0.0.1")
+      @rollout.activate_ip(:chat, "192.168.0.1")
+      @rollout.activate_ip(:chat, "192.168.10.1")
+    end
+
+    it "feature is active for ip" do
+      @rollout.should be_active_ip(:chat, "127.0.0.1")
+      @rollout.should be_active_ip(:chat, "192.168.0.1")
+      @rollout.should be_active_ip(:chat, "192.168.10.1")
+      @rollout.should_not be_active_ip(:chat, "192.168.10.11")
+    end
+  end
+
+  describe "feature should be active for percentage of ips" do
+    before do
+      @rollout.deactivate_ip(:chat, "127.0.0.1")
+      @rollout.deactivate_ip(:chat, "192.168.0.1")
+      @rollout.deactivate_ip(:chat, "192.168.10.1")
+      @rollout.activate_percentage(:chat, 50) 
+    end
+
+    it "feature is active for percentage of ips" do
+      @rollout.should be_active_ip(:chat, "192.168.0.1")
+      @rollout.should be_active_ip(:chat, "192.168.0.2")
+      @rollout.should_not be_active_ip(:chat, "192.168.0.51")
+      @rollout.should_not be_active_ip(:chat, "192.168.0.52")
+    end
+  end
+
+
   describe "#get" do
     before do
       @rollout.activate_percentage(:chat, 10)
@@ -218,6 +251,7 @@ describe "Rollout" do
       @rollout.activate_group(:chat, :greeters)
       @rollout.activate(:signup)
       @rollout.activate_user(:chat, stub(:id => 42))
+      @rollout.activate_ip(:chat, "127.0.0.1")
     end
 
     it "returns the feature object" do
@@ -225,10 +259,12 @@ describe "Rollout" do
       feature.groups.should == [:caretakers, :greeters]
       feature.percentage.should == 10
       feature.users.should == %w(42)
+      feature.ips.should == ["127.0.0.1"]
       feature.to_hash.should == {
         :groups => [:caretakers, :greeters],
         :percentage => 10,
-        :users => %w(42)
+        :users => %w(42),
+        :ips => ["127.0.0.1"]
       }
 
       feature = @rollout.get(:signup)
@@ -252,13 +288,15 @@ describe "Rollout" do
       @rollout.get(:chat).to_hash.should == {
         :percentage => 12,
         :users => %w(24 42),
-        :groups => [:dope_people]
+        :groups => [:dope_people],
+        :ips => []
       }
       @legacy.deactivate_all(:chat)
       @rollout.get(:chat).to_hash.should == {
         :percentage => 12,
         :users => %w(24 42),
-        :groups => [:dope_people]
+        :groups => [:dope_people],
+        :ips => []
       }
       @redis.get("feature:chat").should_not be_nil
     end

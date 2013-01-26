@@ -1,5 +1,6 @@
 require "rollout/legacy"
 require "zlib"
+require 'ipaddress'
 
 class Rollout
   class Feature
@@ -40,7 +41,12 @@ class Rollout
     end
 
     def add_ip(ip)
-      @ips << ip.to_sym unless @ips.include?(ip.to_s)
+      begin 
+        if IPAddress.valid? ip
+          @ips << ip.to_sym unless @ips.include?(ip.to_s)
+        end
+      rescue
+      end
     end
 
     def remove_ip(ip)
@@ -66,6 +72,15 @@ class Rollout
       end
     end
 
+    def active_ip?(rollout, ip)
+      if ip.nil?
+        @percentage == 100
+      else
+        ip_in_percentage?(ip) ||
+          ip_in_active_ips?(ip) 
+      end
+    end
+
     def to_hash
       {:percentage => @percentage,
        :groups     => @groups,
@@ -82,6 +97,15 @@ class Rollout
       def user_in_active_users?(user)
         @users.include?(user.id.to_s)
       end
+
+      def ip_in_percentage?(ip)
+        ip.split('.').inject(0) {|total,value| (total << 8 ) + value.to_i} % 100 < @percentage
+      end
+
+      def ip_in_active_ips?(ip)
+        @ips.include?(ip.to_s)
+      end
+
 
       def user_in_active_group?(user, rollout)
         @groups.any? do |g|
@@ -153,6 +177,11 @@ class Rollout
     feature.active?(self, user)
   end
 
+  def active_ip?(feature, ip = nil)
+    feature = get(feature)
+    feature.active_ip?(self, ip)
+  end
+
   def activate_percentage(feature, percentage)
     with_feature(feature) do |f|
       f.percentage = percentage
@@ -180,7 +209,6 @@ class Rollout
       f.percentage = info[:percentage]
       f.groups = info[:groups].map { |g| g.to_sym }
       f.users = info[:users].map { |u| u.to_s }
-      f.ips = info[:ips].map { |u| u.to_s }
       save(f)
       f
     end
