@@ -3,8 +3,8 @@ require "zlib"
 
 class Rollout
   class Feature
-    attr_reader :name, :groups, :users, :percentage
-    attr_writer :percentage, :groups, :users
+    attr_reader :name, :groups, :users, :percentage, :ips
+    attr_writer :percentage, :groups, :users, :ips
 
     def initialize(name, string = nil)
       @name = name
@@ -38,10 +38,21 @@ class Rollout
       @groups.delete(group.to_sym)
     end
 
+    def add_ip(ip)
+      @ips << ip.to_sym unless @ips.include?(ip.to_sym)
+    end
+
+    def remove_ip(ip)
+      @ips.delete(ip.to_sym)
+    end
+
+
+
     def clear
       @groups = []
       @users = []
       @percentage = 0
+      @ips = []
     end
 
     def active?(rollout, user)
@@ -57,7 +68,9 @@ class Rollout
     def to_hash
       {:percentage => @percentage,
        :groups     => @groups,
-       :users      => @users}
+       :users      => @users,
+       :ips        => @ips
+     }
     end
 
     private
@@ -103,6 +116,18 @@ class Rollout
   def deactivate_group(feature, group)
     with_feature(feature) do |f|
       f.remove_group(group)
+    end
+  end
+
+  def activate_ip(feature, ip)
+    with_feature(feature) do |f|
+      f.add_ip(ip)
+    end
+  end
+
+  def deactivate_ip(feature, ip)
+    with_feature(feature) do |f|
+      f.remove_ip(ip)
     end
   end
 
@@ -154,6 +179,7 @@ class Rollout
       f.percentage = info[:percentage]
       f.groups = info[:groups].map { |g| g.to_sym }
       f.users = info[:users].map { |u| u.to_s }
+      f.ips = info[:ips].map { |u| u.to_s }
       save(f)
       f
     end
