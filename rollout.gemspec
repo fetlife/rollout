@@ -3,7 +3,7 @@ $:.push File.expand_path("../lib", __FILE__)
 require "rollout/version"
 
 Gem::Specification.new do |s|
-  s.name = "rollout"
+  s.name = "rolloutbr"
   s.version = Rollout::VERSION
   s.authors = ["James Golick"]
   s.email       = ["jamesgolick@gmail.com"]

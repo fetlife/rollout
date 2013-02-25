@@ -76,6 +76,9 @@ class Rollout
       end
   end
 
+  @@storage_hash = {}
+  @@cleared = Time.now
+
   def initialize(storage, opts = {})
     @storage  = storage
     @groups = {:all => lambda { |user| true }}
@@ -144,8 +147,19 @@ class Rollout
     f && f.call(user)
   end
 
-  def get(feature)
-    string = @storage.get(key(feature))
+  def period
+    @period ||= 60
+  end
+
+  def get(feature, force=false)
+    if force || !@@cleared || Time.now >= (@@cleared + period)
+      @@storage_hash = {}
+      @@cleared = Time.now
+    end
+    if @@storage_hash[feature].nil?
+      @@storage_hash[feature] = @storage.get(key(feature)) || '0||'
+    end
+    string = @@storage_hash[feature]
     if string || !migrate?
       Feature.new(feature, string)
     else
