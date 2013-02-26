@@ -76,8 +76,13 @@ class Rollout
       end
   end
 
-  @@storage_hash = {}
-  @@cleared = Time.now
+
+  @storage_hash = {}
+  @cleared = Time.now
+
+  class << self
+    attr_accessor :storage_hash, :cleared
+  end
 
   def initialize(storage, opts = {})
     @storage  = storage
@@ -152,14 +157,14 @@ class Rollout
   end
 
   def get(feature, force=false)
-    if force || !@@cleared || Time.now >= (@@cleared + period)
-      @@storage_hash = {}
-      @@cleared = Time.now
+    if force || !self.class.cleared || Time.now >= (self.class.cleared + period)
+      self.class.storage_hash = {}
+      self.class.cleared = Time.now
     end
-    if @@storage_hash[feature].nil?
-      @@storage_hash[feature] = @storage.get(key(feature)) || '0||'
+    if self.class.storage_hash[feature].nil?
+      self.class.storage_hash[feature] = @storage.get(key(feature)) rescue '0||'
     end
-    string = @@storage_hash[feature]
+    string = self.class.storage_hash[feature]
     if string || !migrate?
       Feature.new(feature, string)
     else
