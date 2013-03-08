@@ -85,6 +85,7 @@ class Rollout
   end
 
   def initialize(storage, opts = {})
+    self.class.storage_hash = {}
     @storage  = storage
     @groups = {:all => lambda { |user| true }}
     @legacy = Legacy.new(@storage) if opts[:migrate]
@@ -192,12 +193,13 @@ class Rollout
     end
 
     def with_feature(feature)
-      f = get(feature)
+      f = get(feature, true)
       yield(f)
       save(f)
     end
 
     def save(feature)
+      self.class.storage_hash = {}
       @storage.set(key(feature.name), feature.serialize)
       @storage.set(features_key, (features | [feature.name]).join(","))
     end
