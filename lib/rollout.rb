@@ -1,25 +1,27 @@
 require "rollout/legacy"
 require "zlib"
+require "json"
 
 class Rollout
   class Feature
-    attr_reader :name, :groups, :users, :percentage
+    attr_reader :name, :groups, :users, :percentage, :group_percentages
     attr_writer :percentage, :groups, :users
 
     def initialize(name, string = nil)
       @name = name
       if string
-        raw_percentage,raw_users,raw_groups = string.split("|")
+        raw_percentage,raw_users,raw_groups,raw_group_percentages = string.split("|")
         @percentage = raw_percentage.to_i
         @users = (raw_users || "").split(",").map(&:to_s)
         @groups = (raw_groups || "").split(",").map(&:to_sym)
+        @group_percentages = JSON.load(raw_group_percentages)
       else
         clear
       end
     end
 
     def serialize
-      "#{@percentage}|#{@users.join(",")}|#{@groups.join(",")}"
+      "#{@percentage}|#{@users.join(",")}|#{@groups.join(",")}|#{JSON.dump(@group_percentages)}"
     end
 
     def add_user(user)
@@ -30,18 +32,21 @@ class Rollout
       @users.delete(user.id.to_s)
     end
 
-    def add_group(group)
+    def add_group(group, percentage=100)
       @groups << group.to_sym unless @groups.include?(group.to_sym)
+      @group_percentages[group.to_sym] = percentage.to_i
     end
 
     def remove_group(group)
       @groups.delete(group.to_sym)
+      @group_percentages.delete group.to_sym
     end
 
     def clear
       @groups = []
       @users = []
       @percentage = 0
+      @group_percentages = {}
     end
 
     def active?(rollout, user)
@@ -70,8 +75,8 @@ class Rollout
       end
 
       def user_in_active_group?(user, rollout)
-        @groups.any? do |g|
-          rollout.active_in_group?(g, user)
+        @groups.any? do |group|
+          rollout.active_in_group?(group, user, @group_percentages[group.to_s])
         end
       end
   end
@@ -94,9 +99,9 @@ class Rollout
     end
   end
 
-  def activate_group(feature, group)
+  def activate_group(feature, group, percentage=100)
     with_feature(feature) do |f|
-      f.add_group(group)
+      f.add_group(group, percentage)
     end
   end
 
@@ -139,9 +144,11 @@ class Rollout
     end
   end
 
-  def active_in_group?(group, user)
+  def active_in_group?(group, user, percentage=100)
     f = @groups[group.to_sym]
-    f && f.call(user)
+    active = f && f.call(user)
+    active = active && Zlib.crc32(user.id.to_s) % 100 < percentage unless percentage.nil? or percentage == 100
+    return active
   end
 
   def get(feature)
