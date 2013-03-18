@@ -176,7 +176,7 @@ describe "Rollout::Legacy" do
 
   describe "#info" do
     context "global features" do
-      let(:features) { [:signup, :chat, :table] }
+      let(:features) { [:chat, :signup, :table] }
 
       before do
         features.each do |f|
@@ -185,7 +185,7 @@ describe "Rollout::Legacy" do
       end
 
       it "returns all global features" do
-        @rollout.info.should eq({ :global => features.reverse })
+        @rollout.info.should eq({ :global => [:chat, :table, :signup] })
       end
     end
 
@@ -201,7 +201,7 @@ describe "Rollout::Legacy" do
       it "returns info about all the activations" do
         @rollout.info(:chat).should == {
           :percentage => 10,
-          :groups     => [:greeters, :caretakers],
+          :groups     => [:caretakers, :greeters],
           :users      => [42],
           :global     => [:signup]
         }
