@@ -14,18 +14,8 @@ module Rollout
     end
 
     included do
+      class_attribute :rollout_context_class
       helper_method :rollout
-    end
-
-    module ClassMethods
-      def rollout_context_class
-        @rollout_context_class
-      end
-
-      def has_rollout_context(klazz)
-        raise 'Need a context class' unless klazz
-        @rollout_context_class = klazz
-      end
     end
   end
 end
