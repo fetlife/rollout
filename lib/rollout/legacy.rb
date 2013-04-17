@@ -1,4 +1,4 @@
-class Rollout
+module Rollout
   class Legacy
     def initialize(redis)
       @redis  = redis

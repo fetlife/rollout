@@ -4,3 +4,5 @@ gemspec
 
 
 gem 'redis'
+
+gem 'rails'
