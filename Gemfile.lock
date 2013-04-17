@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    rollout (2.0.0a)
+    rollout (2.0.0c)
       redis
 
 GEM
@@ -36,5 +36,6 @@ DEPENDENCIES
   bundler (>= 1.0.0)
   jeweler (~> 1.6.4)
   mocha (= 0.9.8)
+  redis
   rollout!
   rspec (~> 2.10.0)

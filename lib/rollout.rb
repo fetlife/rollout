@@ -1,81 +1,10 @@
 require "rollout/legacy"
+require "rollout/feature"
+require "rollout/world"
+require "digest"
 require "zlib"
 
 class Rollout
-  class Feature
-    attr_reader :name, :groups, :users, :percentage
-    attr_writer :percentage, :groups, :users
-
-    def initialize(name, string = nil)
-      @name = name
-      if string
-        raw_percentage,raw_users,raw_groups = string.split("|")
-        @percentage = raw_percentage.to_i
-        @users = (raw_users || "").split(",").map(&:to_s)
-        @groups = (raw_groups || "").split(",").map(&:to_sym)
-      else
-        clear
-      end
-    end
-
-    def serialize
-      "#{@percentage}|#{@users.join(",")}|#{@groups.join(",")}"
-    end
-
-    def add_user(user)
-      @users << user.id.to_s unless @users.include?(user.id.to_s)
-    end
-
-    def remove_user(user)
-      @users.delete(user.id.to_s)
-    end
-
-    def add_group(group)
-      @groups << group.to_sym unless @groups.include?(group.to_sym)
-    end
-
-    def remove_group(group)
-      @groups.delete(group.to_sym)
-    end
-
-    def clear
-      @groups = []
-      @users = []
-      @percentage = 0
-    end
-
-    def active?(rollout, user)
-      if user.nil?
-        @percentage == 100
-      else
-        user_in_percentage?(user) ||
-          user_in_active_users?(user) ||
-            user_in_active_group?(user, rollout)
-      end
-    end
-
-    def to_hash
-      {:percentage => @percentage,
-       :groups     => @groups,
-       :users      => @users}
-    end
-
-    private
-      def user_in_percentage?(user)
-        Zlib.crc32(user.id.to_s) % 100 < @percentage
-      end
-
-      def user_in_active_users?(user)
-        @users.include?(user.id.to_s)
-      end
-
-      def user_in_active_group?(user, rollout)
-        @groups.any? do |g|
-          rollout.active_in_group?(g, user)
-        end
-      end
-  end
-
   def initialize(storage, opts = {})
     @storage  = storage
     @groups = {:all => lambda { |user| true }}
@@ -84,15 +13,17 @@ class Rollout
 
   def activate(feature)
     with_feature(feature) do |f|
-      f.percentage = 100
+      f.enabled = true
     end
   end
+  alias :enable :activate
 
   def deactivate(feature)
     with_feature(feature) do |f|
-      f.clear
+      f.enabled = false
     end
   end
+  alias :disable :deactivate
 
   def activate_group(feature, group)
     with_feature(feature) do |f|
@@ -126,6 +57,7 @@ class Rollout
     feature = get(feature)
     feature.active?(self, user)
   end
+  alias :enabled? :active?
 
   def activate_percentage(feature, percentage)
     with_feature(feature) do |f|
@@ -186,4 +118,5 @@ class Rollout
     def migrate?
       @legacy
     end
+
 end
