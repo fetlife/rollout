@@ -1,6 +1,6 @@
 module Rollout
   class Context
-    attr_reader :controller, :logger, :selections
+    attr_reader :controller, :logger, :selections, :digester
 
     def initialize(controller, options = {})
       @controller = controller
@@ -40,8 +40,7 @@ module Rollout
     end
 
     def hash(id)
-      hex_digest = @digester.hexdigest(@digester.digest(id.to_s))
-      puts hex_digest
+      hex_digest = digester.hexdigest(digester.digest(id.to_s))
       map_hex(hex_digest)
     end
 

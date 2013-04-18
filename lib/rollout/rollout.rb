@@ -1,21 +1,25 @@
 module Rollout
   class RolloutClass
-    def initialize(storage, opts = {})
+    attr_accessor :context
+
+    def initialize(storage, context, opts = {})
       @storage  = storage
+      @context  = context
       @groups = {:all => lambda { |user| true }}
       @legacy = Legacy.new(@storage) if opts[:migrate]
     end
 
-    def activate(feature)
+    def activate(feature, value = nil)
+      value ||= true
       with_feature(feature) do |f|
-        f.enabled = true
+        f.enabled = value
       end
     end
     alias :enable :activate
 
     def deactivate(feature)
       with_feature(feature) do |f|
-        f.enabled = false
+        f.enabled = :off
       end
     end
     alias :disable :deactivate
@@ -49,8 +53,9 @@ module Rollout
     end
 
     def active?(feature, user = nil)
-      feature = get(feature)
-      feature.active?(self, user)
+      with_feature(feature) do |f|
+        f.active?(user)
+      end
     end
     alias :enabled? :active?
 
@@ -73,8 +78,9 @@ module Rollout
 
     def get(feature)
       string = @storage.get(key(feature))
+      f = nil
       if string || !migrate?
-        Feature.new(feature, string)
+        f = Feature.new(feature, string)
       else
         info = @legacy.info(feature)
         f = Feature.new(feature)
@@ -84,11 +90,21 @@ module Rollout
         save(f)
         f
       end
+      f.rollout = self
+      f
     end
 
     def features
       (@storage.get(features_key) || "").split(",").map(&:to_sym)
     end
+
+    def with_feature(feature)
+      f = get(feature)
+      r = yield(f)
+      save(f)
+      r
+    end
+
 
     private
       def key(name)
@@ -97,12 +113,6 @@ module Rollout
 
       def features_key
         "feature:__features__"
-      end
-
-      def with_feature(feature)
-        f = get(feature)
-        yield(f)
-        save(f)
       end
 
       def save(feature)

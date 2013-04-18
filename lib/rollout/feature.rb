@@ -2,12 +2,14 @@ module Rollout
   class Feature
     attr_reader :name, :enabled, :variants, :users, :groups
     attr_writer :enabled, :variants, :users, :groups, :url, :internal, :admin, :bucketing, :percentages
+    attr_accessor :rollout, :cache
 
     # Bucketing schemes
     # :uaid, :user, :random
 
     def initialize(name, string = nil)
       @name = name
+      @cache = {}
       if string
         raw_enabled,raw_variants,raw_users,raw_groups,raw_url,raw_internal,raw_admin,raw_bucketing = string.split("|")
 
@@ -19,6 +21,8 @@ module Rollout
         end
 
         @enabled = raw_enabled == "true"
+        @enabled ||= raw_enabled if raw_enabled != "false"
+
         @users = (raw_users || "").split(",").map(&:to_s)
         @groups = (raw_groups || "").split(",").map(&:to_sym)
 
@@ -92,9 +96,15 @@ module Rollout
       @url = "feature_#{@name}"
     end
 
-    def active?(rollout)
-      user_id = rollout.world.user_id
-      choose_variant(rollout, bucketing_id, user_id, false)
+    def active?(user = nil)
+      user_id = user.id if user
+      user_id ||= rollout.context.user_id
+      ret = choose_variant(user_id, false)
+      if ret.is_a?(Array)
+        sym, selector = ret
+        ret = false if sym == :off
+      end
+      ret
     end
 
     def to_hash
@@ -105,12 +115,12 @@ module Rollout
 
 
     # private
-      def bucketing_id(rollout)
+      def bucketing_id
         ret = nil
         case @bucketing
           when :uaid
           when :random
-            uaid = rollout.world.uaid
+            uaid = rollout.context.uaid
             # In the RANDOM case we still need a bucketing id to keep
             # the assignment stable within a request.
             # Note that when being run from outside of a web request (e.g. crons),
@@ -118,24 +128,25 @@ module Rollout
             ret = uaid ? uaid : "no uaid"
 
           when :user
-            user_id = rollout.world.user_id
+            user_id = rollout.context.user_id
             # Not clear if this is right. There's an argument to be
             # made that if we're bucketing by userID and the user is
             # not logged in we should treat the feature as disabled.
-            ret = (not user_id.nil?) ? user_id  : rollout.world.uaid
+            ret = (not user_id.nil?) ? user_id  : rollout.context.uaid
 
           else
-            throw "Bad bucketing: #{@bucketing}"
+            raise "Bad bucketing: #{@bucketing}"
         end
+        ret
       end
 
-      def variant_from_url(rollout, user_id)
-        if @url or @internal or rollout.world.admin?(user_id)
-          url_features = rollout.world.url_features
+      def variant_from_url(user_id)
+        if @url or @internal or rollout.context.admin?(user_id)
+          url_features = rollout.context.features
           if url_features
             url_features.split(/,/).each do |f|
               parts = f.split(/:/)
-              if parts.first == @name
+              if parts.first.to_sym == @name.to_sym
                 return [(parts[1].nil? or parts[1].empty?) ? :on : parts[1], 'o']
               end
             end
@@ -144,21 +155,28 @@ module Rollout
         false
       end
 
-      def variant_for_user(rollout, id)
+      def variant_for_user(id)
+        if @users.length > 0
+          name = rollout.context.user_name(id)
+          if name != nil and @names.include?(name)
+            return [:user, 'u']
+          end
+        end
+        false
       end
 
-      def variant_for_group(rollout, id)
+      def variant_for_group(id)
       end
 
-      def variant_for_admin(rollout, id)
-        if @admin and rollout.world.admin?(id)
+      def variant_for_admin(id)
+        if @admin and rollout.context.admin?(id)
           return [:admin, 'a']
         end
         false
       end
 
       def variant_for_internal
-        if @internal and rollout.world.internal_request
+        if @internal and rollout.context.internal_request
           return [:internal, 'i']
         end
         false
@@ -175,19 +193,23 @@ module Rollout
       end
 
       def randomish(id)
-        @bucketing == :random ? rollout.world.random : rollout.world.hash("#{@name}-#{id}")
+        @bucketing == :random ? rollout.context.random : rollout.context.hash("#{@name}-#{id}")
       end
 
-      def choose_variant(rollout, bucketing_id, user_id, in_variant = false)
+      def choose_variant(user_id, in_variant = false)
         # if in_variant and @enabled == true
         #   throw "Variant check when fully enabled"
         # end
         #
-        if @enabled == false
-          return false
+        if @enabled.is_a?(String) or @enabled.is_a?(Symbol)
+          if @enabled.to_sym == :off
+            return false
+          elsif @enabled.to_sym == :on
+            return true
+          end
         end
 
-        bucket_id = bucketing_id(rollout)
+        bucket_id = bucketing_id
 
         if @cache.include?(bucket_id)
           # Note that this caching is not just an optimization:
@@ -207,17 +229,13 @@ module Rollout
         variant ||= variant_for_group(user_id)
         variant ||= variant_for_admin(user_id)
         variant ||= variant_for_internal
-        variant ||= variant_by_percentage
+        variant ||= variant_by_percentage(user_id)
         variant ||= [:off, 'w']
 
         @cache[bucket_id] = variant
       end
 
     private
-
-      def user_in_percentage?(user)
-        Zlib.crc32(user.id.to_s) % 100 < @percentage
-      end
 
       def user_in_active_users?(user)
         @users.include?(user.id.to_s)
