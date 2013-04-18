@@ -59,11 +59,20 @@ module Rollout
     end
     alias :enabled? :active?
 
+    def variant?(feature, variant, user = nil)
+      with_feature(feature) do |f|
+        ret = f.variant?(variant) if f.active?(user)
+        ret ||= false
+        ret
+      end
+    end
+
     def active(feature, &block)
       with_feature(feature) do |f|
         block.call(f)
       end
     end
+    alias :enabled :active
 
     def activate_percentage(feature, percentage)
       with_feature(feature) do |f|
