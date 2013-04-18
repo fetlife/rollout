@@ -59,6 +59,12 @@ module Rollout
     end
     alias :enabled? :active?
 
+    def active(feature, &block)
+      with_feature(feature) do |f|
+        block.call(f)
+      end
+    end
+
     def activate_percentage(feature, percentage)
       with_feature(feature) do |f|
         f.percentage = percentage

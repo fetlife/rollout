@@ -113,6 +113,12 @@ module Rollout
         :users      => @users}
     end
 
+    def variant?(variant, user_id = nil)
+      user_id ||= rollout.context.user_id
+      var, selector = choose_variant(user_id, true)
+      var == variant
+    end
+
 
     # private
       def bucketing_id
@@ -146,8 +152,9 @@ module Rollout
           if url_features
             url_features.split(/,/).each do |f|
               parts = f.split(/:/)
+              # puts "#{url_features} = #{parts.inspect} = #{@name.to_sym}"
               if parts.first.to_sym == @name.to_sym
-                return [(parts[1].nil? or parts[1].empty?) ? :on : parts[1], 'o']
+                return [(parts[1].nil? or parts[1].empty?) ? :on : parts[1].to_sym, 'o']
               end
             end
           end
@@ -231,6 +238,8 @@ module Rollout
         variant ||= variant_for_internal
         variant ||= variant_by_percentage(user_id)
         variant ||= [:off, 'w']
+
+        # puts variant.inspect
 
         @cache[bucket_id] = variant
       end
