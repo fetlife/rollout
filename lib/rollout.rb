@@ -1,5 +1,6 @@
 require "rollout/legacy"
 require "rollout/feature"
+require "rollout/no_feature"
 require "rollout/context"
 require 'rollout/rollout'
 require "digest"

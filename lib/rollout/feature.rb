@@ -2,13 +2,14 @@ module Rollout
   class Feature
     attr_reader :name, :enabled, :variants, :users, :groups
     attr_writer :enabled, :variants, :users, :groups, :url, :internal, :admin, :bucketing, :percentages
-    attr_accessor :rollout, :cache
+    attr_accessor :context, :cache
 
     # Bucketing schemes
     # :uaid, :user, :random
 
-    def initialize(name, string = nil)
+    def initialize(name, context, string = nil)
       @name = name
+      @context = context
       @cache = {}
       if string
         raw_enabled,raw_variants,raw_users,raw_groups,raw_url,raw_internal,raw_admin,raw_bucketing = string.split("|")
@@ -38,9 +39,13 @@ module Rollout
     end
 
     def serialize
-      # "#{@percentage}|#{@users.join(",")}|#{@groups.join(",")}"
       parts = []
-      parts << @enabled ? 'true' : 'false'
+      if !!@enabled == @enabled # check for boolean type
+        enabled = @enabled ? 'true' : 'false'
+      else
+        enabled = @enabled 
+      end
+      parts << enabled
       parts << @variants.map{|k,v| "#{k}:#{v}" }.join(",")
       parts << @users.join(",")
       parts << @groups.join(",")
@@ -98,7 +103,7 @@ module Rollout
 
     def active?(user = nil)
       user_id = user.id if user
-      user_id ||= rollout.context.user_id
+      user_id ||= context.user_id
       ret = choose_variant(user_id, false)
       if ret.is_a?(Array)
         sym, selector = ret
@@ -113,10 +118,26 @@ module Rollout
         :users      => @users}
     end
 
+    def variant
+      variant = choose_variant(user_id, true)[0]
+      variant.to_s.inquiry
+    end
+
     def variant?(variant, user_id = nil)
-      user_id ||= rollout.context.user_id
+      user_id ||= context.user_id
       var, selector = choose_variant(user_id, true)
       var == variant
+    end
+
+    def method_missing(method_name, *arguments)
+      if method_name.to_s[-1,1] == "?"
+        variant_name_to_check = method_name.to_s[0..-2]
+        #find which variant, compare to variant_name_to_check
+        user_id ||= context.user_id
+        variant?(variant_name_to_check.to_sym)
+      else
+        super
+      end
     end
 
 
@@ -126,7 +147,7 @@ module Rollout
         case @bucketing
           when :uaid
           when :random
-            uaid = rollout.context.uaid
+            uaid = context.uaid
             # In the RANDOM case we still need a bucketing id to keep
             # the assignment stable within a request.
             # Note that when being run from outside of a web request (e.g. crons),
@@ -134,11 +155,11 @@ module Rollout
             ret = uaid ? uaid : "no uaid"
 
           when :user
-            user_id = rollout.context.user_id
+            user_id = context.user_id
             # Not clear if this is right. There's an argument to be
             # made that if we're bucketing by userID and the user is
             # not logged in we should treat the feature as disabled.
-            ret = (not user_id.nil?) ? user_id  : rollout.context.uaid
+            ret = (not user_id.nil?) ? user_id  : context.uaid
 
           else
             raise "Bad bucketing: #{@bucketing}"
@@ -147,8 +168,8 @@ module Rollout
       end
 
       def variant_from_url(user_id)
-        if @url or @internal or rollout.context.admin?(user_id)
-          url_features = rollout.context.features
+        if @url or @internal or context.admin?(user_id)
+          url_features = context.features
           if url_features
             url_features.split(/,/).each do |f|
               parts = f.split(/:/)
@@ -164,7 +185,7 @@ module Rollout
 
       def variant_for_user(id)
         if @users.length > 0
-          name = rollout.context.user_name(id)
+          name = context.user_name(id)
           if name != nil and @names.include?(name)
             return [:user, 'u']
           end
@@ -176,14 +197,14 @@ module Rollout
       end
 
       def variant_for_admin(id)
-        if @admin and rollout.context.admin?(id)
+        if @admin and context.admin?(id)
           return [:admin, 'a']
         end
         false
       end
 
       def variant_for_internal
-        if @internal and rollout.context.internal_request
+        if @internal and context.internal_request
           return [:internal, 'i']
         end
         false
@@ -200,7 +221,7 @@ module Rollout
       end
 
       def randomish(id)
-        @bucketing == :random ? rollout.context.random : rollout.context.hash("#{@name}-#{id}")
+        @bucketing == :random ? context.random : context.hash("#{@name}-#{id}")
       end
 
       def choose_variant(user_id, in_variant = false)
@@ -252,7 +273,7 @@ module Rollout
 
       def user_in_active_group?(user, rollout)
         @groups.any? do |g|
-          rollout.active_in_group?(g, user)
+          active_in_group?(g, user)
         end
       end
 

@@ -69,10 +69,22 @@ module Rollout
 
     def active(feature, &block)
       with_feature(feature) do |f|
-        block.call(f)
+        block.call(f) if block_given?
       end
     end
     alias :enabled :active
+
+    def feature(feature)
+      if enabled?(feature) 
+        get(feature).tap do |f|
+          if block_given?
+            yield f
+          end
+        end
+      else
+        NoFeature.instance
+      end
+    end
 
     def activate_percentage(feature, percentage)
       with_feature(feature) do |f|
@@ -95,17 +107,16 @@ module Rollout
       string = @storage.get(key(feature))
       f = nil
       if string || !migrate?
-        f = Feature.new(feature, string)
+        f = Feature.new(feature, context, string)
       else
         info = @legacy.info(feature)
-        f = Feature.new(feature)
+        f = Feature.new(feature, context)
         f.percentage = info[:percentage]
         f.groups = info[:groups].map { |g| g.to_sym }
         f.users = info[:users].map { |u| u.to_s }
         save(f)
         f
       end
-      f.rollout = self
       f
     end
 
