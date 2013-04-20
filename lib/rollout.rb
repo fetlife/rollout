@@ -9,5 +9,12 @@ require "zlib"
 require 'rollout/railtie' if defined?(Rails)
 
 module Rollout
+  def self.redis
+    @redis
+  end
+
+  def self.redis=(redis)
+    @redis = redis
+  end
 
 end

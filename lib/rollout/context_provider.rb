@@ -8,20 +8,17 @@ module Rollout
       self.class.rollout_context_class
     end
 
-    def rollout_context
-      raise 'No rollout context available' unless rollout_context_class
-      @rollout_context ||= rollout_context_class.new(self)
-    end
 
     def rollout
-      redis = Redis.new
-      @rollout ||= RolloutClass.new(redis, rollout_context)
+      raise 'No rollout context available' unless rollout_context_class
+      @rollout ||= RolloutClass.new(Rollout.redis, rollout_context_class.new(self))
       @rollout
     end
-
+    
     included do
       class_attribute :rollout_context_class
-      helper_method :rollout_context
+      delegate :enabled?, :feature, to: :rollout
+      helper_method :enabled?, :feature
       helper_method :rollout
     end
   end

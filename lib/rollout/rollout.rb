@@ -59,21 +59,6 @@ module Rollout
     end
     alias :enabled? :active?
 
-    def variant?(feature, variant, user = nil)
-      with_feature(feature) do |f|
-        ret = f.variant?(variant) if f.active?(user)
-        ret ||= false
-        ret
-      end
-    end
-
-    def active(feature, &block)
-      with_feature(feature) do |f|
-        block.call(f) if block_given?
-      end
-    end
-    alias :enabled :active
-
     def feature(feature)
       if enabled?(feature) 
         get(feature).tap do |f|
