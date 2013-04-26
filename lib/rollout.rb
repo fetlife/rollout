@@ -11,8 +11,8 @@ class Rollout
       if string
         raw_percentage,raw_users,raw_groups = string.split("|")
         @percentage = raw_percentage.to_i
-        @users = (raw_users || "").split(",").map(&:to_s)
-        @groups = (raw_groups || "").split(",").map(&:to_sym)
+        @users      = (raw_users  || "").split(",").map(&:to_s)
+        @groups     = (raw_groups || "").split(",").map(&:to_sym)
       else
         clear
       end
@@ -39,8 +39,8 @@ class Rollout
     end
 
     def clear
-      @groups = []
-      @users = []
+      @groups     = []
+      @users      = []
       @percentage = 0
     end
 
@@ -78,8 +78,8 @@ class Rollout
 
   def initialize(storage, opts = {})
     @storage  = storage
-    @groups = {:all => lambda { |user| true }}
-    @legacy = Legacy.new(@storage) if opts[:migrate]
+    @groups   = {:all => lambda { |user| true }}
+    @legacy   = Legacy.new(@storage) if opts[:migrate]
   end
 
   def activate(feature)
@@ -152,8 +152,8 @@ class Rollout
       info = @legacy.info(feature)
       f = Feature.new(feature)
       f.percentage = info[:percentage]
-      f.groups = info[:groups].map { |g| g.to_sym }
-      f.users = info[:users].map { |u| u.to_s }
+      f.groups     = info[:groups].map { |g| g.to_sym }
+      f.users      = info[:users].map  { |u| u.to_s }
       save(f)
       f
     end
