@@ -25,7 +25,7 @@ module Rollout
       raise 'Not implemented'
     end
 
-    def in_group?(user_id, group)
+    def in_group?(user_id, groups)
       raise 'Not implemented'
     end
 

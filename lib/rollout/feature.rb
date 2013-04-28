@@ -14,7 +14,6 @@ module Rollout
       if string
         raw_enabled,raw_variants,raw_users,raw_groups,raw_url,raw_internal,raw_admin,raw_bucketing = string.split("|")
 
-
         @variants = {}
         (raw_variants || "").split(",").each do |kv|
           key, value = kv.split(":")
@@ -24,8 +23,8 @@ module Rollout
         @enabled = raw_enabled == "true"
         @enabled ||= raw_enabled if raw_enabled != "false"
 
-        @users = (raw_users || "").split(",").map(&:to_s)
-        @groups = (raw_groups || "").split(",").map(&:to_sym)
+        @users = parse_users_groups(raw_users, :users, :to_s)
+        @groups = parse_users_groups(raw_groups, :groups, :to_sym)
 
         @url = raw_url if not (raw_url || "").empty?
         @internal = raw_internal == "true"
@@ -38,6 +37,16 @@ module Rollout
       end
     end
 
+    def parse_users_groups(raw_users, default_key, value_type)
+      ret = {}
+      (raw_users || "").split("&").map do |x|
+        key = default_key
+        key, x = x.split(":", 2) if x.match(/:/)
+        ret[key.to_sym] = x.split(",").map(&value_type)
+      end
+      ret
+    end
+
     def serialize
       parts = []
       if !!@enabled == @enabled # check for boolean type
@@ -47,12 +56,13 @@ module Rollout
       end
       parts << enabled
       parts << @variants.map{|k,v| "#{k}:#{v}" }.join(",")
-      parts << @users.join(",")
-      parts << @groups.join(",")
+      parts << @users.map{|k,v| k.to_s + ":"  + v.join(",")}.join("&")
+      parts << @groups.map{|k,v| k.to_s + ":"  + v.join(",")}.join("&")
       parts << @url
       parts << @internal ? 'true' : 'false'
       parts << @admin ? 'true' : 'false'
       parts << @bucketing
+      # puts "serialized: " + parts.join("|")
       parts.join("|")
     end
 
@@ -74,27 +84,36 @@ module Rollout
       percentages
     end
 
-    def add_user(user)
-      @users << user.id.to_s unless @users.include?(user.id.to_s)
+    def add_user(user, variant = :users)
+      remove_user(user)
+      @users[variant] ||= []
+      @users[variant] << user.to_s
     end
 
     def remove_user(user)
-      @users.delete(user.id.to_s)
+      @users.each do |variant,items|
+        @users[variant].delete(user.to_s)
+      end
     end
 
-    def add_group(group)
-      @groups << group.to_sym unless @groups.include?(group.to_sym)
+    def add_group(group, variant = :groups)
+      remove_group(group)
+      @groups[variant] ||= []
+      @groups[variant] << group.to_sym
+      # puts "add groups: " + @groups.inspect
     end
 
     def remove_group(group)
-      @groups.delete(group.to_sym)
+      @groups.each do |variant,items|
+        @groups[variant].delete(group.to_sym)
+      end
     end
 
     def clear
       @enabled = false
       @variants = {}
-      @groups = []
-      @users = []
+      @groups = {}
+      @users = {}
       @percentage = 0
       @bucketing = :uaid
       @internal = false
@@ -185,15 +204,31 @@ module Rollout
 
       def variant_for_user(id)
         if @users.length > 0
-          name = context.user_name(id)
-          if name != nil and @names.include?(name)
-            return [:user, 'u']
+          name = context.user_name
+          id ||= context.user_id
+          @users.each do |variant, list|
+            if (name != nil and list.include?(name)) or (id != nil and list.include?(id.to_s))
+              ret = [variant, 'u'] 
+              return ret
+            end
           end
         end
         false
       end
 
       def variant_for_group(id)
+        # puts "groups are now: " + @groups.inspect
+        if @groups.length > 0
+          id ||= context.user_id
+          @groups.each do |variant, list|
+            # puts "#{variant}: " + list.inspect
+            if id != nil and context.in_group?(id, list)
+              ret = [variant, 'g'] 
+              return ret
+            end
+          end
+        end
+        false
       end
 
       def variant_for_admin(id)
