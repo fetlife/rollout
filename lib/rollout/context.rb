@@ -29,6 +29,10 @@ module Rollout
       raise 'Not implemented'
     end
 
+    def internal_request
+      raise 'Not implemented'
+    end
+
     # Produce a random number in [0, 1] for RANDOM bucketing.
     def random
       rand
