@@ -114,7 +114,7 @@ module Rollout
       @variants = {}
       @groups = {}
       @users = {}
-      @percentage = 0
+      @percentages = []
       @bucketing = :uaid
       @internal = false
       @url = "feature_#{@name}"

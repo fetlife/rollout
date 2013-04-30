@@ -2,7 +2,7 @@ module Rollout
   class Context
     attr_reader :controller, :logger, :selections, :digester
 
-    def initialize(controller, options = {})
+    def initialize(controller = nil, options = {})
       @controller = controller
       @digester = Digest::SHA256.new
       @logger = options[:logger] || Rails.logger
