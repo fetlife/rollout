@@ -79,7 +79,7 @@ class Rollout
   def initialize(storage, opts = {})
     @storage  = storage
     @groups = {:all => lambda { |user| true }}
-    @legacy = Legacy.new(@storage) if opts[:migrate]
+    @legacy = Legacy.new(opts[:legacy_storage] || @storage) if opts[:migrate]
   end
 
   def activate(feature)
