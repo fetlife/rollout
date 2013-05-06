@@ -1,8 +1,9 @@
 class Rollout
   class Legacy
-    def initialize(redis)
+    def initialize(redis, opts = {})
       @redis  = redis
       @groups = {"all" => lambda { |user| true }}
+      @use_as_id = opts.delete(:use_as_id) || :id
     end
 
     def activate_globally(feature)
@@ -29,11 +30,11 @@ class Rollout
     end
 
     def activate_user(feature, user)
-      @redis.sadd(user_key(feature), user.id)
+      @redis.sadd(user_key(feature), user_identifier(user))
     end
 
     def deactivate_user(feature, user)
-      @redis.srem(user_key(feature), user.id)
+      @redis.srem(user_key(feature), user_identifier(user))
     end
 
     def define_group(group, &block)
@@ -100,7 +101,11 @@ class Rollout
       end
 
       def active_user_ids(feature)
-        @redis.smembers(user_key(feature)).map { |id| id.to_i }
+        users = @redis.smembers(user_key(feature))
+        if @use_as_id == :id
+          users.map!(&:to_i)
+        end
+        users
       end
 
       def active_global_features
@@ -128,7 +133,15 @@ class Rollout
       def user_within_active_percentage?(feature, user)
         percentage = active_percentage(feature)
         return false if percentage.nil?
-        user.id % 100 < percentage.to_i
+        if @use_as_id == :id
+          user.id % 100 < percentage.to_i
+        else
+          user_identifier(user).hash % 100 < percentage.to_i
+        end
+      end
+
+      def user_identifier(user)
+        user.send(@use_as_id).to_s
       end
   end
 end

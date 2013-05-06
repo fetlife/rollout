@@ -6,7 +6,7 @@ class Rollout
     attr_reader :name, :groups, :users, :percentage
     attr_writer :percentage, :groups, :users
 
-    def initialize(name, string = nil)
+    def initialize(name, string = nil, opts = {})
       @name = name
       if string
         raw_percentage,raw_users,raw_groups = string.split("|")
@@ -16,6 +16,7 @@ class Rollout
       else
         clear
       end
+      @use_as_id = opts.delete :use_as_id
     end
 
     def serialize
@@ -23,11 +24,11 @@ class Rollout
     end
 
     def add_user(user)
-      @users << user.id.to_s unless @users.include?(user.id.to_s)
+      @users << user_identifier(user) unless @users.include?(user_identifier(user))
     end
 
     def remove_user(user)
-      @users.delete(user.id.to_s)
+      @users.delete(user_identifier(user))
     end
 
     def add_group(group)
@@ -62,11 +63,11 @@ class Rollout
 
     private
       def user_in_percentage?(user)
-        Zlib.crc32(user.id.to_s) % 100 < @percentage
+        Zlib.crc32(user_identifier(user)) % 100 < @percentage
       end
 
       def user_in_active_users?(user)
-        @users.include?(user.id.to_s)
+        @users.include?(user_identifier(user))
       end
 
       def user_in_active_group?(user, rollout)
@@ -74,12 +75,21 @@ class Rollout
           rollout.active_in_group?(g, user)
         end
       end
+
+      def user_identifier(user)
+        user.send(@use_as_id).to_s
+      end
   end
 
   def initialize(storage, opts = {})
     @storage  = storage
     @groups = {:all => lambda { |user| true }}
-    @legacy = Legacy.new(@storage) if opts[:migrate]
+    @use_as_id = opts.delete :use_as_id
+    @legacy = Legacy.new(@storage, use_as_id: @use_as_id) if opts[:migrate]
+  end
+
+  def user_identifier_method
+    @use_as_id || :id
   end
 
   def activate(feature)
@@ -147,10 +157,10 @@ class Rollout
   def get(feature)
     string = @storage.get(key(feature))
     if string || !migrate?
-      Feature.new(feature, string)
+      Feature.new(feature, string, use_as_id: user_identifier_method)
     else
       info = @legacy.info(feature)
-      f = Feature.new(feature)
+      f = Feature.new(feature, nil, use_as_id: user_identifier_method)
       f.percentage = info[:percentage]
       f.groups = info[:groups].map { |g| g.to_sym }
       f.users = info[:users].map { |u| u.to_s }
