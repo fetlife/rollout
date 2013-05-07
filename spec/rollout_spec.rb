@@ -349,8 +349,6 @@ describe "Rollout" do
       @rollout.define_group(:a) { |user| user.a }
       @rollout.define_group(:b) { |user| user.b }
       @rollout.define_group(:c) { |user| user.c }
-      @rollout.define_group(:d) { |user| user.d }
-      @rollout.define_group(:e) { |user| user.e }
     end
 
     it "should work for the unique group" do
@@ -364,7 +362,7 @@ describe "Rollout" do
       @rollout.active_in_groups?("b&a", user).should be_true
     end
 
-    it "should work for one union" do
+    it "should work for multiple unions" do
       user = stub(:a => true, :b => true, :c => false)
       @rollout.active_in_groups?("a&b&c", user).should be_false
       @rollout.active_in_groups?("b&a&c", user).should be_false
@@ -375,12 +373,18 @@ describe "Rollout" do
     end
 
     it "should work with rejections" do
+      user = stub(:a => true, :b => false)
+      @rollout.active_in_groups?("!a", user).should be_false
+      @rollout.active_in_groups?("!b", user).should be_true
+    end
+
+    it "should work with rejections and unions" do
       user = stub(:a => true, :b => true, :c => false)
       @rollout.active_in_groups?("a&b&!c", user).should be_true
       @rollout.active_in_groups?("a&!c", user).should be_true
       @rollout.active_in_groups?("a&!c&b", user).should be_true
-
       @rollout.active_in_groups?("a&!c&!b", user).should be_false
+
       user = stub(:a => true, :b => false, :c => false)
       @rollout.active_in_groups?("a&!c&!b", user).should be_true
     end
