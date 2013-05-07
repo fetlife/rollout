@@ -71,7 +71,7 @@ class Rollout
 
       def user_in_active_group?(user, rollout)
         @groups.any? do |g|
-          rollout.evaluate_groups(g, user)
+          rollout.active_in_groups?(g, user)
         end
       end
   end
@@ -139,7 +139,7 @@ class Rollout
     end
   end
 
-  def evaluate_groups(groups, user)
+  def active_in_groups?(groups, user)
     groups.to_s.split('&').map do |group|
       evaluate_group(group, user)
     end.all?
@@ -195,7 +195,7 @@ class Rollout
 
     def evaluate_group(group, user)
       if group.match(/\!/)
-        !active_in_group?(group.gsub("!", ""), user)
+        !active_in_group?(group.sub(/^!/, ''), user)
       else
         active_in_group?(group, user)
       end

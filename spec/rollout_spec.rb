@@ -344,7 +344,7 @@ describe "Rollout" do
     end
   end
 
-  describe "evaluate_groups" do
+  describe "active_in_groups?" do
     before(:each) do
       @rollout.define_group(:a) { |user| user.a }
       @rollout.define_group(:b) { |user| user.b }
@@ -355,34 +355,34 @@ describe "Rollout" do
 
     it "should work for the unique group" do
       user = stub(:a => true)
-      @rollout.evaluate_groups("a", user).should be_true
+      @rollout.active_in_groups?("a", user).should be_true
     end
 
     it "should work for one union" do
       user = stub(:a => true, :b => true)
-      @rollout.evaluate_groups("a&b", user).should be_true
-      @rollout.evaluate_groups("b&a", user).should be_true
+      @rollout.active_in_groups?("a&b", user).should be_true
+      @rollout.active_in_groups?("b&a", user).should be_true
     end
 
     it "should work for one union" do
       user = stub(:a => true, :b => true, :c => false)
-      @rollout.evaluate_groups("a&b&c", user).should be_false
-      @rollout.evaluate_groups("b&a&c", user).should be_false
-      @rollout.evaluate_groups("b&c&a", user).should be_false
+      @rollout.active_in_groups?("a&b&c", user).should be_false
+      @rollout.active_in_groups?("b&a&c", user).should be_false
+      @rollout.active_in_groups?("b&c&a", user).should be_false
 
       user = stub(:a => true, :b => true, :c => true)
-      @rollout.evaluate_groups("a&b&c", user).should be_true
+      @rollout.active_in_groups?("a&b&c", user).should be_true
     end
 
     it "should work with rejections" do
       user = stub(:a => true, :b => true, :c => false)
-      @rollout.evaluate_groups("a&b&!c", user).should be_true
-      @rollout.evaluate_groups("a&!c", user).should be_true
-      @rollout.evaluate_groups("a&!c&b", user).should be_true
+      @rollout.active_in_groups?("a&b&!c", user).should be_true
+      @rollout.active_in_groups?("a&!c", user).should be_true
+      @rollout.active_in_groups?("a&!c&b", user).should be_true
 
-      @rollout.evaluate_groups("a&!c&!b", user).should be_false
+      @rollout.active_in_groups?("a&!c&!b", user).should be_false
       user = stub(:a => true, :b => false, :c => false)
-      @rollout.evaluate_groups("a&!c&!b", user).should be_true
+      @rollout.active_in_groups?("a&!c&!b", user).should be_true
     end
   end
 end
