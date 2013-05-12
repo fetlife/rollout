@@ -1,5 +1,5 @@
 module Rollout
-  class RolloutClass
+  class Roller
     attr_accessor :context
 
     def initialize(storage, context, opts = {})

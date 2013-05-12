@@ -11,7 +11,7 @@ module Rollout
 
     def rollout
       raise 'No rollout context available' unless rollout_context_class
-      @rollout ||= RolloutClass.new(Rollout.redis, rollout_context_class.new(self))
+      @rollout ||= Roller.new(Rollout.redis, rollout_context_class.new(self))
       @rollout
     end
     

@@ -1,7 +1,7 @@
 module Rollout
   class Feature
     attr_reader :name, :enabled, :variants, :users, :groups
-    attr_writer :enabled, :variants, :users, :groups, :url, :internal, :admin, :bucketing, :percentages
+    attr_writer :enabled, :variants, :users, :groups, :url, :internal, :admin, :bucketing, :percentages, :percentage
     attr_accessor :context, :cache
 
     # Bucketing schemes
@@ -12,7 +12,7 @@ module Rollout
       @context = context
       @cache = {}
       if string
-        raw_enabled,raw_variants,raw_users,raw_groups,raw_url,raw_internal,raw_admin,raw_bucketing = string.split("|")
+        raw_enabled,raw_variants,raw_users,raw_groups,raw_url,raw_internal,raw_admin,raw_bucketing,raw_percentage = string.split("|")
 
         @variants = {}
         (raw_variants || "").split(",").each do |kv|
@@ -20,9 +20,7 @@ module Rollout
           @variants[key.to_sym] = value.to_i
         end
 
-        @enabled = raw_enabled == "true"
-        @enabled ||= raw_enabled if raw_enabled != "false"
-
+        @enabled = raw_enabled.to_sym
         @users = parse_users_groups(raw_users, :users, :to_s)
         @groups = parse_users_groups(raw_groups, :groups, :to_sym)
 
@@ -31,6 +29,8 @@ module Rollout
         @admin = raw_admin == "true"
         @bucketing = raw_bucketing.to_sym if not (raw_bucketing || "").empty?
         @bucketing ||= :uaid
+        @percentage = raw_percentage.to_i if not (raw_percentage || "").empty?
+        @percentage ||= 0
         @percentages = compute_percentages
       else
         clear
@@ -49,12 +49,7 @@ module Rollout
 
     def serialize
       parts = []
-      if !!@enabled == @enabled # check for boolean type
-        enabled = @enabled ? 'true' : 'false'
-      else
-        enabled = @enabled 
-      end
-      parts << enabled
+      parts << enabled.to_s
       parts << @variants.map{|k,v| "#{k}:#{v}" }.join(",")
       parts << @users.map{|k,v| k.to_s + ":"  + v.join(",")}.join("&")
       parts << @groups.map{|k,v| k.to_s + ":"  + v.join(",")}.join("&")
@@ -62,6 +57,7 @@ module Rollout
       parts << @internal ? 'true' : 'false'
       parts << @admin ? 'true' : 'false'
       parts << @bucketing
+      parts << @percentage.to_s
       # puts "serialized: " + parts.join("|")
       parts.join("|")
     end
@@ -110,11 +106,12 @@ module Rollout
     end
 
     def clear
-      @enabled = false
+      @enabled = :off
       @variants = {}
       @groups = {}
       @users = {}
       @percentages = []
+      @percentage = 0
       @bucketing = :uaid
       @internal = false
       @url = "feature_#{@name}"
@@ -124,6 +121,7 @@ module Rollout
       user_id = user.id if user
       user_id ||= context.user_id
       ret = choose_variant(user_id, false)
+      # puts ret.inspect
       if ret.is_a?(Array)
         sym, selector = ret
         ret = false if sym == :off
@@ -245,11 +243,17 @@ module Rollout
         false
       end
 
-      def variant_by_percentage(id)
+      def variant_by_percentage(id, in_variant = false)
         n = 100 * randomish(id)
         @percentages.each do |percent,variant|
           if n < percent or percent == 100
             return [variant.to_sym, 'w']
+          end
+        end
+        if not in_variant && enabled_status == :rollout
+          # puts "percentage: " + @enabled.inspect
+          if n < @percentage or @percentage == 100
+            return [@name.to_sym, 'w']
           end
         end
         false
@@ -259,17 +263,28 @@ module Rollout
         @bucketing == :random ? context.random : context.hash("#{@name}-#{id}")
       end
 
+      # status one of these [:off, :on, :rollout]
+      def enabled_status
+        if @enabled.is_a?(String) or @enabled.is_a?(Symbol)
+          if @enabled.to_sym == :off
+            return :off
+          elsif @enabled.to_sym == :on
+            return :on
+          end
+        end
+        :rollout
+      end
+
       def choose_variant(user_id, in_variant = false)
         # if in_variant and @enabled == true
         #   throw "Variant check when fully enabled"
         # end
         #
-        if @enabled.is_a?(String) or @enabled.is_a?(Symbol)
-          if @enabled.to_sym == :off
-            return false
-          elsif @enabled.to_sym == :on
-            return true
-          end
+        status = enabled_status
+        if status == :off
+          return false
+        elsif status == :on
+          return true
         end
 
         bucket_id = bucketing_id
@@ -292,7 +307,7 @@ module Rollout
         variant ||= variant_for_group(user_id)
         variant ||= variant_for_admin(user_id)
         variant ||= variant_for_internal
-        variant ||= variant_by_percentage(user_id)
+        variant ||= variant_by_percentage(user_id, in_variant)
         variant ||= [:off, 'w']
 
         # puts variant.inspect
