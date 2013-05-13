@@ -356,13 +356,13 @@ describe "Rollout" do
       @rollout.active_in_groups?("a", user).should be_true
     end
 
-    it "should work for one union" do
+    it "should work for one intersection" do
       user = stub(:a => true, :b => true)
       @rollout.active_in_groups?("a&b", user).should be_true
       @rollout.active_in_groups?("b&a", user).should be_true
     end
 
-    it "should work for multiple unions" do
+    it "should work for multiple intersections" do
       user = stub(:a => true, :b => true, :c => false)
       @rollout.active_in_groups?("a&b&c", user).should be_false
       @rollout.active_in_groups?("b&a&c", user).should be_false
@@ -378,7 +378,7 @@ describe "Rollout" do
       @rollout.active_in_groups?("!b", user).should be_true
     end
 
-    it "should work with rejections and unions" do
+    it "should work with rejections and intersections" do
       user = stub(:a => true, :b => true, :c => false)
       @rollout.active_in_groups?("a&b&!c", user).should be_true
       @rollout.active_in_groups?("a&!c", user).should be_true
