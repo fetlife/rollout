@@ -70,8 +70,8 @@ class Rollout
       end
 
       def user_in_active_group?(user, rollout)
-        @groups.any? do |g|
-          rollout.active_in_groups?(g, user)
+        @groups.any? do |expression|
+          rollout.active_in_group_expression?(expression, user)
         end
       end
   end
@@ -139,10 +139,10 @@ class Rollout
     end
   end
 
-  def active_in_groups?(groups, user)
-    groups.to_s.split('&').map do |group|
+  def active_in_group_expression?(group_expression, user)
+    group_expression.to_s.split('&').all? do |group|
       evaluate_group(group, user)
-    end.all?
+    end
   end
 
   def active_in_group?(group, user)
