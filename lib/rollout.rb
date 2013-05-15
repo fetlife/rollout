@@ -77,7 +77,7 @@ class Rollout
       end
 
       def user_identifier(user)
-        user.send(@use_as_id).to_s
+        user.public_send(@use_as_id).to_s
       end
   end
 
