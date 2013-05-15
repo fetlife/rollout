@@ -251,13 +251,13 @@ describe "Rollout with email" do
     it "imports the settings from the legacy rollout once" do
       @rollout.get(:chat).to_hash.should == {
         :percentage => 12,
-        :users => %w(twenty_four@example.com forty_two@example.com),
+        :users => %w(forty_two@example.com twenty_four@example.com),
         :groups => [:dope_people]
       }
       @legacy.deactivate_all(:chat)
       @rollout.get(:chat).to_hash.should == {
         :percentage => 12,
-        :users => %w(twenty_four@example.com forty_two@example.com),
+        :users => %w(forty_two@example.com twenty_four@example.com),
         :groups => [:dope_people]
       }
       @redis.get("feature:chat").should_not be_nil
