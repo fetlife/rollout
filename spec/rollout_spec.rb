@@ -98,7 +98,7 @@ describe "Rollout" do
   describe "#active? (in the context of percentage)" do
     describe "when the salt option is on" do
       before(:each) do
-        @rollout = Rollout.new(@redis, {:salt => true})
+        @rollout = Rollout.new(@redis, {:has_salt => true})
       end
 
       it "should return a different result for the same user and different feature" do

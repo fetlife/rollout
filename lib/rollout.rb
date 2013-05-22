@@ -8,7 +8,7 @@ class Rollout
 
     def initialize(name, string = nil, options = {})
       @name = name
-      @salt = name if options[:salt]
+      @salt = name if options[:has_salt]
 
       if string
         raw_percentage,raw_users,raw_groups = string.split("|")
@@ -82,7 +82,7 @@ class Rollout
     @storage  = storage
     @groups   = {:all => lambda { |user| true }}
     @legacy   = Legacy.new(@storage) if opts[:migrate]
-    @salt     = true if opts[:salt]
+    @has_salt     = !!opts[:has_salt]
   end
 
   def activate(feature)
@@ -156,7 +156,7 @@ class Rollout
   def get(feature)
     string = @storage.get(key(feature))
     if string || !migrate?
-      Feature.new(feature, string, {:salt => @salt})
+      Feature.new(feature, string, {:has_salt => @has_salt})
     else
       info = @legacy.info(feature)
       f = Feature.new(feature)
