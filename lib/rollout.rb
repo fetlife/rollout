@@ -50,9 +50,9 @@ class Rollout
       if user.nil?
         @percentage == 100
       else
-        user_in_percentage?(user) ||
-          user_in_active_users?(user) ||
-            user_in_active_group?(user, rollout)
+        (user_in_percentage?(user) && user_in_active_group?(user, rollout)) ||
+          user_in_active_users?(user)
+
       end
     end
 
@@ -82,12 +82,13 @@ class Rollout
     @storage  = storage
     @groups   = {:all => lambda { |user| true }}
     @legacy   = Legacy.new(@storage) if opts[:migrate]
-    @has_salt     = !!opts[:has_salt]
+    @has_salt = !!opts[:has_salt]
   end
 
   def activate(feature)
     with_feature(feature) do |f|
       f.percentage = 100
+      f.add_group(:all)
     end
   end
 

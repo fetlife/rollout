@@ -37,59 +37,48 @@ describe "Rollout" do
 
   # active?
   describe "when checking if feature is active" do
-    describe "when the feature is accessible to all" do
-      before do
-        @rollout.activate_percentage(:chat, 100)
-      end
-
-      it "should be active" do
-        @rollout.should be_active(:chat, stub(:id => 0))
-      end
+    before(:each) do
+      @rollout = Rollout.new(@redis, {:has_salt => true})
     end
 
-    describe "when the user is part of the percentage" do
-      before do
-        @rollout.activate_percentage(:chat, 20)
-        Zlib.stubs(:crc32).returns(19)
-      end
-
-      it "should be active" do
-        @rollout.should be_active(:chat, stub(:id => 19))
-      end
-    end
-
-    describe "when the user is not part of the percentage" do
-      before do
-        @rollout.activate_percentage(:chat, 20)
-        Zlib.stubs(:crc32).returns(30)
-      end
-
-      describe "but was specifically activated" do
+    describe "when it has no group associated" do
+      describe "but a specific id is activated" do
         before do
           @rollout.activate_user(:chat, stub(:id => 42))
         end
 
-        it "should be active" do
+        it "should return true if the user matches this id" do
           @rollout.should be_active(:chat, stub(:id => 42))
         end
       end
 
-      describe "and was not specifically activated" do
-        describe "but is part of an active group" do
-          before do
-            @rollout.define_group(:fortyniners) { |user| user.id == 49 }
-            @rollout.activate_group(:chat, :fortyniners)
-          end
-
-          it "should be active" do
-            @rollout.should be_active(:chat, stub(:id => 49))
-          end
+      describe "and no specific id is activated" do
+        it "should return false" do
+          @rollout.activate_percentage(:chat, 100)
+          @rollout.should_not be_active(:chat, stub(:id => 5))
         end
+      end
+    end
 
-        describe "and is not part of an active group" do
-          it "should not be active" do
-            @rollout.should_not be_active(:chat, stub(:id => 50))
-          end
+    describe "when it has a group associated" do
+      before(:each) do
+        @rollout.define_group(:fortyniners) { |user| user.id == 49 }
+        @rollout.define_group(:fivers) { |user| user.id == 5 }
+
+        @rollout.activate_percentage(:chat, 15)
+        @rollout.activate_group(:chat, :fivers)
+        @rollout.activate_group(:chat, :fortyniners)
+      end
+
+      describe "when the user is part of the percentage" do
+        it "should return true" do
+          @rollout.should be_active(:chat, stub(:id => 5))
+        end
+      end
+
+      describe "when the user is not part of the percentage" do
+        it "should return false" do
+          @rollout.should_not be_active(:chat, stub(:id => 49))
         end
       end
     end
@@ -102,6 +91,7 @@ describe "Rollout" do
       end
 
       it "should return a different result for the same user and different feature" do
+        @rollout.activate_group(:chat, :all)
         @rollout.activate_percentage(:chat, 15)
         @rollout.activate_percentage(:chat2, 15)
         @rollout.should be_active(:chat, stub(:id => 5))
@@ -115,6 +105,8 @@ describe "Rollout" do
       end
 
       it "should return the same result for the same user and different feature" do
+        @rollout.activate_group(:chat, :all)
+        @rollout.activate_group(:chat2, :all)
         @rollout.activate_percentage(:chat, 15)
         @rollout.activate_percentage(:chat2, 15)
         @rollout.should be_active(:chat, stub(:id => 3))
@@ -128,6 +120,7 @@ describe "Rollout" do
     before do
       @rollout.define_group(:fivesonly) { |user| user.id == 5 }
       @rollout.activate_group(:chat, :fivesonly)
+      @rollout.activate_percentage(:chat, 100)
     end
 
     it "should allow access to any users in this group" do
@@ -156,6 +149,7 @@ describe "Rollout" do
       @rollout.define_group(:fivesonly) { |user| user.id == 5 }
       @rollout.activate_group(:chat, :foursonly)
       @rollout.activate_group(:chat, :fivesonly)
+      @rollout.activate_percentage(:chat, 100)
     end
 
     it "should allow access to any users in these groups" do
@@ -175,6 +169,7 @@ describe "Rollout" do
       @rollout.define_group(:fivesonly) { |user| user.id == 5 }
       @rollout.activate_group(:chat, :foursonly)
       @rollout.activate_group(:chat, :fivesonly)
+      @rollout.activate_percentage(:chat, 100)
 
       @rollout.deactivate_group(:chat, :foursonly)
     end
@@ -185,16 +180,6 @@ describe "Rollout" do
 
     it "should still allow access in other active groups" do
       @rollout.should be_active(:chat, stub(:id => 5))
-    end
-  end
-
-  describe "the default all group" do
-    before do
-      @rollout.activate_group(:chat, :all)
-    end
-
-    it "evaluates to true no matter what" do
-      @rollout.should be_active(:chat, stub(:id => 0))
     end
   end
 
@@ -271,7 +256,10 @@ describe "Rollout" do
   describe "activating a feature for a percentage of users" do
     before do
       @rollout.activate_percentage(:commenting, 5)
+      @rollout.activate_group(:commenting, :all)
+
       @rollout.activate_percentage(:chat, 20)
+      @rollout.activate_group(:chat, :all)
     end
 
     it "activates the feature for that percentage of the users" do
@@ -304,7 +292,7 @@ describe "Rollout" do
 
       it "returns the feature object" do
         feature = @rollout.get(:signup)
-        feature.groups.should be_empty
+        feature.groups.should == [:all]
         feature.users.should be_empty
         feature.percentage.should == 100
       end
