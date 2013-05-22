@@ -95,6 +95,34 @@ describe "Rollout" do
     end
   end
 
+  describe "#active? (in the context of percentage)" do
+    describe "when the salt option is on" do
+      before(:each) do
+        @rollout = Rollout.new(@redis, {:has_salt => true})
+      end
+
+      it "should return a different result for the same user and different feature" do
+        @rollout.activate_percentage(:chat, 15)
+        @rollout.activate_percentage(:chat2, 15)
+        @rollout.should be_active(:chat, stub(:id => 5))
+        @rollout.should_not be_active(:chat2, stub(:id => 5))
+      end
+    end
+
+    describe "when the salt option is off" do
+      before(:each) do
+        @rollout = Rollout.new(@redis)
+      end
+
+      it "should return the same result for the same user and different feature" do
+        @rollout.activate_percentage(:chat, 15)
+        @rollout.activate_percentage(:chat2, 15)
+        @rollout.should be_active(:chat, stub(:id => 3))
+        @rollout.should be_active(:chat2, stub(:id => 3))
+      end
+    end
+  end
+
   # activate_group
   describe "when activating a group" do
     before do
