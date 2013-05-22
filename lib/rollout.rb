@@ -6,8 +6,10 @@ class Rollout
     attr_reader :name, :groups, :users, :percentage
     attr_writer :percentage, :groups, :users
 
-    def initialize(name, string = nil)
+    def initialize(name, string = nil, options = {})
       @name = name
+      @salt = name if options[:salt]
+
       if string
         raw_percentage,raw_users,raw_groups = string.split("|")
         @percentage = raw_percentage.to_i
@@ -62,7 +64,7 @@ class Rollout
 
     private
       def user_in_percentage?(user)
-        Zlib.crc32(user.id.to_s) % 100 < @percentage
+        Zlib.crc32(user.id.to_s + @salt.to_s) % 100 < @percentage
       end
 
       def user_in_active_users?(user)
@@ -80,6 +82,7 @@ class Rollout
     @storage  = storage
     @groups   = {:all => lambda { |user| true }}
     @legacy   = Legacy.new(@storage) if opts[:migrate]
+    @salt     = true if opts[:salt]
   end
 
   def activate(feature)
@@ -153,7 +156,7 @@ class Rollout
   def get(feature)
     string = @storage.get(key(feature))
     if string || !migrate?
-      Feature.new(feature, string)
+      Feature.new(feature, string, {:salt => @salt})
     else
       info = @legacy.info(feature)
       f = Feature.new(feature)
