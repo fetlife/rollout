@@ -70,8 +70,8 @@ class Rollout
       end
 
       def user_in_active_group?(user, rollout)
-        @groups.any? do |g|
-          rollout.active_in_group?(g, user)
+        @groups.any? do |expression|
+          rollout.active_in_group_expression?(expression, user)
         end
       end
   end
@@ -139,6 +139,12 @@ class Rollout
     end
   end
 
+  def active_in_group_expression?(group_expression, user)
+    group_expression.to_s.split('&').all? do |group|
+      evaluate_group(group, user)
+    end
+  end
+
   def active_in_group?(group, user)
     f = @groups[group.to_sym]
     f && f.call(user)
@@ -186,4 +192,13 @@ class Rollout
     def migrate?
       @legacy
     end
+
+    def evaluate_group(group, user)
+      if group.match(/\!/)
+        !active_in_group?(group.sub(/^!/, ''), user)
+      else
+        active_in_group?(group, user)
+      end
+    end
+
 end

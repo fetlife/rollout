@@ -110,8 +110,6 @@ describe "Rollout" do
       @rollout.should_not be_active(:chat, stub(:id => 4))
     end
 
-    end
-
     describe "when a string is passed" do
       before do
         @rollout.define_group(:admins) { |user| user.id == 5 }
@@ -343,6 +341,52 @@ describe "Rollout" do
         :groups => [:dope_people]
       }
       @redis.get("feature:chat").should_not be_nil
+    end
+  end
+
+  describe "active_in_group_expression?" do
+    before(:each) do
+      @rollout.define_group(:a) { |user| user.a }
+      @rollout.define_group(:b) { |user| user.b }
+      @rollout.define_group(:c) { |user| user.c }
+    end
+
+    it "should work for the unique group" do
+      user = stub(:a => true)
+      @rollout.active_in_group_expression?("a", user).should be_true
+    end
+
+    it "should work for one intersection" do
+      user = stub(:a => true, :b => true)
+      @rollout.active_in_group_expression?("a&b", user).should be_true
+      @rollout.active_in_group_expression?("b&a", user).should be_true
+    end
+
+    it "should work for multiple intersections" do
+      user = stub(:a => true, :b => true, :c => false)
+      @rollout.active_in_group_expression?("a&b&c", user).should be_false
+      @rollout.active_in_group_expression?("b&a&c", user).should be_false
+      @rollout.active_in_group_expression?("b&c&a", user).should be_false
+
+      user = stub(:a => true, :b => true, :c => true)
+      @rollout.active_in_group_expression?("a&b&c", user).should be_true
+    end
+
+    it "should work with rejections" do
+      user = stub(:a => true, :b => false)
+      @rollout.active_in_group_expression?("!a", user).should be_false
+      @rollout.active_in_group_expression?("!b", user).should be_true
+    end
+
+    it "should work with rejections and intersections" do
+      user = stub(:a => true, :b => true, :c => false)
+      @rollout.active_in_group_expression?("a&b&!c", user).should be_true
+      @rollout.active_in_group_expression?("a&!c", user).should be_true
+      @rollout.active_in_group_expression?("a&!c&b", user).should be_true
+      @rollout.active_in_group_expression?("a&!c&!b", user).should be_false
+
+      user = stub(:a => true, :b => false, :c => false)
+      @rollout.active_in_group_expression?("a&!c&!b", user).should be_true
     end
   end
 end
