@@ -76,7 +76,16 @@ class Rollout
       end
   end
 
+
+  @storage_hash = {}
+  @cleared = Time.now
+
+  class << self
+    attr_accessor :storage_hash, :cleared
+  end
+
   def initialize(storage, opts = {})
+    self.class.storage_hash = {}
     @storage  = storage
     @groups = {:all => lambda { |user| true }}
     @legacy = Legacy.new(opts[:legacy_storage] || @storage) if opts[:migrate]
@@ -144,8 +153,19 @@ class Rollout
     f && f.call(user)
   end
 
-  def get(feature)
-    string = @storage.get(key(feature))
+  def period
+    @period ||= 60
+  end
+
+  def get(feature, force=false)
+    if force || !self.class.cleared || Time.now >= (self.class.cleared + period)
+      self.class.storage_hash = {}
+      self.class.cleared = Time.now
+    end
+    if self.class.storage_hash[feature].nil?
+      self.class.storage_hash[feature] = @storage.get(key(feature)) rescue '0||'
+    end
+    string = self.class.storage_hash[feature]
     if string || !migrate?
       Feature.new(feature, string)
     else
@@ -173,12 +193,13 @@ class Rollout
     end
 
     def with_feature(feature)
-      f = get(feature)
+      f = get(feature, true)
       yield(f)
       save(f)
     end
 
     def save(feature)
+      self.class.storage_hash = {}
       @storage.set(key(feature.name), feature.serialize)
       @storage.set(features_key, (features | [feature.name]).join(","))
     end
