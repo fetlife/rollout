@@ -83,6 +83,36 @@ Deactivate all percentages like this:
 
 _Note that activating a feature for 100% of users will also make it active "globally". That is when calling Rollout#active? without a user object._
 
+== IP Adresses
+
+As the user and group functions heavily rely on already having a User some might also want to activate specific functions for anonymous visitors or on an IP Address based mechanism. Therefor you can add IP Addresses to the list of activated items for a feature or map visitors IP Addresses against a percentage for a feature.
+
+For example activating the feature "landing_page_new" for a specific IP Address : 
+
+
+  $rollout.activate_ip(:landing_page_new, "8.8.8.8")
+
+
+Deactivating the feature "landing_page_new" for a specific IP Address:
+
+
+  $rollout.activate_ip(:landing_page_new, "8.8.8.8")
+
+
+In your code you can check if an IP is activated for a feature like this:
+
+
+  $rollout.active_ip?(:landing_page_new, request.env['REMOTE_ADDR'])
+
+
+Of course the global deactivating of a feature works for IP Addresses as well.
+
+*Attention*
+
+As the algorithm for percentage converts the IP Address to the int representative and does a modulus 100. 
+
+Practialy it means that not all visitors accessing your webpage have IP Addresses following each other and the optimum percentage will not be achieved. But it's kind of the best effort to come very close to the percentage.
+
 == Feature is broken
 
 Deactivate everybody at once:

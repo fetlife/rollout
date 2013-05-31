@@ -1,25 +1,27 @@
 require "rollout/legacy"
 require "zlib"
+require 'ipaddress'
 
 class Rollout
   class Feature
-    attr_reader :name, :groups, :users, :percentage
-    attr_writer :percentage, :groups, :users
+    attr_reader :name, :groups, :users, :percentage, :ips
+    attr_writer :percentage, :groups, :users, :ips
 
     def initialize(name, string = nil)
       @name = name
       if string
-        raw_percentage,raw_users,raw_groups = string.split("|")
+        raw_percentage,raw_users,raw_groups,raw_ips = string.split("|")
         @percentage = raw_percentage.to_i
         @users = (raw_users || "").split(",").map(&:to_s)
         @groups = (raw_groups || "").split(",").map(&:to_sym)
+        @ips = (raw_ips || "").split(",").map(&:to_s)
       else
         clear
       end
     end
 
     def serialize
-      "#{@percentage}|#{@users.join(",")}|#{@groups.join(",")}"
+      "#{@percentage}|#{@users.join(",")}|#{@groups.join(",")}|#{@ips.join(",")}"
     end
 
     def add_user(user)
@@ -38,10 +40,26 @@ class Rollout
       @groups.delete(group.to_sym)
     end
 
+    def add_ip(ip)
+      begin 
+        if IPAddress.valid? ip
+          @ips << ip.to_sym unless @ips.include?(ip.to_s)
+        end
+      rescue
+      end
+    end
+
+    def remove_ip(ip)
+      @ips.delete(ip.to_sym)
+    end
+
+
+
     def clear
       @groups = []
       @users = []
       @percentage = 0
+      @ips = []
     end
 
     def active?(rollout, user)
@@ -54,10 +72,21 @@ class Rollout
       end
     end
 
+    def active_ip?(rollout, ip)
+      if ip.nil?
+        @percentage == 100
+      else
+        ip_in_percentage?(ip) ||
+          ip_in_active_ips?(ip) 
+      end
+    end
+
     def to_hash
       {:percentage => @percentage,
        :groups     => @groups,
-       :users      => @users}
+       :users      => @users,
+       :ips        => @ips
+     }
     end
 
     private
@@ -68,6 +97,15 @@ class Rollout
       def user_in_active_users?(user)
         @users.include?(user.id.to_s)
       end
+
+      def ip_in_percentage?(ip)
+        ip.split('.').inject(0) {|total,value| (total << 8 ) + value.to_i} % 100 < @percentage
+      end
+
+      def ip_in_active_ips?(ip)
+        @ips.include?(ip.to_s)
+      end
+
 
       def user_in_active_group?(user, rollout)
         @groups.any? do |g|
@@ -106,6 +144,18 @@ class Rollout
     end
   end
 
+  def activate_ip(feature, ip)
+    with_feature(feature) do |f|
+      f.add_ip(ip)
+    end
+  end
+
+  def deactivate_ip(feature, ip)
+    with_feature(feature) do |f|
+      f.remove_ip(ip)
+    end
+  end
+
   def activate_user(feature, user)
     with_feature(feature) do |f|
       f.add_user(user)
@@ -125,6 +175,11 @@ class Rollout
   def active?(feature, user = nil)
     feature = get(feature)
     feature.active?(self, user)
+  end
+
+  def active_ip?(feature, ip = nil)
+    feature = get(feature)
+    feature.active_ip?(self, ip)
   end
 
   def activate_percentage(feature, percentage)
