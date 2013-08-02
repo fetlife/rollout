@@ -163,6 +163,16 @@ class Rollout
     (@storage.get(features_key) || "").split(",").map(&:to_sym)
   end
 
+  class << self
+    def setup(redis)
+      @instance = new(redis)
+    end
+
+    def method_missing(method, *args, &block)
+      @instance.public_send(method, *args)
+    end
+  end
+
   private
     def key(name)
       "feature:#{name}"

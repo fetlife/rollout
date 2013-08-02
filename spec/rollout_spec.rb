@@ -271,4 +271,17 @@ describe "Rollout" do
       @redis.get("feature:chat").should_not be_nil
     end
   end
+
+  describe "singleton" do
+    before do
+      Rollout.setup(@redis)
+    end
+    it "forwards to a singleton" do
+      Rollout.activate(:chat)
+      Rollout.features.size.should == 1
+
+      Rollout.activate_user(:chat, stub(:id => 42))
+      Rollout.should be_active(:chat, stub(:id => 24))
+    end
+  end
 end
