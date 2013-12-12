@@ -184,6 +184,17 @@ describe "Rollout" do
     end
   end
 
+  describe "activating a feature for a percentage of a group" do
+    before do
+      @rollout.define_group(:admins) { |user| user.id > 20 }
+      @rollout.activate_group(:chat, 'admins', 50)
+    end
+
+    it "activates the feature for that percentage of the users" do
+      (1..100).select { |id| @rollout.active?(:chat, stub(:id => id)) }.length.should be_within(5).of(40)
+    end
+  end
+
   describe "deactivating the percentage of users" do
     before do
       @rollout.activate_percentage(:chat, 100)
