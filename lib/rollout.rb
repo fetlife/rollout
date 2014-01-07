@@ -49,13 +49,13 @@ class Rollout
     end
 
     def active?(rollout, user)
-      if user.nil?
-        @percentage == 100
-      else
+      if user
         id = user_id(user)
         user_in_percentage?(id) ||
           user_in_active_users?(id) ||
             user_in_active_group?(user, rollout)
+      else
+        @percentage == 100
       end
     end
 
