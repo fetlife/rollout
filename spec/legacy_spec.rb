@@ -185,13 +185,19 @@ describe "Rollout::Legacy" do
       end
 
       it "returns all global features" do
-        @rollout.info.should eq({ :global => features.reverse })
+        info = @rollout.info
+        info.should be_a(Hash)
+        info[:global].should_not be_nil
+        features.each do |f|
+          info[:global].should include(f)
+        end
       end
     end
 
     describe "with a percentage set" do
+      let(:percentage) { 10 }
       before do
-        @rollout.activate_percentage(:chat, 10)
+        @rollout.activate_percentage(:chat, percentage)
         @rollout.activate_group(:chat, :caretakers)
         @rollout.activate_group(:chat, :greeters)
         @rollout.activate_globally(:signup)
@@ -199,12 +205,15 @@ describe "Rollout::Legacy" do
       end
 
       it "returns info about all the activations" do
-        @rollout.info(:chat).should == {
-          :percentage => 10,
-          :groups     => [:greeters, :caretakers],
-          :users      => [42],
-          :global     => [:signup]
-        }
+        chat_info = @rollout.info(:chat)
+        chat_info.should be_a(Hash)
+        chat_info[:percentage].should eq(percentage)
+        groups = chat_info[:groups]
+        groups.size.should eq(2)
+        groups.should include(:caretakers)
+        groups.should include(:greeters)
+        chat_info[:users].should eq([42])
+        chat_info[:global].should eq([:signup])
       end
     end
 
