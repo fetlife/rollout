@@ -13,16 +13,16 @@ describe "Rollout::Legacy" do
     end
 
     it "the feature is active for users for which the block evaluates to true" do
-      @rollout.should be_active(:chat, stub(:id => 5))
+      expect(@rollout).to be_active(:chat, stub(:id => 5))
     end
 
     it "is not active for users for which the block evaluates to false" do
-      @rollout.should_not be_active(:chat, stub(:id => 1))
+      expect(@rollout).not_to be_active(:chat, stub(:id => 1))
     end
 
     it "is not active if a group is found in Redis but not defined in Rollout" do
       @rollout.activate_group(:chat, :fake)
-      @rollout.should_not be_active(:chat, stub(:id => 1))
+      expect(@rollout).not_to be_active(:chat, stub(:id => 1))
     end
   end
 
@@ -32,7 +32,7 @@ describe "Rollout::Legacy" do
     end
 
     it "evaluates to true no matter what" do
-      @rollout.should be_active(:chat, stub(:id => 0))
+      expect(@rollout).to be_active(:chat, stub(:id => 0))
     end
   end
 
@@ -45,11 +45,11 @@ describe "Rollout::Legacy" do
     end
 
     it "deactivates the rules for that group" do
-      @rollout.should_not be_active(:chat, stub(:id => 10))
+      expect(@rollout).not_to be_active(:chat, stub(:id => 10))
     end
 
     it "leaves the other groups active" do
-      @rollout.should be_active(:chat, stub(:id => 5))
+      expect(@rollout).to be_active(:chat, stub(:id => 5))
     end
   end
 
@@ -65,19 +65,19 @@ describe "Rollout::Legacy" do
     end
 
     it "removes all of the groups" do
-      @rollout.should_not be_active(:chat, stub(:id => 0))
+      expect(@rollout).not_to be_active(:chat, stub(:id => 0))
     end
 
     it "removes all of the users" do
-      @rollout.should_not be_active(:chat, stub(:id => 51))
+      expect(@rollout).not_to be_active(:chat, stub(:id => 51))
     end
 
     it "removes the percentage" do
-      @rollout.should_not be_active(:chat, stub(:id => 24))
+      expect(@rollout).not_to be_active(:chat, stub(:id => 24))
     end
 
     it "removes globally" do
-      @rollout.should_not be_active(:chat)
+      expect(@rollout).not_to be_active(:chat)
     end
   end
 
@@ -87,11 +87,11 @@ describe "Rollout::Legacy" do
     end
 
     it "is active for that user" do
-      @rollout.should be_active(:chat, stub(:id => 42))
+      expect(@rollout).to be_active(:chat, stub(:id => 42))
     end
 
     it "remains inactive for other users" do
-      @rollout.should_not be_active(:chat, stub(:id => 24))
+      expect(@rollout).not_to be_active(:chat, stub(:id => 24))
     end
   end
 
@@ -103,11 +103,11 @@ describe "Rollout::Legacy" do
     end
 
     it "that user should no longer be active" do
-      @rollout.should_not be_active(:chat, stub(:id => 42))
+      expect(@rollout).not_to be_active(:chat, stub(:id => 42))
     end
 
     it "remains active for other active users" do
-      @rollout.should be_active(:chat, stub(:id => 24))
+      expect(@rollout).to be_active(:chat, stub(:id => 24))
     end
   end
 
@@ -117,7 +117,7 @@ describe "Rollout::Legacy" do
     end
 
     it "activates the feature" do
-      @rollout.should be_active(:chat)
+      expect(@rollout).to be_active(:chat)
     end
   end
 
@@ -127,7 +127,7 @@ describe "Rollout::Legacy" do
     end
 
     it "activates the feature for that percentage of the users" do
-      (1..120).select { |id| @rollout.active?(:chat, stub(:id => id)) }.length.should == 39
+      expect((1..120).select { |id| @rollout.active?(:chat, stub(:id => id)) }.length).to eq(39)
     end
   end
 
@@ -137,7 +137,7 @@ describe "Rollout::Legacy" do
     end
 
     it "activates the feature for that percentage of the users" do
-      (1..200).select { |id| @rollout.active?(:chat, stub(:id => id)) }.length.should == 40
+      expect((1..200).select { |id| @rollout.active?(:chat, stub(:id => id)) }.length).to eq(40)
     end
   end
 
@@ -147,7 +147,7 @@ describe "Rollout::Legacy" do
     end
 
     it "activates the feature for that percentage of the users" do
-      (1..100).select { |id| @rollout.active?(:chat, stub(:id => id)) }.length.should == 5
+      expect((1..100).select { |id| @rollout.active?(:chat, stub(:id => id)) }.length).to eq(5)
     end
   end
 
@@ -159,7 +159,7 @@ describe "Rollout::Legacy" do
     end
 
     it "becomes inactivate for all users" do
-      @rollout.should_not be_active(:chat, stub(:id => 24))
+      expect(@rollout).not_to be_active(:chat, stub(:id => 24))
     end
   end
 
@@ -170,7 +170,7 @@ describe "Rollout::Legacy" do
     end
 
     it "becomes inactivate" do
-      @rollout.should_not be_active(:chat)
+      expect(@rollout).not_to be_active(:chat)
     end
   end
 
@@ -186,10 +186,10 @@ describe "Rollout::Legacy" do
 
       it "returns all global features" do
         info = @rollout.info
-        info.should be_a(Hash)
-        info[:global].should_not be_nil
+        expect(info).to be_a(Hash)
+        expect(info[:global]).not_to be_nil
         features.each do |f|
-          info[:global].should include(f)
+          expect(info[:global]).to include(f)
         end
       end
     end
@@ -206,25 +206,25 @@ describe "Rollout::Legacy" do
 
       it "returns info about all the activations" do
         chat_info = @rollout.info(:chat)
-        chat_info.should be_a(Hash)
-        chat_info[:percentage].should eq(percentage)
+        expect(chat_info).to be_a(Hash)
+        expect(chat_info[:percentage]).to eq(percentage)
         groups = chat_info[:groups]
-        groups.size.should eq(2)
-        groups.should include(:caretakers)
-        groups.should include(:greeters)
-        chat_info[:users].should eq([42])
-        chat_info[:global].should eq([:signup])
+        expect(groups.size).to eq(2)
+        expect(groups).to include(:caretakers)
+        expect(groups).to include(:greeters)
+        expect(chat_info[:users]).to eq([42])
+        expect(chat_info[:global]).to eq([:signup])
       end
     end
 
     describe "without a percentage set" do
       it "defaults to 0" do
-        @rollout.info(:chat).should == {
+        expect(@rollout.info(:chat)).to eq({
           :percentage => 0,
           :groups     => [],
           :users      => [],
           :global     => []
-        }
+        })
       end
     end
   end
