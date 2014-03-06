@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    rollout (2.0.0a)
+    rollout (2.0.0c)
       redis
 
 GEM
@@ -18,7 +18,7 @@ GEM
     mocha (0.9.8)
       rake
     rake (0.9.2.2)
-    redis (3.0.2)
+    redis (3.0.4)
     rspec (2.10.0)
       rspec-core (~> 2.10.0)
       rspec-expectations (~> 2.10.0)

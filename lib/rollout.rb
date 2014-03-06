@@ -6,8 +6,10 @@ class Rollout
     attr_reader :name, :groups, :users, :percentage
     attr_writer :percentage, :groups, :users
 
-    def initialize(name, string = nil)
+    def initialize(name, string = nil, options = {})
       @name = name
+      @salt = name if options[:has_salt]
+
       if string
         raw_percentage,raw_users,raw_groups = string.split("|")
         @percentage = raw_percentage.to_i
@@ -48,9 +50,9 @@ class Rollout
       if user.nil?
         @percentage == 100
       else
-        user_in_percentage?(user) ||
-          user_in_active_users?(user) ||
-            user_in_active_group?(user, rollout)
+        (user_in_percentage?(user) &&
+          user_in_active_group?(user, rollout)) ||
+            user_in_active_users?(user)
       end
     end
 
@@ -62,7 +64,7 @@ class Rollout
 
     private
       def user_in_percentage?(user)
-        Zlib.crc32(user.id.to_s) % 100 < @percentage
+        Zlib.crc32(user.id.to_s + @salt.to_s) % 100 < @percentage
       end
 
       def user_in_active_users?(user)
@@ -70,21 +72,23 @@ class Rollout
       end
 
       def user_in_active_group?(user, rollout)
-        @groups.any? do |g|
-          rollout.active_in_group?(g, user)
+        @groups.any? do |expression|
+          rollout.active_in_group_expression?(expression, user)
         end
       end
   end
 
   def initialize(storage, opts = {})
     @storage  = storage
-    @groups = {:all => lambda { |user| true }}
-    @legacy = Legacy.new(opts[:legacy_storage] || @storage) if opts[:migrate]
+    @groups   = {:all => lambda { |user| true }}
+    @legacy   = Legacy.new(@storage) if opts[:migrate]
+    @has_salt = !!opts[:has_salt]
   end
 
   def activate(feature)
     with_feature(feature) do |f|
       f.percentage = 100
+      f.add_group(:all)
     end
   end
 
@@ -139,6 +143,12 @@ class Rollout
     end
   end
 
+  def active_in_group_expression?(group_expression, user)
+    group_expression.to_s.split('&').all? do |group|
+      evaluate_group(group, user)
+    end
+  end
+
   def active_in_group?(group, user)
     f = @groups[group.to_sym]
     f && f.call(user)
@@ -147,7 +157,7 @@ class Rollout
   def get(feature)
     string = @storage.get(key(feature))
     if string || !migrate?
-      Feature.new(feature, string)
+      Feature.new(feature, string, {:has_salt => @has_salt})
     else
       info = @legacy.info(feature)
       f = Feature.new(feature)
@@ -186,4 +196,13 @@ class Rollout
     def migrate?
       @legacy
     end
+
+    def evaluate_group(group, user)
+      if group.match(/\!/)
+        !active_in_group?(group.sub(/^!/, ''), user)
+      else
+        active_in_group?(group, user)
+      end
+    end
+
 end
