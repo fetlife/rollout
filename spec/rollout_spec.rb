@@ -270,5 +270,10 @@ describe "Rollout" do
       }
       @redis.get("feature:chat").should_not be_nil
     end
+    
+    it "imports settings that were globally activated" do
+      @legacy.activate_globally(:video_chat)
+      @rollout.get(:video_chat).to_hash[:percentage].should == 100
+    end
   end
 end
