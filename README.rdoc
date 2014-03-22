@@ -112,7 +112,8 @@ When a feature reaches "maturity" - in other words, expected to be at 100% rollo
 
 == Implementations in other languages
 
-* Python: http://github.com/asenchi/proclaim
+* Python:  https://github.com/asenchi/proclaim
+* Clojure: https://github.com/tcrayford/shoutout
 
 == Copyright
 
