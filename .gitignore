@@ -20,3 +20,6 @@ pkg
 *.gem
 
 ## PROJECT::SPECIFIC
+.bundle
+Gemfile.lock
+.ruby-version
