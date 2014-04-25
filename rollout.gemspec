@@ -7,8 +7,8 @@ Gem::Specification.new do |s|
   s.version = Rollout::VERSION
   s.authors = ["James Golick"]
   s.email       = ["jamesgolick@gmail.com"]
-  s.description = "Feature flippers with redis."
-  s.summary = "Feature flippers with redis."
+  s.description = "Feature flippers."
+  s.summary = "Feature flippers."
   s.homepage = "https://github.com/jamesgolick/rollout"
 
   s.rubyforge_project = "rollout"
@@ -24,6 +24,4 @@ Gem::Specification.new do |s|
   s.add_development_dependency "jeweler", "~> 1.6.4"
   s.add_development_dependency "bourne", "1.0"
   s.add_development_dependency "mocha", "0.9.8"
-
-  s.add_runtime_dependency "redis"
 end
