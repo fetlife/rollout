@@ -11,8 +11,6 @@ Gem::Specification.new do |s|
   s.summary = "Feature flippers with redis."
   s.homepage = "https://github.com/jamesgolick/rollout"
 
-  s.require_paths = ["lib"]
-
   s.rubyforge_project = "rollout"
 
   s.files         = `git ls-files`.split("\n")
