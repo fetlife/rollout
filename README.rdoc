@@ -114,6 +114,7 @@ When a feature reaches "maturity" - in other words, expected to be at 100% rollo
 
 * Python: http://github.com/asenchi/proclaim
 * PHP: https://github.com/opensoft/rollout
+* Clojure: https://github.com/tcrayford/shoutout
 
 == Copyright
 
