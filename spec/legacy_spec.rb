@@ -185,7 +185,7 @@ describe "Rollout::Legacy" do
       end
 
       it "returns all global features" do
-        @rollout.info.should eq({ :global => features.reverse })
+        @rollout.info[:global].should include(*features)
       end
     end
 
