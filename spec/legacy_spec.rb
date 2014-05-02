@@ -199,12 +199,11 @@ describe "Rollout::Legacy" do
       end
 
       it "returns info about all the activations" do
-        @rollout.info(:chat).should == {
-          :percentage => 10,
-          :groups     => [:greeters, :caretakers],
-          :users      => [42],
-          :global     => [:signup]
-        }
+        info = @rollout.info(:chat)
+        info[:percentage].should == 10
+        info[:groups].should include(:caretakers, :greeters)
+        info[:users].should include(42)
+        info[:global].should include(:signup)
       end
     end
 
