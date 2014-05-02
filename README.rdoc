@@ -2,6 +2,8 @@
 
 Feature flippers.
 
+{<img src="https://travis-ci.org/FetLife/rollout.svg?branch=master" alt="Build Status" />}[https://travis-ci.org/FetLife/rollout]
+
 == MAKE SURE TO READ THIS: 2.0 Changes and Migration Path
 
 As of rollout-2.x, only one key is used per feature for performance reasons. The data format is <tt>percentage|user_id,user_id,...|group,_group...</tt>. This has the effect of making concurrent feature modifications unsafe, but in practice, I doubt this will actually be a problem.
