@@ -24,6 +24,8 @@ If you'd prefer to continue to use the old layout in redis, <tt>Rollout::Legacy<
 
 Initialize a rollout object. I assign it to a global var.
 
+  require 'redis'
+
   $redis   = Redis.new
   $rollout = Rollout.new($redis)
 
