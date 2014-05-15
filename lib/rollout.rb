@@ -22,12 +22,13 @@ class Rollout
       "#{@percentage}|#{@users.join(",")}|#{@groups.join(",")}"
     end
 
-    def add_user(user)
-      @users << user.id.to_s unless @users.include?(user.id.to_s)
+    def add_user(user_or_id)
+      k = user_id(user_or_id)
+      @users << k unless @users.include?(k)
     end
 
-    def remove_user(user)
-      @users.delete(user.id.to_s)
+    def remove_user(user_or_id)
+      @users.delete(user_id(user_or_id))
     end
 
     def add_group(group)
@@ -48,7 +49,7 @@ class Rollout
       if user.nil?
         @percentage == 100
       else
-        user_in_percentage?(user) ||
+        user_in_percentage?(user)   ||
           user_in_active_users?(user) ||
             user_in_active_group?(user, rollout)
       end
@@ -61,17 +62,25 @@ class Rollout
     end
 
     private
-      def user_in_percentage?(user)
-        Zlib.crc32(user.id.to_s) % 100 < @percentage
+      def user_in_percentage?(user_or_id)
+        Zlib.crc32(user_id(user_or_id).to_s) % 100 < @percentage
       end
 
-      def user_in_active_users?(user)
-        @users.include?(user.id.to_s)
+      def user_in_active_users?(user_or_id)
+        @users.include?(user_id(user_or_id))
       end
 
       def user_in_active_group?(user, rollout)
         @groups.any? do |g|
           rollout.active_in_group?(g, user)
+        end
+      end
+
+      def user_id(user_or_id)
+        if user_or_id.is_a?(Fixnum) || user_or_id.is_a?(String)
+          user_or_id.to_s
+        else
+          user_or_id.id.to_s
         end
       end
   end
@@ -123,8 +132,7 @@ class Rollout
   end
 
   def active?(feature, user = nil)
-    feature = get(feature)
-    feature.active?(self, user)
+    get(feature).active?(self, user)
   end
 
   def activate_percentage(feature, percentage)
@@ -142,6 +150,8 @@ class Rollout
   def active_in_group?(group, user)
     f = @groups[group.to_sym]
     f && f.call(user)
+  rescue NoMethodError
+    false
   end
 
   def get(feature)
