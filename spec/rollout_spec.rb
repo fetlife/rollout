@@ -217,6 +217,12 @@ describe "Rollout" do
       @rollout.activate(:chat)
       @rollout.features.size.should == 1
     end
+
+    it "does not contain doubles when using string" do
+      @rollout.activate(:chat)
+      @rollout.activate("chat")
+      @rollout.features.size.should == 1
+    end
   end
 
   describe "#get" do
