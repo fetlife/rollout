@@ -127,4 +127,4 @@ When a feature reaches "maturity" - in other words, expected to be at 100% rollo
 
 == Copyright
 
-Copyright (c) 2010 James Golick, BitLove, Inc. See LICENSE for details.
+Copyright (c) 2010-InfinityAndBeyond BitLove, Inc. See LICENSE for details.
