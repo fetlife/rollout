@@ -30,7 +30,7 @@ Initialize a rollout object. I assign it to a global var.
   $rollout = Rollout.new($redis)
 
 Check whether a feature is active for a particular user:
-  
+
   $rollout.active?(:chat, User.first) # => true/false
 
 Check whether a feature is active globally:
@@ -41,7 +41,7 @@ You can activate features using a number of different mechanisms.
 
 == Groups
 
-Rollout ships with one group by default: "all", which does exactly what it sounds like. 
+Rollout ships with one group by default: "all", which does exactly what it sounds like.
 
 You can activate the all group for the chat feature like this:
 
@@ -62,7 +62,7 @@ Deactivate groups like this:
 == Specific Users
 
 You might want to let a specific user into a beta test or something. If that user isn't part of an existing group, you can let them in specifically:
-  
+
   $rollout.activate_user(:chat, @user)
 
 Deactivate them like this:
@@ -104,7 +104,7 @@ If you're using redis, you can namespace keys further to support multiple enviro
   $ns = Redis::Namespace.new(Rails.env, :redis => $redis)
   $rollout = Rollout.new($ns)
   $rollout.activate_group(:chat, :all)
-  
+
 This example would use the "development:feature:chat:groups" key.
 
 == misc/check_rollout.rb
@@ -119,6 +119,11 @@ When a feature reaches "maturity" - in other words, expected to be at 100% rollo
 * Python: http://github.com/asenchi/proclaim
 * PHP: https://github.com/opensoft/rollout
 * Clojure: https://github.com/tcrayford/shoutout
+
+== Contributors
+
+* [James Golick](https://github.com/jamesgolick) - Creator
+* [Eric Rafaloff](https://github.com/EricR) - Maintainer
 
 == Copyright
 
