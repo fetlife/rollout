@@ -122,8 +122,8 @@ When a feature reaches "maturity" - in other words, expected to be at 100% rollo
 
 == Contributors
 
-* [James Golick](https://github.com/jamesgolick) - Creator
-* [Eric Rafaloff](https://github.com/EricR) - Maintainer
+* James Golick - Creator - https://github.com/jamesgolick
+* Eric Rafaloff - Maintainer - https://github.com/EricR
 
 == Copyright
 
