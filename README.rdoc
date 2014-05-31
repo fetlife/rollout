@@ -32,6 +32,8 @@ Initialize a rollout object. I assign it to a global var.
 Check whether a feature is active for a particular user:
 
   $rollout.active?(:chat, User.first) # => true/false
+  # or via ID:
+  $rollout.active?(:chat, 1) # => true/false
 
 Check whether a feature is active globally:
 
