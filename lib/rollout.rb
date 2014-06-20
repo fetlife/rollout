@@ -4,11 +4,13 @@ require "zlib"
 
 class Rollout
   class Feature
-    attr_reader :name, :groups, :users, :percentage
-    attr_writer :percentage, :groups, :users
+    attr_accessor :groups, :users, :percentage
+    attr_reader :name, :options
 
-    def initialize(name, string = nil)
-      @name = name
+    def initialize(name, string = nil, opts = {})
+      @options = opts
+      @name    = name
+
       if string
         raw_percentage,raw_users,raw_groups = string.split("|")
         @percentage = raw_percentage.to_i
@@ -23,12 +25,13 @@ class Rollout
       "#{@percentage}|#{@users.join(",")}|#{@groups.join(",")}"
     end
 
-    def add_user(user_id)
-      @users << user_id unless @users.include?(user_id)
+    def add_user(user)
+      id = user_id(user)
+      @users << id unless @users.include?(id)
     end
 
-    def remove_user(user_id)
-      @users.delete(user_id)
+    def remove_user(user)
+      @users.delete(user_id(user))
     end
 
     def add_group(group)
@@ -49,9 +52,9 @@ class Rollout
       if user.nil?
         @percentage == 100
       else
-        user_id = rollout.user_id(user)
-        user_in_percentage?(user_id) ||
-          user_in_active_users?(user_id) ||
+        id = user_id(user)
+        user_in_percentage?(id) ||
+          user_in_active_users?(id) ||
             user_in_active_group?(user, rollout)
       end
     end
@@ -63,6 +66,22 @@ class Rollout
     end
 
     private
+      def user_id(user)
+        if !user
+          user
+        elsif user.is_a?(Integer) ||
+                user.is_a?(Fixnum) ||
+                  user.is_a?(String)
+          user.to_s
+        else
+          user.send(id_user_by).to_s
+        end
+      end
+
+      def id_user_by
+        @options[:id_user_by] || :id
+      end
+
       def user_in_percentage?(user_id)
         Zlib.crc32(user_id.to_s) % 100 < @percentage
       end
@@ -80,9 +99,9 @@ class Rollout
 
   def initialize(storage, opts = {})
     @storage    = storage
+    @options    = opts
     @groups     = {:all => lambda { |user| true }}
     @legacy     = Legacy.new(opts[:legacy_storage] || @storage) if opts[:migrate]
-    @user_id_by = opts[:user_id_by] || :id
   end
 
   def activate(feature)
@@ -111,13 +130,13 @@ class Rollout
 
   def activate_user(feature, user)
     with_feature(feature) do |f|
-      f.add_user(user_id(user))
+      f.add_user(user)
     end
   end
 
   def deactivate_user(feature, user)
     with_feature(feature) do |f|
-      f.remove_user(user_id(user))
+      f.remove_user(user)
     end
   end
 
@@ -150,7 +169,7 @@ class Rollout
   def get(feature)
     string = @storage.get(key(feature))
     if string || !migrate?
-      Feature.new(feature, string)
+      Feature.new(feature, string, @options)
     else
       info = @legacy.info(feature)
       f = Feature.new(feature)
@@ -165,18 +184,6 @@ class Rollout
 
   def features
     (@storage.get(features_key) || "").split(",").map(&:to_sym)
-  end
-
-  def user_id(user)
-    if !user
-      user
-    elsif user.is_a?(Integer) ||
-            user.is_a?(Fixnum) ||
-              user.is_a?(String)
-      user.to_s
-    else
-      user.send(@user_id_by).to_s
-    end
   end
 
   private

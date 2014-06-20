@@ -252,21 +252,6 @@ describe "Rollout" do
     end
   end
 
-  describe "#user_id" do
-    describe "where user is an integer" do
-      it "returns itself as a string" do
-        @rollout.user_id(1).should == "1"
-      end
-    end
-
-    describe "where user is some other object" do
-      it "calls user_id_by and returns itself as a string" do
-        user = stub(:id => 1)
-        @rollout.user_id(user).should == "1"
-      end
-    end
-  end
-
   describe "migration mode" do
     before do
       @legacy = Rollout::Legacy.new(@redis)
@@ -303,7 +288,7 @@ describe "Rollout configuration" do
   describe "setting user_id_by" do
     before do
       @redis   = Redis.new
-      @rollout = Rollout.new(@redis, :user_id_by => :email)
+      @rollout = Rollout.new(@redis, :id_user_by => :email)
       @user = stub(:email => "test@test.com")
     end
 
