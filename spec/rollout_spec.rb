@@ -252,6 +252,12 @@ describe "Rollout" do
     end
   end
 
+  describe "#user_id" do
+    it "converts the user to a string if it is already an ID" do
+      @rollout.user_id(1).should == "1"
+    end
+  end
+
   describe "migration mode" do
     before do
       @legacy = Rollout::Legacy.new(@redis)
