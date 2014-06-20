@@ -283,3 +283,18 @@ describe "Rollout" do
     end
   end
 end
+
+describe "Rollout configuration" do
+  describe "setting user_id_by" do
+    before do
+      @redis   = Redis.new
+      @rollout = Rollout.new(@redis, :user_id_by => :email)
+      @user = stub(:email => "test@test.com")
+    end
+
+    it "calls our own method to get a user's id" do
+      @rollout.activate_user(:chat, @user)
+      @user.should have_received(:email)
+    end
+  end
+end

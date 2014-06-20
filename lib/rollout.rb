@@ -23,12 +23,12 @@ class Rollout
       "#{@percentage}|#{@users.join(",")}|#{@groups.join(",")}"
     end
 
-    def add_user(user)
-      @users << user.id.to_s unless @users.include?(user.id.to_s)
+    def add_user(user_id)
+      @users << user_id unless @users.include?(user_id)
     end
 
-    def remove_user(user)
-      @users.delete(user.id.to_s)
+    def remove_user(user_id)
+      @users.delete(user_id)
     end
 
     def add_group(group)
@@ -49,8 +49,9 @@ class Rollout
       if user.nil?
         @percentage == 100
       else
-        user_in_percentage?(user) ||
-          user_in_active_users?(user) ||
+        user_id = rollout.user_id(user)
+        user_in_percentage?(user_id) ||
+          user_in_active_users?(user_id) ||
             user_in_active_group?(user, rollout)
       end
     end
@@ -62,12 +63,12 @@ class Rollout
     end
 
     private
-      def user_in_percentage?(user)
-        Zlib.crc32(user.id.to_s) % 100 < @percentage
+      def user_in_percentage?(user_id)
+        Zlib.crc32(user_id.to_s) % 100 < @percentage
       end
 
-      def user_in_active_users?(user)
-        @users.include?(user.id.to_s)
+      def user_in_active_users?(user_id)
+        @users.include?(user_id.to_s)
       end
 
       def user_in_active_group?(user, rollout)
@@ -78,9 +79,10 @@ class Rollout
   end
 
   def initialize(storage, opts = {})
-    @storage  = storage
-    @groups = {:all => lambda { |user| true }}
-    @legacy = Legacy.new(opts[:legacy_storage] || @storage) if opts[:migrate]
+    @storage    = storage
+    @groups     = {:all => lambda { |user| true }}
+    @legacy     = Legacy.new(opts[:legacy_storage] || @storage) if opts[:migrate]
+    @user_id_by = opts[:user_id_by] || :id
   end
 
   def activate(feature)
@@ -109,13 +111,13 @@ class Rollout
 
   def activate_user(feature, user)
     with_feature(feature) do |f|
-      f.add_user(user)
+      f.add_user(user_id(user))
     end
   end
 
   def deactivate_user(feature, user)
     with_feature(feature) do |f|
-      f.remove_user(user)
+      f.remove_user(user_id(user))
     end
   end
 
@@ -163,6 +165,18 @@ class Rollout
 
   def features
     (@storage.get(features_key) || "").split(",").map(&:to_sym)
+  end
+
+  def user_id(user)
+    if !user
+      user
+    elsif user.is_a?(Integer) ||
+            user.is_a?(Fixnum) ||
+              user.is_a?(String)
+      user.to_s
+    else
+      user.send(@user_id_by).to_s
+    end
   end
 
   private
