@@ -253,8 +253,17 @@ describe "Rollout" do
   end
 
   describe "#user_id" do
-    it "converts the user to a string if it is already an ID" do
-      @rollout.user_id(1).should == "1"
+    describe "where user is an integer" do
+      it "returns itself as a string" do
+        @rollout.user_id(1).should == "1"
+      end
+    end
+
+    describe "where user is some other object" do
+      it "calls user_id_by and returns itself as a string" do
+        user = stub(:id => 1)
+        @rollout.user_id(user).should == "1"
+      end
     end
   end
 
