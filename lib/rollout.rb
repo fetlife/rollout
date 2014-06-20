@@ -83,11 +83,11 @@ class Rollout
       end
 
       def user_in_percentage?(user)
-        Zlib.crc32(user_id(user).to_s) % 100 < @percentage
+        Zlib.crc32(user_id(user)) % 100 < @percentage
       end
 
       def user_in_active_users?(user)
-        @users.include?(user_id(user).to_s)
+        @users.include?(user_id(user))
       end
 
       def user_in_active_group?(user, rollout)
