@@ -87,13 +87,22 @@ Deactivate all percentages like this:
 
 _Note that activating a feature for 100% of users will also make it active "globally". That is when calling Rollout#active? without a user object._
 
-== Feature is broken
+== Global action
 
-Deactivate everybody at once:
+While groups can come in handy, the actual global setter for a feature does not require a group to be passed.
+
+  $rollout.activate(:chat)
+  
+In that case you can check the global availability of a feature using the following :
+
+  $rollout.active?(:chat)
+  
+And if something is wrong you can set a feature off for everybody using :
 
   $rollout.deactivate(:chat)
 
 For many of our features, we keep track of error rates using redis, and deactivate them automatically when a threshold is reached to prevent service failures from cascading. See http://github.com/jamesgolick/degrade for the failure detection code.
+
 
 == Namespacing
 
