@@ -252,6 +252,30 @@ describe "Rollout" do
     end
   end
 
+  describe "#clear" do
+    let(:features) { %w(signup beta alpha gm) }
+
+    before do
+      features.each { |f| @rollout.activate(f) }
+
+      @rollout.clear!
+    end
+
+    it "each feature is cleared" do
+      features.each do |feature|
+        @rollout.get(feature).to_hash.should == {
+          :percentage => 0,
+          :users => [],
+          :groups => []
+        }
+      end
+    end
+
+    it "removes all features" do
+      @rollout.features.should be_empty
+    end
+  end
+
   describe "migration mode" do
     before do
       @legacy = Rollout::Legacy.new(@redis)
