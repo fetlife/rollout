@@ -82,7 +82,8 @@ class Rollout
     end
   end
 
-  def initialize(storage, opts = {})
+  def initialize(storage, opts = {}, auditor=nil)
+    @auditor = auditor
     @storage  = storage
     @groups = {:all => lambda { |user| true }}
     @legacy = Legacy.new(opts[:legacy_storage] || @storage) if opts[:migrate]
@@ -162,11 +163,11 @@ class Rollout
   def get(feature)
     string = @storage.get(key(feature))
     if string || !migrate?
-      Feature.new(feature, string)
+      Feature.new(feature, string, @auditor)
     else
       @auditor.log("creating new feature #{feature}") unless @auditor.nil?
       info = @legacy.info(feature)
-      f = Feature.new(feature)
+      f = Feature.new(feature, {}, @auditor)
       f.percentage = info[:percentage]
       f.percentage = 100 if info[:global].include? feature
       f.groups = info[:groups].map { |g| g.to_sym }
