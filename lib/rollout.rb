@@ -167,7 +167,7 @@ class Rollout
     else
       @auditor.log("creating new feature #{feature}") unless @auditor.nil?
       info = @legacy.info(feature)
-      f = Feature.new(feature, {}, @auditor)
+      f = Feature.new(feature, nil, @auditor)
       f.percentage = info[:percentage]
       f.percentage = 100 if info[:global].include? feature
       f.groups = info[:groups].map { |g| g.to_sym }
