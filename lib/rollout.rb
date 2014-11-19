@@ -25,12 +25,12 @@ class Rollout
     end
 
     def add_user(user)
-      @auditor.log("adding user #{user}") unless @auditor.nil?
+      @auditor.log("adding user #{user[:id]}") unless @auditor.nil?
       @users << user.id.to_s unless @users.include?(user.id.to_s)
     end
 
     def remove_user(user)
-      @auditor.log("removing user #{user}") unless @auditor.nil?
+      @auditor.log("removing user #{user[:id]}") unless @auditor.nil?
       @users.delete(user.id.to_s)
     end
 
@@ -118,14 +118,14 @@ class Rollout
   end
 
   def activate_user(feature, user)
-    @auditor.log("activating user #{user} for feature #{feature}") unless @auditor.nil?
+    @auditor.log("activating user #{user[:id]} for feature #{feature}") unless @auditor.nil?
     with_feature(feature) do |f|
       f.add_user(user)
     end
   end
 
   def deactivate_user(feature, user)
-    @auditor.log("deactivating user #{user} for feature #{feature}") unless @auditor.nil?
+    @auditor.log("deactivating user #{user[:id]} for feature #{feature}") unless @auditor.nil?
     with_feature(feature) do |f|
       f.remove_user(user)
     end
@@ -165,7 +165,6 @@ class Rollout
     if string || !migrate?
       Feature.new(feature, string, @auditor)
     else
-      @auditor.log("creating new feature #{feature}") unless @auditor.nil?
       info = @legacy.info(feature)
       f = Feature.new(feature, nil, @auditor)
       f.percentage = info[:percentage]
