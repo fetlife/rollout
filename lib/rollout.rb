@@ -142,8 +142,8 @@ class Rollout
   end
 
   def activate_percentage(feature, percentage)
-    @auditor.log("activating percentage #{percentage} for feature #{feature}") unless @auditor.nil?
     with_feature(feature) do |f|
+      @auditor.log("activating percentage #{percentage} instead #{f.percentage} for feature #{feature}") unless @auditor.nil?
       f.percentage = percentage
     end
   end
