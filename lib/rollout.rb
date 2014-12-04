@@ -4,11 +4,13 @@ require "zlib"
 
 class Rollout
   class Feature
-    attr_reader :name, :groups, :users, :percentage
-    attr_writer :percentage, :groups, :users
+    attr_accessor :groups, :users, :percentage
+    attr_reader :name, :options
 
-    def initialize(name, string = nil)
-      @name = name
+    def initialize(name, string = nil, opts = {})
+      @options = opts
+      @name    = name
+
       if string
         raw_percentage,raw_users,raw_groups = string.split("|")
         @percentage = raw_percentage.to_i
@@ -24,11 +26,12 @@ class Rollout
     end
 
     def add_user(user)
-      @users << user.id.to_s unless @users.include?(user.id.to_s)
+      id = user_id(user)
+      @users << id unless @users.include?(id)
     end
 
     def remove_user(user)
-      @users.delete(user.id.to_s)
+      @users.delete(user_id(user))
     end
 
     def add_group(group)
@@ -49,8 +52,9 @@ class Rollout
       if user.nil?
         @percentage == 100
       else
-        user_in_percentage?(user) ||
-          user_in_active_users?(user) ||
+        id = user_id(user)
+        user_in_percentage?(id) ||
+          user_in_active_users?(id) ||
             user_in_active_group?(user, rollout)
       end
     end
@@ -62,12 +66,25 @@ class Rollout
     end
 
     private
+      def user_id(user)
+        if user.is_a?(Fixnum) ||
+             user.is_a?(String)
+          user.to_s
+        else
+          user.send(id_user_by).to_s
+        end
+      end
+
+      def id_user_by
+        @options[:id_user_by] || :id
+      end
+
       def user_in_percentage?(user)
-        Zlib.crc32(user.id.to_s) % 100 < @percentage
+        Zlib.crc32(user_id(user)) % 100 < @percentage
       end
 
       def user_in_active_users?(user)
-        @users.include?(user.id.to_s)
+        @users.include?(user_id(user))
       end
 
       def user_in_active_group?(user, rollout)
@@ -78,9 +95,10 @@ class Rollout
   end
 
   def initialize(storage, opts = {})
-    @storage  = storage
-    @groups = {:all => lambda { |user| true }}
-    @legacy = Legacy.new(opts[:legacy_storage] || @storage) if opts[:migrate]
+    @storage = storage
+    @options = opts
+    @groups  = {:all => lambda { |user| true }}
+    @legacy  = Legacy.new(opts[:legacy_storage] || @storage) if opts[:migrate]
   end
 
   def activate(feature)
@@ -158,7 +176,7 @@ class Rollout
   def get(feature)
     string = @storage.get(key(feature))
     if string || !migrate?
-      Feature.new(feature, string)
+      Feature.new(feature, string, @options)
     else
       info = @legacy.info(feature)
       f = Feature.new(feature)

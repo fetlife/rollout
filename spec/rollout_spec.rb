@@ -97,6 +97,20 @@ describe "Rollout" do
     end
   end
 
+  describe "activating a specific user by ID" do
+    before do
+      @rollout.activate_user(:chat, 42)
+    end
+
+    it "is active for that user" do
+      @rollout.should be_active(:chat, stub(:id => 42))
+    end
+
+    it "remains inactive for other users" do
+      @rollout.should_not be_active(:chat, stub(:id => 24))
+    end
+  end
+
   describe "activating a specific user with a string id" do
     before do
       @rollout.activate_user(:chat, stub(:id => 'user-72'))
@@ -296,10 +310,24 @@ describe "Rollout" do
       }
       @redis.get("feature:chat").should_not be_nil
     end
-    
+
     it "imports settings that were globally activated" do
       @legacy.activate_globally(:video_chat)
       @rollout.get(:video_chat).to_hash[:percentage].should == 100
+    end
+  end
+end
+
+describe "Rollout::Feature" do
+  before do
+    @user    = stub("User", :email => "test@test.com")
+    @feature = Rollout::Feature.new(:chat, nil, :id_user_by => :email)
+  end
+
+  describe "#add_user" do
+    it "ids a user using id_user_by" do
+      @feature.add_user(@user)
+      @user.should have_received :email
     end
   end
 end
