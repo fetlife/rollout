@@ -116,6 +116,16 @@ class Rollout
     end
   end
 
+  def set(feature, desired_state)
+    with_feature(feature) do |f|
+      if desired_state
+        f.percentage = 100
+      else
+        f.clear
+      end
+    end
+  end
+
   def activate_group(feature, group)
     with_feature(feature) do |f|
       f.add_group(group)

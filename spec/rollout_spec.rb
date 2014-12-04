@@ -220,6 +220,26 @@ describe "Rollout" do
     end
   end
 
+  describe "setting a feature on" do
+    before do
+      @rollout.set(:chat, true)
+    end
+
+    it "becomes activated" do
+      @rollout.should be_active(:chat)
+    end
+  end
+
+  describe "setting a feature off" do
+    before do
+      @rollout.set(:chat, false)
+    end
+
+    it "becomes activated" do
+      @rollout.should_not be_active(:chat)
+    end
+  end
+
   describe "keeps a list of features" do
     it "saves the feature" do
       @rollout.activate(:chat)
