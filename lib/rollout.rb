@@ -193,6 +193,15 @@ class Rollout
     (@storage.get(features_key) || "").split(",").map(&:to_sym)
   end
 
+  def clear!
+    features.each do |feature|
+      with_feature(feature) { |f| f.clear }
+      @storage.del(key(feature))
+    end
+
+    @storage.del(features_key)
+  end
+
   private
     def key(name)
       "feature:#{name}"
