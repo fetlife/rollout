@@ -87,6 +87,12 @@ Deactivate all percentages like this:
 
 _Note that activating a feature for 100% of users will also make it active "globally". That is when calling Rollout#active? without a user object._
 
+In some cases you might want to have a feature activated for a random set of users. It can come specially handy when using Rollout for split tests.
+
+  $rollout = Rollout.new($redis, randomize_percentage: true)
+
+When on `randomize_percentage` will make sure that 50% of users for feature A are selected independently from users for feature B.
+
 == Feature is broken
 
 Deactivate everybody at once:
