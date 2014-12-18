@@ -183,6 +183,27 @@ describe "Rollout" do
     end
   end
 
+  describe "activating a feature for a percentage of users" do
+    before do
+      @rollout.activate_percentage(:chat, 20)
+      @rollout.activate_percentage(:beta, 20)
+      @options = @rollout.instance_variable_get('@options')
+    end
+
+    it "activates the feature for a random set of users when opt is set" do
+      @options[:randomize_percentage] = true
+      chat_users = (1..100).select { |id| @rollout.active?(:chat, stub(:id => id)) }
+      beta_users = (1..100).select { |id| @rollout.active?(:beta, stub(:id => id)) }
+      chat_users.should_not eq beta_users
+    end
+    it "activates the feature for the same set of users when opt is not set" do
+      @options[:randomize_percentage] = false
+      chat_users = (1..100).select { |id| @rollout.active?(:chat, stub(:id => id)) }
+      beta_users = (1..100).select { |id| @rollout.active?(:beta, stub(:id => id)) }
+      chat_users.should eq beta_users
+    end
+  end
+
   describe "activating a feature for a group as a string" do
     before do
       @rollout.define_group(:admins) { |user| user.id == 5 }

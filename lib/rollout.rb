@@ -80,7 +80,15 @@ class Rollout
       end
 
       def user_in_percentage?(user)
-        Zlib.crc32(user_id(user)) % 100 < @percentage
+        Zlib.crc32(user_id_for_percentage(user)) % 100 < @percentage
+      end
+
+      def user_id_for_percentage(user)
+        if @options[:randomize_percentage]
+          user_id(user).to_s + @name.to_s
+        else
+          user_id(user)
+        end
       end
 
       def user_in_active_users?(user)
