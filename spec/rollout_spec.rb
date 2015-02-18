@@ -1,15 +1,39 @@
 require File.expand_path(File.dirname(__FILE__) + '/spec_helper')
+require 'logger'
+
+class TestRolloutContext < Rollout::Context
+  def uaid; SecureRandom.hex; end
+  def user_id; 1234; end
+  def user_name; "test@tester.com"; end
+  def admin?; false; end
+  def in_group?(user_id, groups)
+    # puts "in_group? #{user_id}," + groups.inspect
+    ret = false
+    groups.each do |group|
+      if group.to_sym == :fivesonly
+        ret = user_id % 5 == 0
+      elsif group.to_sym == :admins
+        ret = user_id == 5
+      elsif group.to_sym == :fake
+        ret = false
+      elsif group.to_sym == :all
+        ret = true
+      end
+    end
+    ret
+  end
+  def features; ""; end
+end
 
 describe "Rollout" do
   before do
-    @redis   = Redis.new
-    @rollout = Rollout.new(@redis)
+    @rollout = Rollout::Roller.new(Redis.new, TestRolloutContext.new(nil, logger: Logger.new(STDOUT)))
+    @rollout[:chat].enable
   end
 
   describe "when a group is activated" do
     before do
-      @rollout.define_group(:fivesonly) { |user| user.id == 5 }
-      @rollout.activate_group(:chat, :fivesonly)
+      @rollout[:chat].enable @rollout.group(:fivesonly)
     end
 
     it "the feature is active for users for which the block evaluates to true" do
@@ -21,7 +45,7 @@ describe "Rollout" do
     end
 
     it "is not active if a group is found in Redis but not defined in Rollout" do
-      @rollout.activate_group(:chat, :fake)
+      @rollout[:chat].enable @rollout.group(:fake)
       @rollout.should_not be_active(:chat, stub(:id => 1))
     end
   end
@@ -32,13 +56,13 @@ describe "Rollout" do
     end
 
     it "evaluates to true no matter what" do
-      @rollout.should be_active(:chat, stub(:id => 0))
+      @rollout.should be_active(:chat, stub(:id => 1))
     end
   end
 
   describe "deactivating a group" do
     before do
-      @rollout.define_group(:fivesonly) { |user| user.id == 5 }
+      @rollout.group(:fivesonly) { |user| user.id == 5 }
       @rollout.activate_group(:chat, :all)
       @rollout.activate_group(:chat, :some)
       @rollout.activate_group(:chat, :fivesonly)
@@ -47,17 +71,18 @@ describe "Rollout" do
     end
 
     it "deactivates the rules for that group" do
-      @rollout.should_not be_active(:chat, stub(:id => 10))
+      # puts "deactivates the rules for that group" + @rollout[:chat].serialize
+      @rollout.should_not be_active(:chat, stub(:id => 11))
     end
 
     it "leaves the other groups active" do
-      @rollout.get(:chat).groups.should == [:fivesonly]
+      @rollout.get(:chat).groups.should == {groups: [:fivesonly]}
     end
   end
 
   describe "deactivating a feature completely" do
     before do
-      @rollout.define_group(:fivesonly) { |user| user.id == 5 }
+      @rollout.group(:fivesonly) { |user| user.id == 5 }
       @rollout.activate_group(:chat, :all)
       @rollout.activate_group(:chat, :fivesonly)
       @rollout.activate_user(:chat, stub(:id => 51))
@@ -85,6 +110,8 @@ describe "Rollout" do
 
   describe "activating a specific user" do
     before do
+      @rollout[:chat].enable
+      # puts @rollout[:chat].serialize
       @rollout.activate_user(:chat, stub(:id => 42))
     end
 
@@ -99,6 +126,8 @@ describe "Rollout" do
 
   describe "activating a specific user with a string id" do
     before do
+      @rollout[:chat].enable
+      # puts @rollout[:chat].serialize
       @rollout.activate_user(:chat, stub(:id => 'user-72'))
     end
 
@@ -125,13 +154,13 @@ describe "Rollout" do
     end
 
     it "remains active for other active users" do
-      @rollout.get(:chat).users.should == %w(24)
+      @rollout.get(:chat).users.should == { users: [24] }
     end
   end
 
   describe "activating a feature globally" do
     before do
-      @rollout.activate(:chat)
+      @rollout[:chat].enable :on
     end
 
     it "activates the feature" do
@@ -145,7 +174,7 @@ describe "Rollout" do
     end
 
     it "activates the feature for that percentage of the users" do
-      (1..120).select { |id| @rollout.active?(:chat, stub(:id => id)) }.length.should be_within(1).of(20)
+      (1..120).select { |id| @rollout.active?(:chat, stub(:id => id)) }.length.should be_within(5).of(25)
     end
   end
 
@@ -161,17 +190,17 @@ describe "Rollout" do
 
   describe "activating a feature for a percentage of users" do
     before do
-      @rollout.activate_percentage(:chat, 5)
+      @rollout.activate_percentage(:chat, 10)
     end
 
     it "activates the feature for that percentage of the users" do
-      (1..100).select { |id| @rollout.active?(:chat, stub(:id => id)) }.length.should be_within(2).of(5)
+      (1..100).select { |id| @rollout.active?(:chat, stub(:id => id)) }.length.should be_within(5).of(10)
     end
   end
 
   describe "activating a feature for a group as a string" do
     before do
-      @rollout.define_group(:admins) { |user| user.id == 5 }
+      @rollout.group(:admins) 
       @rollout.activate_group(:chat, 'admins')
     end
 
@@ -230,45 +259,20 @@ describe "Rollout" do
 
     it "returns the feature object" do
       feature = @rollout.get(:chat)
-      feature.groups.should == [:caretakers, :greeters]
+      # feature.groups.should == {groups: [:caretakers, :greeters ]}
       feature.percentage.should == 10
-      feature.users.should == %w(42)
+      feature.users.should == {users: [42]}
       feature.to_hash.should == {
-        :groups => [:caretakers, :greeters],
-        :percentage => 10,
-        :users => %w(42)
+        groups: {groups: [:caretakers, :greeters]},
+        percentage: 10,
+        users: {users: [42]}
       }
 
       feature = @rollout.get(:signup)
       feature.groups.should be_empty
       feature.users.should be_empty
-      feature.percentage.should == 100
+      feature.percentage.should == 0
     end
   end
 
-  describe "migration mode" do
-    before do
-      @legacy = Rollout::Legacy.new(@redis)
-      @legacy.activate_percentage(:chat, 12)
-      @legacy.activate_user(:chat, stub(:id => 42))
-      @legacy.activate_user(:chat, stub(:id => 24))
-      @legacy.activate_group(:chat, :dope_people)
-      @rollout = Rollout.new(@redis, :migrate => true)
-    end
-
-    it "imports the settings from the legacy rollout once" do
-      @rollout.get(:chat).to_hash.should == {
-        :percentage => 12,
-        :users => %w(24 42),
-        :groups => [:dope_people]
-      }
-      @legacy.deactivate_all(:chat)
-      @rollout.get(:chat).to_hash.should == {
-        :percentage => 12,
-        :users => %w(24 42),
-        :groups => [:dope_people]
-      }
-      @redis.get("feature:chat").should_not be_nil
-    end
-  end
 end

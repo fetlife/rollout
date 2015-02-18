@@ -9,6 +9,10 @@ module Rollout
       @selections = []
     end
 
+    def features
+      raise 'Not implemented'
+    end
+
     def uaid
       raise 'Not implemented'
     end
@@ -44,8 +48,9 @@ module Rollout
     end
 
     def hash(id)
-      hex_digest = digester.hexdigest(digester.digest(id.to_s))
-      map_hex(hex_digest)
+      # hex_digest = digester.hexdigest(digester.digest(id.to_s))
+      # map_hex(hex_digest)
+      (Zlib.crc32(id.to_s) % 100) * 0.01
     end
 
 

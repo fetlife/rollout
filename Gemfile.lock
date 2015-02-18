@@ -56,6 +56,7 @@ GEM
     mime-types (1.22)
     mocha (0.9.8)
       rake
+    mock_redis (0.14.0)
     multi_json (1.7.2)
     polyglot (0.3.3)
     rack (1.4.5)
@@ -112,6 +113,7 @@ DEPENDENCIES
   bundler (>= 1.0.0)
   jeweler (~> 1.6.4)
   mocha (= 0.9.8)
+  mock_redis
   rails
   redis
   rollout!

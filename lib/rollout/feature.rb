@@ -1,65 +1,68 @@
+require "active_support/core_ext/object"
+require "active_support/core_ext/hash"
+
 module Rollout
   class Feature
-    attr_reader :name, :enabled, :variants, :users, :groups
+    attr_reader :roller, :name, :enabled, :variants, :users, :groups
     attr_writer :enabled, :variants, :users, :groups, :url, :internal, :admin, :bucketing, :percentages, :percentage
     attr_accessor :context, :cache
 
     # Bucketing schemes
     # :uaid, :user, :random
-
-    def initialize(name, context, string = nil)
-      @name = name
-      @context = context
-      @cache = {}
-      if string
-        raw_enabled,raw_variants,raw_users,raw_groups,raw_url,raw_internal,raw_admin,raw_bucketing,raw_percentage = string.split("|")
-
-        @variants = {}
-        (raw_variants || "").split(",").each do |kv|
-          key, value = kv.split(":")
-          @variants[key.to_sym] = value.to_i
-        end
-
-        @enabled = raw_enabled.to_sym
-        @users = parse_users_groups(raw_users, :users, :to_s)
-        @groups = parse_users_groups(raw_groups, :groups, :to_sym)
-
-        @url = raw_url if not (raw_url || "").empty?
-        @internal = raw_internal == "true"
-        @admin = raw_admin == "true"
-        @bucketing = raw_bucketing.to_sym if not (raw_bucketing || "").empty?
-        @bucketing ||= :uaid
-        @percentage = raw_percentage.to_i if not (raw_percentage || "").empty?
-        @percentage ||= 0
-        @percentages = compute_percentages
-      else
-        clear
-      end
+    def enable(*args)
+      @roller.enable(@name, *args)
     end
 
-    def parse_users_groups(raw_users, default_key, value_type)
-      ret = {}
-      (raw_users || "").split("&").map do |x|
-        key = default_key
-        key, x = x.split(":", 2) if x.match(/:/)
-        ret[key.to_sym] = x.split(",").map(&value_type)
+    def disable(*args)
+      @roller.disable(@name, *args)
+    end
+
+    def initialize(roller, name, context, string = nil)
+      @roller = roller
+      @name = name.to_sym
+      @context = context
+      @cache = {}
+
+      if not string
+        clear
+        return
       end
-      ret
+
+      raw = JSON.parse(string).with_indifferent_access
+      @url = raw[:url]
+      @variants = raw[:variants] || {}
+      @users = raw[:users] || {}
+      @groups = raw[:groups] || {}
+      @internal = raw[:internal] || false
+      @admin = raw[:admin] || false
+      @bucketing = (raw[:bucketing] || :uaid).to_sym
+      @percentage = raw[:percentage].to_i if raw[:percentage]
+      @percentage ||= 0
+      @percentages = compute_percentages
+
+      # Can be :on, :off or :rollout
+      @enabled = raw[:enabled].to_sym if raw[:enabled].is_a?(String)
+      @enabled ||= :on if raw[:enabled] == true || raw[:enabled] == "true" || raw[:enabled] == "True"
+      @enabled ||= :off
     end
 
     def serialize
-      parts = []
-      parts << enabled.to_s
-      parts << @variants.map{|k,v| "#{k}:#{v}" }.join(",")
-      parts << @users.map{|k,v| k.to_s + ":"  + v.join(",")}.join("&")
-      parts << @groups.map{|k,v| k.to_s + ":"  + v.join(",")}.join("&")
-      parts << @url
-      parts << @internal ? 'true' : 'false'
-      parts << @admin ? 'true' : 'false'
-      parts << @bucketing
-      parts << @percentage.to_s
-      # puts "serialized: " + parts.join("|")
-      parts.join("|")
+      {
+        enabled: enabled,
+        url: @url,
+        admin: @admin,
+        users: @users,
+        groups: @groups,
+        internal: @internal,
+        variants: @variants,
+        percentage: @percentage,
+        date_range: @date_range,
+        bucketing: @bucketing,
+      }.to_json
+    end
+
+    def multivariant?
+      @variants.length > 0
     end
 
     def compute_percentages
@@ -80,29 +83,55 @@ module Rollout
       percentages
     end
 
+    def groups
+      Hash[@groups.symbolize_keys.map{|k,v| [k, v.map{|x| x.to_sym}]}]
+    end
+
+    def users
+      @users.symbolize_keys
+    end
+
+    def percentage
+      @percentage
+    end
+
+    def id_from_user(user)
+      id = user if user.is_a?(String) or user.is_a?(Numeric)
+      id ||= user.send(@roller.user_id_method)
+      id
+    end
+
     def add_user(user, variant = :users)
       remove_user(user)
       @users[variant] ||= []
-      @users[variant] << user.to_s
+      @users[variant] << id_from_user(user)
+      users
     end
 
     def remove_user(user)
+      id = id_from_user(user)
       @users.each do |variant,items|
-        @users[variant].delete(user.to_s)
+        @users[variant].delete(id.to_s)
+        @users[variant].delete(id.to_i) if id.to_i > 0
       end
+      users
     end
 
     def add_group(group, variant = :groups)
+      group = Group.new(group) if not group.is_a?(Group)
       remove_group(group)
       @groups[variant] ||= []
-      @groups[variant] << group.to_sym
+      @groups[variant] << group.name
       # puts "add groups: " + @groups.inspect
+      groups
     end
 
     def remove_group(group)
+      group = Group.new(group) if not group.is_a?(Group)
       @groups.each do |variant,items|
-        @groups[variant].delete(group.to_sym)
+        @groups[variant].delete(group.name.to_s)
       end
+      groups
     end
 
     def clear
@@ -118,7 +147,8 @@ module Rollout
     end
 
     def active?(user = nil)
-      user_id = user.id if user
+      user_id = id_from_user(user) if user
+      # puts "active? user_id: #{user_id}"
       user_id ||= context.user_id
       ret = choose_variant(user_id, false)
       # puts ret.inspect
@@ -130,14 +160,15 @@ module Rollout
     end
 
     def to_hash
-      {:percentage => @percentage,
-        :groups     => @groups,
-        :users      => @users}
+      {
+        percentage: @percentage,
+        groups: groups,
+        users: users
+      }
     end
 
     def variant
-      variant = choose_variant(user_id, true)[0]
-      variant.to_s.inquiry
+      choose_variant(nil, true)[0]
     end
 
     def variant?(variant, user_id = nil)
@@ -204,11 +235,16 @@ module Rollout
         if @users.length > 0
           name = context.user_name
           id ||= context.user_id
+          ret = false
+          # puts "users: " + @users.inspect
           @users.each do |variant, list|
-            if (name != nil and list.include?(name)) or (id != nil and list.include?(id.to_s))
-              ret = [variant, 'u'] 
-              return ret
+            # puts "list: " + list.inspect
+            if name != nil and list.include?(name)
+              ret = [variant.to_sym, 'u'] 
+            elsif id != nil and (list.include?(id.to_s) or (id.to_i > 0 and list.include?(id.to_i)))
+              ret = [variant.to_sym, 'u'] 
             end
+            return ret if ret != false
           end
         end
         false
@@ -221,7 +257,7 @@ module Rollout
           @groups.each do |variant, list|
             # puts "#{variant}: " + list.inspect
             if id != nil and context.in_group?(id, list)
-              ret = [variant, 'g'] 
+              ret = [variant.to_sym, 'g'] 
               return ret
             end
           end
@@ -251,7 +287,7 @@ module Rollout
           end
         end
         if not in_variant && enabled_status == :rollout
-          # puts "percentage: " + @enabled.inspect
+          # puts "percentage: #{@percentage} n: #{n}"
           if n < @percentage or @percentage == 100
             return [@name.to_sym, 'w']
           end
@@ -307,7 +343,7 @@ module Rollout
         variant ||= variant_for_group(user_id)
         variant ||= variant_for_admin(user_id)
         variant ||= variant_for_internal
-        variant ||= variant_by_percentage(user_id, in_variant)
+        variant ||= variant_by_percentage(user_id, multivariant?)
         variant ||= [:off, 'w']
 
         # puts variant.inspect

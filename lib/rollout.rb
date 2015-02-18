@@ -1,4 +1,4 @@
-require "rollout/legacy"
+require "rollout/group"
 require "rollout/feature"
 require "rollout/no_feature"
 require "rollout/context"

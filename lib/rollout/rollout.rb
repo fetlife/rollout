@@ -1,63 +1,14 @@
 module Rollout
   class Roller
     attr_accessor :context
+    attr_accessor :user_id_method
 
     def initialize(storage, context, opts = {})
       @storage  = storage
       @context  = context
       @groups = {:all => lambda { |user| true }}
-      @legacy = Legacy.new(@storage) if opts[:migrate]
+      @user_id_method = opts[:user_id_method] || :id
     end
-
-    def activate(feature, value = nil)
-      value ||= true
-      with_feature(feature) do |f|
-        f.enabled = value
-      end
-    end
-    alias :enable :activate
-
-    def deactivate(feature)
-      with_feature(feature) do |f|
-        f.enabled = :off
-      end
-    end
-    alias :disable :deactivate
-
-    def activate_group(feature, group)
-      with_feature(feature) do |f|
-        f.add_group(group)
-      end
-    end
-
-    def deactivate_group(feature, group)
-      with_feature(feature) do |f|
-        f.remove_group(group)
-      end
-    end
-
-    def activate_user(feature, user)
-      with_feature(feature) do |f|
-        f.add_user(user)
-      end
-    end
-
-    def deactivate_user(feature, user)
-      with_feature(feature) do |f|
-        f.remove_user(user)
-      end
-    end
-
-    def define_group(group, &block)
-      @groups[group.to_sym] = block
-    end
-
-    def active?(feature, user = nil)
-      with_feature(feature) do |f|
-        f.active?(user)
-      end
-    end
-    alias :enabled? :active?
 
     def feature(feature)
       if enabled?(feature) 
@@ -67,53 +18,104 @@ module Rollout
           end
         end
       else
-        NoFeature.instance
+        # NoFeature.instance
+        get(feature)
       end
     end
 
+    def set(feature)
+      f = get(feature)
+      r = f
+      if block_given?
+        r = yield(f)
+        save(f)
+      end
+      r
+    end
+
+    alias_method :[], :feature
+    alias_method :with_feature, :set
+
+    def enable(feature, *args)
+      if args.last.is_a?(Group)
+        group = args.pop
+      end
+      value = args.pop || :rollout
+      set(feature) do |f|
+        f.enabled = value
+        f.add_group(group) if group
+      end
+    end
+    alias :activate :enable
+
+    def disable(feature)
+      set(feature) do |f|
+        f.enabled = :off
+      end
+    end
+    alias :deactivate :disable
+
+    def activate_group(feature, group)
+      set(feature) do |f|
+        f.add_group(group)
+      end
+    end
+
+    def deactivate_group(feature, group)
+      set(feature) do |f|
+        f.remove_group(group)
+      end
+    end
+
+    def activate_user(feature, user)
+      set(feature) do |f|
+        f.add_user(user)
+      end
+    end
+
+    def deactivate_user(feature, user)
+      set(feature) do |f|
+        f.remove_user(user)
+      end
+    end
+
+    def group(group, &block)
+      group = Group.new(group, &block)
+      @groups[group.name] = group
+      group
+    end
+
+    def active?(feature, user = nil)
+      set(feature) do |f|
+        f.active?(user)
+      end
+    end
+    alias :enabled? :active?
+
     def activate_percentage(feature, percentage)
-      with_feature(feature) do |f|
+      set(feature) do |f|
         f.percentage = percentage
       end
     end
 
     def deactivate_percentage(feature)
-      with_feature(feature) do |f|
+      set(feature) do |f|
         f.percentage = 0
       end
     end
 
     def active_in_group?(group, user)
       f = @groups[group.to_sym]
-      f && f.call(user)
+      f && f.block.call(user)
     end
 
     def get(feature)
       string = @storage.get(key(feature))
-      f = nil
-      if string || !migrate?
-        f = Feature.new(feature, context, string)
-      else
-        info = @legacy.info(feature)
-        f = Feature.new(feature, context)
-        f.percentage = info[:percentage]
-        f.groups = info[:groups].map { |g| g.to_sym }
-        f.users = info[:users].map { |u| u.to_s }
-        save(f)
-        f
-      end
-      f
+      Feature.new(self, feature, context, string)
     end
 
     def features
       (@storage.get(features_key) || "").split(",").map(&:to_sym)
-    end
-
-    def with_feature(feature)
-      f = get(feature)
-      r = yield(f)
-      save(f)
-      r
     end
 
 
@@ -129,10 +131,6 @@ module Rollout
       def save(feature)
         @storage.set(key(feature.name), feature.serialize)
         @storage.set(features_key, (features | [feature.name]).join(","))
-      end
-
-      def migrate?
-        @legacy
       end
 
   end
