@@ -150,7 +150,7 @@ module Rollout
       user_id = id_from_user(user) if user
       # puts "active? user_id: #{user_id}"
       user_id ||= context.user_id
-      ret = choose_variant(user_id, false)
+      ret = choose_variant(user_id)
       # puts ret.inspect
       if ret.is_a?(Array)
         sym, selector = ret
@@ -173,7 +173,8 @@ module Rollout
 
     def variant?(variant, user_id = nil)
       user_id ||= context.user_id
-      var, selector = choose_variant(user_id, true)
+      # puts "user_id: #{user_id}"
+      var, selector = choose_variant(user_id)
       var == variant
     end
 
@@ -181,6 +182,7 @@ module Rollout
       if method_name.to_s[-1,1] == "?"
         variant_name_to_check = method_name.to_s[0..-2]
         #find which variant, compare to variant_name_to_check
+        # puts "checking for: #{variant_name_to_check}"
         user_id ||= context.user_id
         variant?(variant_name_to_check.to_sym)
       else
@@ -281,6 +283,7 @@ module Rollout
 
       def variant_by_percentage(id, in_variant = false)
         n = 100 * randomish(id)
+        # puts n.inspect
         @percentages.each do |percent,variant|
           if n < percent or percent == 100
             return [variant.to_sym, 'w']
@@ -311,7 +314,7 @@ module Rollout
         :rollout
       end
 
-      def choose_variant(user_id, in_variant = false)
+      def choose_variant(user_id)
         # if in_variant and @enabled == true
         #   throw "Variant check when fully enabled"
         # end
@@ -350,6 +353,13 @@ module Rollout
 
         @cache[bucket_id] = variant
       end
+
+    def inspect
+      string = "#<#{self.class.name}:#{sprintf("0x%0x", (self.object_id << 1))} "
+      fields = instance_variables.select{|v| not [:@roller, :@context].include?(v) }.
+                  map{|v| "#{v}=#{instance_variable_get(v).inspect}"}
+      string << fields.join(", ") << ">"
+    end
 
     private
 

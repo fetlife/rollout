@@ -259,7 +259,7 @@ describe "Rollout" do
 
     it "returns the feature object" do
       feature = @rollout.get(:chat)
-      # feature.groups.should == {groups: [:caretakers, :greeters ]}
+      feature.groups.should == {groups: [:caretakers, :greeters]}
       feature.percentage.should == 10
       feature.users.should == {users: [42]}
       feature.to_hash.should == {

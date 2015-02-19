@@ -48,8 +48,8 @@ module Rollout
     end
 
     def hash(id)
-      # hex_digest = digester.hexdigest(digester.digest(id.to_s))
-      # map_hex(hex_digest)
+      # TODO: benchmark each, allow user to pick?
+      # map_hex(digester.hexdigest(digester.digest(id.to_s)))
       (Zlib.crc32(id.to_s) % 100) * 0.01
     end
 

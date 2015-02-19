@@ -2,21 +2,19 @@
 
 Feature flippers.
 
-== MAKE SURE TO READ THIS: 2.0 Changes and Migration Path
-
-As of rollout-2.x, only one key is used per feature for performance reasons. The data format is <tt>percentage|user_id,user_id,...|group,_group...</tt>. This has the effect of making concurrent feature modifications unsafe, but in practice, I doubt this will actually be a problem.
-
-This also has the effect of rollout no longer being dependent on redis. Just give it something that responds to <tt>set(key,value)</tt> and <tt>get(key)</tt>.
-
-If you have been using the 1.x format, you can initialize Rollout with <tt>:migrate => true</tt> and it'll do its best to automatically migrate your old features to the new format. There will be some performance impact, but it should be limited and short-lived since each feature only needs to get migrated once.
-
-== Rollout::Legacy
-
-If you'd prefer to continue to use the old layout in redis, <tt>Rollout::Legacy</tt> is a copy and paste of the old code :-).
-
 == Install it
 
-  gem install rollout
+  Add this line to your application's Gemfile:
+
+  gem 'rollout'
+
+  And then execute:
+
+  $ bundle
+
+  Or install it yourself with:
+
+  $ gem install rollout
 
 == How it works
 
@@ -27,13 +25,74 @@ Initialize a rollout object. I assign it to a global var.
 
 Check whether a feature is active for a particular user:
   
-  $rollout.active?(:chat, User.first) # => true/false
+  $rollout.enabled?(:chat, User.first) # => true/false
+
+or
+
+  $rollout[:chat].enabled? User.first # => true/false
 
 Check whether a feature is active globally:
 
-  $rollout.active?(:chat)
+  $rollout[:chat].enabled?
 
 You can activate features using a number of different mechanisms.
+
+== Context
+
+The Rollout::Context hooks rollout into your web framework.
+
+  class WebContext < Rollout::Context
+    delegate :session, :params, :current_user, to: :controller
+
+    def uaid
+      session[:visitor_id]
+    end
+
+    def user_id
+      current_user && current_user.id || uaid
+    end
+
+    def user_name
+      current_user && current_user.email
+    end
+
+    def admin?
+      current_user && current_user.admin?
+    end
+
+    def features
+      params[:features]
+    end
+
+    def in_group?(user_id, groups)
+      user = User.find(user_id)
+      # loop thru enabled groups, check if user is part of one
+      ret = false
+      groups.each do |group|
+        ret = user.in_group?(group)
+        break if ret == true
+      end
+      ret
+    end
+
+    def internal_request
+      # check request if from a local ip addr
+      false
+    end
+  end
+
+
+== Variants
+
+  $rollout.set(:background) {|f| f.variants = { red: 33, blue: 33, green: 33} }
+
+Override variant via URL
+
+  http://carwoo.com/?features=background:green
+
+If you have multiple features to test, use commas to separate the features. For example, if you had features "background", "color", and "size" the url would look like this:
+
+  http://carwoo.com/?features=background:green,color:orange,size:really_big
 
 == Groups
 

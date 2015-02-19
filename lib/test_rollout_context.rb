@@ -1,3 +1,7 @@
+require 'redis'
+require 'logger'
+require 'rollout'
+
 class TestRolloutContext < Rollout::Context
   def self.rollout
     Rollout::Roller.new(Redis.new, TestRolloutContext.new(nil, logger: Logger.new(STDOUT)))

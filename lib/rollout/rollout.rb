@@ -18,7 +18,7 @@ module Rollout
           end
         end
       else
-        # NoFeature.instance
+        # Worst case, a blank feature
         get(feature)
       end
     end
@@ -117,7 +117,6 @@ module Rollout
     def features
       (@storage.get(features_key) || "").split(",").map(&:to_sym)
     end
-
 
     private
       def key(name)
