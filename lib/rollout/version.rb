@@ -1,3 +1,3 @@
 module Rollout
-  VERSION = "2.0.0c"
+  VERSION = "3.0.1"
 end
