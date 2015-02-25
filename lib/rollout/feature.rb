@@ -5,7 +5,7 @@ module Rollout
   class Feature
     attr_reader :roller, :name, :enabled, :variants, :users, :groups
     attr_writer :enabled, :variants, :users, :groups, :url, :internal, :admin, :bucketing, :percentages, :percentage
-    attr_accessor :context, :cache
+    attr_accessor :context, :cache, :persisted
 
     # Bucketing schemes
     # :uaid, :user, :random
@@ -17,17 +17,27 @@ module Rollout
       @roller.disable(@name, *args)
     end
 
-    def initialize(roller, name, context, string = nil)
+    def persisted?
+      @persisted == true
+    end
+
+    def initialize(roller, context, name = nil, string = nil)
       @roller = roller
-      @name = name.to_sym
       @context = context
       @cache = {}
+      @persisted = false
 
+      @name = name.to_sym if name
       if not string
         clear
         return
+      else
+        parse_feature(string)
+        @persisted = true
       end
+    end
 
+    def parse_feature(string)
       raw = JSON.parse(string).with_indifferent_access
       @url = raw[:url]
       @variants = raw[:variants] || {}

@@ -11,15 +11,16 @@ module Rollout
     end
 
     def feature(feature)
-      if enabled?(feature) 
-        get(feature).tap do |f|
+      f = get(feature)
+      if f.enabled?
+        f.tap do |f|
           if block_given?
             yield f
           end
         end
       else
         # Worst case, a blank feature
-        get(feature)
+        f
       end
     end
 
@@ -111,7 +112,11 @@ module Rollout
 
     def get(feature)
       string = @storage.get(key(feature))
-      Feature.new(self, feature, context, string)
+      Feature.new(self, context, feature, string)
+    end
+
+    def new_feature
+      Feature.new(self, context)
     end
 
     def features
