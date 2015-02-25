@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    rollout (3.0.1)
+    rollout (3.0.3)
       redis
 
 GEM

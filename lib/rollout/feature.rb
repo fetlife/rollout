@@ -3,9 +3,8 @@ require "active_support/core_ext/hash"
 
 module Rollout
   class Feature
-    attr_reader :roller, :name, :enabled, :variants, :users, :groups
-    attr_writer :enabled, :variants, :users, :groups, :url, :internal, :admin, :bucketing, :percentages, :percentage
-    attr_accessor :context, :cache, :persisted
+    attr_reader :roller
+    attr_accessor :context, :cache, :persisted, :name, :enabled, :variants, :users, :groups, :url, :internal, :admin, :bucketing, :percentages, :percentage
 
     # Bucketing schemes
     # :uaid, :user, :random
