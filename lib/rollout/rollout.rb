@@ -1,5 +1,6 @@
 module Rollout
   class Roller
+    attr_accessor :storage
     attr_accessor :context
     attr_accessor :user_id_method
 
@@ -120,21 +121,21 @@ module Rollout
     end
 
     def features
-      (@storage.get(features_key) || "").split(",").map(&:to_sym)
+      @storage.smembers(features_key).map(&:to_sym)
     end
 
     private
       def key(name)
-        "feature:#{name}"
+        "rollout:feature:#{name}"
       end
 
       def features_key
-        "feature:__features__"
+        "rollout:features"
       end
 
       def save(feature)
         @storage.set(key(feature.name), feature.serialize)
-        @storage.set(features_key, (features | [feature.name]).join(","))
+        @storage.sadd(features_key, feature.name)
       end
 
   end
