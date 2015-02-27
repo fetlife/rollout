@@ -47,12 +47,22 @@ module Rollout
       @bucketing = (raw[:bucketing] || :uaid).to_sym
       @percentage = raw[:percentage].to_i if raw[:percentage]
       @percentage ||= 0
-      @percentages = compute_percentages
 
       # Can be :on, :off or :rollout
       @enabled = raw[:enabled].to_sym if raw[:enabled].is_a?(String)
       @enabled ||= :on if raw[:enabled] == true || raw[:enabled] == "true" || raw[:enabled] == "True"
       @enabled ||= :off
+
+      # double check that the data is sane
+      @groups = {} if not @groups.is_a?(Hash)
+      @users = {} if not @users.is_a?(Hash)
+      @variants = {} if not @variants.is_a?(Hash)
+
+      @admin = false if not (!!@admin == @admin)
+      @internal = false if not (!!@internal == @internal)
+
+      # Now caclulate
+      @percentages = compute_percentages
     end
 
     def serialize
