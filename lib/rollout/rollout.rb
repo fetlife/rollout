@@ -124,6 +124,11 @@ module Rollout
       @storage.smembers(features_key).map(&:to_sym)
     end
 
+    def delete(feature)
+      @storage.del(key(feature))
+      @storage.srem(features_key, feature)
+    end
+
     private
       def key(name)
         "rollout:feature:#{name}"
