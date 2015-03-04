@@ -28,4 +28,5 @@ class TestRolloutContext < Rollout::Context
     ret
   end
   def features; ""; end
+  def internal_request; false; end
 end
