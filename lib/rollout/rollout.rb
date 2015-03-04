@@ -129,6 +129,12 @@ module Rollout
       @storage.srem(features_key, feature)
     end
 
+    def rename(old_name, new_name)
+      @storage.rename(key(old_name), key(new_name))
+      @storage.srem(features_key, old_name)
+      @storage.sadd(features_key, new_name)
+    end
+
     private
       def key(name)
         "rollout:feature:#{name}"
