@@ -10,7 +10,7 @@ class TestRolloutContext < Rollout::Context
   def uaid; SecureRandom.hex; end
   def user_id; 1234; end
   def user_name; "test@tester.com"; end
-  def admin?; false; end
+  def admin?(id); false; end
   def in_group?(user_id, groups)
     # puts "in_group? #{user_id}," + groups.inspect
     ret = false
