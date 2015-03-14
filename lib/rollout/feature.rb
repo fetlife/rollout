@@ -63,6 +63,15 @@ module Rollout
       @admin = false if not (!!@admin == @admin)
       @internal = false if not (!!@internal == @internal)
 
+      # double check variant types
+      if @variants.length > 0
+        @variants = Hash[@variants.map { |variant, percent|
+          variant = variant.to_sym if variant.is_a?(String)
+          percent = percent.to_i if percent.is_a?(String)
+          [variant, percent]
+        }]
+      end
+
       # Now calculate
       @percentages = compute_percentages
     end
