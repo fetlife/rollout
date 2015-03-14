@@ -25,10 +25,73 @@ class TestRolloutContext < Rollout::Context
   def features; ""; end
 end
 
+class TestRolloutContextWithUrl < TestRolloutContext
+  def features
+    "background:blue,element:water"
+  end
+end
+
 describe "Rollout" do
   before do
     @rollout = Rollout::Roller.new(Redis.new, TestRolloutContext.new(nil, logger: Logger.new(STDOUT)))
     @rollout[:chat].enable
+  end
+
+  describe "multi-variant basics" do
+    before do
+      @rollout.set(:background) do |f|
+        f.variants = {:red => 50, :blue => 50}
+        f.bucketing = :user
+        f.enabled = :rollout
+      end
+    end
+    it "should make user always enter the same bucket" do
+      @rollout.should be_active(:background, stub(:id => 5))
+      @rollout.get(:background).active?.should == [:blue, "w"]
+      @rollout.get(:background).blue?.should == true
+      @rollout.get(:background).red?.should == false
+    end
+  end
+
+  describe "multi-variant random bucketing" do
+    before do
+      @rollout.set(:background) do |f|
+        f.variants = {:red => 50, :blue => 50}
+        f.bucketing = :random
+        f.enabled = :rollout
+      end
+    end
+    it "should randomly bucket" do
+      (1..200).select { |id| @rollout[:background].blue? }.length.should be_within(20).of(100)
+    end
+  end
+
+  describe "multi-variant force user to a variant" do
+    before do
+      @rollout.set(:background) do |f|
+        f.variants = {:red => 100, :blue => 0} # NOTE: blue is 0 percent
+        f.users = { :blue => [1234] }
+        f.bucketing = :random
+        f.enabled = :rollout
+      end
+    end
+    it "should force user to the blue bucket" do
+      (1..200).select { |id| @rollout[:background].blue? }.length.should == 200
+    end
+  end
+
+  describe "multi-variant url override for a variant" do
+    before do
+      @rollout2 = Rollout::Roller.new(Redis.new, TestRolloutContextWithUrl.new(nil, logger: Logger.new(STDOUT)))
+      @rollout2.set(:background) do |f|
+        f.variants = {:red => 100, :blue => 0} # NOTE: blue is 0 percent
+        f.bucketing = :random
+        f.enabled = :rollout
+      end
+    end
+    it "should force user to the blue bucket with url" do
+      (1..200).select { |id| @rollout2[:background].blue? }.length.should == 200
+    end
   end
 
   describe "when a group is activated" do
