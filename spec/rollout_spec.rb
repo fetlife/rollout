@@ -5,7 +5,9 @@ class TestRolloutContext < Rollout::Context
   def uaid; SecureRandom.hex; end
   def user_id; 1234; end
   def user_name; "test@tester.com"; end
-  def admin?; false; end
+  def admin?(user_id); false; end
+  def admin?(user_id); false; end
+  def internal_request; false; end
   def in_group?(user_id, groups)
     # puts "in_group? #{user_id}," + groups.inspect
     ret = false
@@ -85,6 +87,7 @@ describe "Rollout" do
       @rollout2 = Rollout::Roller.new(Redis.new, TestRolloutContextWithUrl.new(nil, logger: Logger.new(STDOUT)))
       @rollout2.set(:background) do |f|
         f.variants = {:red => 100, :blue => 0} # NOTE: blue is 0 percent
+        f.users = { :red => [1234] } # NOTE: forcing user to red
         f.bucketing = :random
         f.enabled = :rollout
       end
