@@ -91,9 +91,18 @@ describe "Rollout" do
         f.bucketing = :random
         f.enabled = :rollout
       end
+      @rollout2.set(:element) do |f|
+        f.variants = {:earth => 100, :wind => 0, :water => 0} # NOTE: water is 0 percent
+        f.users = { :earth => [1234] } # NOTE: forcing user to red
+        f.bucketing = :random
+        f.enabled = :rollout
+      end
     end
     it "should force user to the blue bucket with url" do
       (1..200).select { |id| @rollout2[:background].blue? }.length.should == 200
+    end
+    it "should force user to the water bucket with url" do
+      (1..200).select { |id| @rollout2[:element].water? }.length.should == 200
     end
   end
 
