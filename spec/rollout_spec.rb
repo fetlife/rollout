@@ -68,6 +68,18 @@ describe "Rollout" do
     end
   end
 
+  describe "multi-variant coerce" do
+    before do
+      @rollout.set(:background) do |f|
+        f.variants = {"red" => "90", :blue => "10"} # NOTE: blue is 0 percent
+        f.enabled = :rollout
+      end
+    end
+    it "should coerce the strings to symbols" do
+      @rollout[:background].variants.should == { red: 90, blue: 10 }
+    end
+  end
+
   describe "multi-variant force user to a variant" do
     before do
       @rollout.set(:background) do |f|

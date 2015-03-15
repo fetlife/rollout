@@ -3,8 +3,8 @@ require "active_support/core_ext/hash"
 
 module Rollout
   class Feature
-    attr_reader :roller
-    attr_accessor :context, :cache, :persisted, :name, :enabled, :variants, :users, :groups, :url, :internal, :admin, :bucketing, :percentages, :percentage
+    attr_reader :roller, :variants
+    attr_accessor :context, :cache, :persisted, :name, :enabled, :users, :groups, :url, :internal, :admin, :bucketing, :percentages, :percentage
 
     # Bucketing schemes
     # :uaid, :user, :random
@@ -63,14 +63,9 @@ module Rollout
       @admin = false if not (!!@admin == @admin)
       @internal = false if not (!!@internal == @internal)
 
-      # double check variant types
+      # make sure we coerce variants
       if @variants.length > 0
-        @variants = Hash[@variants.map { |variant, percent|
-          # puts "bad type, variant: #{variant} percent: #{percent}" if variant.is_a?(String)
-          variant = variant.to_sym if variant.is_a?(String)
-          percent = percent.to_i if percent.is_a?(String)
-          [variant, percent]
-        }]
+        self.variants = @variants
       end
 
       # Now calculate
@@ -90,6 +85,10 @@ module Rollout
         date_range: @date_range,
         bucketing: @bucketing,
       }.to_json
+    end
+
+    def variants=(value)
+      @variants = coerce_variants(value)
     end
 
     def multivariant?
@@ -394,19 +393,27 @@ module Rollout
     end
 
     private
+    def coerce_variants(hash)
+      Hash[hash.map { |variant, percent|
+        # puts "bad type, variant: #{variant} percent: #{percent}" if percent.is_a?(String)
+        variant = variant.to_sym 
+        percent = percent.to_i if percent.is_a?(String)
+        [variant, percent]
+      }]
+    end
 
-      def user_in_active_users?(user)
-        @users.include?(user.id.to_s)
-      end
+    def user_in_active_users?(user)
+      @users.include?(user.id.to_s)
+    end
 
-      def user_in_active_group?(user, rollout)
-        @groups.any? do |g|
-          active_in_group?(g, user)
-        end
+    def user_in_active_group?(user, rollout)
+      @groups.any? do |g|
+        active_in_group?(g, user)
       end
+    end
 
-      def to_boolean(s)
-        !!(s =~ /^(true|t|yes|y|1)$/i)
-      end
+    def to_boolean(s)
+      !!(s =~ /^(true|t|yes|y|1)$/i)
+    end
   end
 end
