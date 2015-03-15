@@ -30,6 +30,8 @@ module Rollout
       r = f
       if block_given?
         r = yield(f)
+        # recompute percentages
+        f.compute_percentages! 
         save(f)
       end
       r

@@ -66,6 +66,7 @@ module Rollout
       # double check variant types
       if @variants.length > 0
         @variants = Hash[@variants.map { |variant, percent|
+          # puts "bad type, variant: #{variant} percent: #{percent}" if variant.is_a?(String)
           variant = variant.to_sym if variant.is_a?(String)
           percent = percent.to_i if percent.is_a?(String)
           [variant, percent]
@@ -73,7 +74,7 @@ module Rollout
       end
 
       # Now calculate
-      @percentages = compute_percentages
+      compute_percentages!
     end
 
     def serialize
@@ -95,12 +96,12 @@ module Rollout
       @variants.length > 0
     end
 
-    def compute_percentages
+    def compute_percentages!
       total = 0
       percentages = []
       @variants.each do |variant,percent|
         if !percent.is_a?(Integer) or percent < 0 or percent > 100
-          throw "Bad percentage #{percent} for variant #{variant}"
+          throw "Bad percentage #{percent.inspect} for variant #{variant}"
         end
         if percent > 0
           total += percent
@@ -110,7 +111,8 @@ module Rollout
           throw "Total of percentages > 100 for variant #{variant}"
         end
       end
-      percentages
+      @percentages = percentages
+      @percentages
     end
 
     def groups
