@@ -4,7 +4,10 @@ require "active_support/core_ext/hash"
 module Rollout
   class Feature
     attr_reader :roller, :variants
-    attr_accessor :context, :cache, :persisted, :name, :enabled, :users, :groups, :url, :internal, :admin, :bucketing, :percentages, :percentage
+    attr_accessor :context, :cache, :persisted, :name, :enabled
+    attr_accessor :users, :groups, :url, :internal, :admin
+    attr_accessor :bucketing, :percentages, :percentage
+    attr_accessor :type, :value
 
     # Bucketing schemes
     # :uaid, :user, :random
@@ -39,6 +42,8 @@ module Rollout
     def parse_feature(string)
       raw = JSON.parse(string).with_indifferent_access
       @url = raw[:url]
+      @type = (raw[:type] || :gate).to_sym
+      @value = raw[:value]
       @variants = raw[:variants] || {}
       @users = raw[:users] || {}
       @groups = raw[:groups] || {}
@@ -48,7 +53,7 @@ module Rollout
       @percentage = raw[:percentage].to_i if raw[:percentage]
       @percentage ||= 0
 
-      # Can be :on, :off or :rollout
+      # Can be :on, :off, :rollout or symbol of a variant
       @enabled = raw[:enabled].to_sym if raw[:enabled].is_a?(String)
       @enabled ||= :on if raw[:enabled] == true || raw[:enabled] == "true" || raw[:enabled] == "True"
       @enabled ||= :off
@@ -75,6 +80,8 @@ module Rollout
     def serialize
       {
         enabled: enabled,
+        type: @type,
+        value: @value,
         url: @url,
         admin: @admin,
         users: @users,
@@ -167,6 +174,7 @@ module Rollout
 
     def clear
       @enabled = :off
+      @value = nil
       @variants = {}
       @groups = {}
       @users = {}
@@ -174,7 +182,7 @@ module Rollout
       @percentage = 0
       @bucketing = :uaid
       @internal = false
-      @url = "feature_#{@name}"
+      @url = @name
     end
 
     def active?(user = nil)
