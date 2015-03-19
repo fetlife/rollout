@@ -68,6 +68,11 @@ module Rollout
       @admin = false if not (!!@admin == @admin)
       @internal = false if not (!!@internal == @internal)
 
+      # No concept of on for a multi-variant
+      if multivariant? and @enabled == :on
+        @enabled = :rollout
+      end
+
       # make sure we coerce variants
       if @variants.length > 0
         self.variants = @variants
@@ -98,8 +103,17 @@ module Rollout
       @variants = coerce_variants(value)
     end
 
+    def enable_options
+      options = []
+      options << :on if not multivariant?
+      options << :off
+      options << :rollout
+      options += @variants.keys if multivariant?
+      options
+    end
+
     def multivariant?
-      @variants.length > 0
+      @variants.length > 0 and type == :variant
     end
 
     def compute_percentages!
