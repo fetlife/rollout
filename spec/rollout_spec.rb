@@ -358,6 +358,7 @@ describe "Rollout" do
         internal: false,
         name: "chat",
         percentage: 10,
+        sha: "2ff7c9d97eaf80afb251a8e9b1203948ebe4096875ef4ae542b4c710c7a31d67",
         type: "gate",
         url: "chat",
         users: {users: [42]}

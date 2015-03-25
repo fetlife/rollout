@@ -83,14 +83,15 @@ module Rollout
     end
 
     def serialize
+      ret = nil
       if value?
-        {
+        ret = {
           name: @name,
           type: @type,
           value: @value,
         }
       elsif gate?
-        {
+        ret = {
           name: @name,
           enabled: enabled,
           type: @type,
@@ -104,7 +105,7 @@ module Rollout
           bucketing: @bucketing,
         }
       else
-        {
+        ret = {
           name: @name,
           enabled: enabled,
           type: @type,
@@ -119,7 +120,8 @@ module Rollout
           bucketing: @bucketing,
         }
       end
-      .to_json
+      ret[:sha] = Digest::SHA256.hexdigest ret.to_json
+      ret.to_json
     end
 
     def variants=(value)
