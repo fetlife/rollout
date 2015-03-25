@@ -83,23 +83,47 @@ module Rollout
     end
 
     def serialize
-      {
-        enabled: enabled,
-        type: @type,
-        value: @value,
-        url: @url,
-        admin: @admin,
-        users: @users,
-        groups: @groups,
-        internal: @internal,
-        variants: @variants,
-        percentage: @percentage,
-        date_range: @date_range,
-        bucketing: @bucketing,
-      }.to_json
+      if value?
+        {
+          name: @name,
+          type: @type,
+          value: @value,
+        }
+      elsif gate?
+        {
+          name: @name,
+          enabled: enabled,
+          type: @type,
+          url: @url,
+          admin: @admin,
+          users: @users,
+          groups: @groups,
+          internal: @internal,
+          percentage: @percentage,
+          date_range: @date_range,
+          bucketing: @bucketing,
+        }
+      else
+        {
+          name: @name,
+          enabled: enabled,
+          type: @type,
+          url: @url,
+          admin: @admin,
+          users: @users,
+          groups: @groups,
+          internal: @internal,
+          variants: @variants,
+          percentage: @percentage,
+          date_range: @date_range,
+          bucketing: @bucketing,
+        }
+      end
+      .to_json
     end
 
     def variants=(value)
+      @type = :variant
       @variants = coerce_variants(value)
     end
 
@@ -110,6 +134,18 @@ module Rollout
       options << :rollout
       options += @variants.keys if multivariant?
       options
+    end
+
+    def value?
+      type == :value
+    end
+
+    def gate?
+      type == :gate
+    end
+
+    def variant?
+      type == :variant
     end
 
     def multivariant?
@@ -188,7 +224,7 @@ module Rollout
 
     def clear
       @enabled = :off
-      @value = nil
+      @value = :gate
       @variants = {}
       @groups = {}
       @users = {}
@@ -212,12 +248,10 @@ module Rollout
       ret
     end
 
-    def to_hash
-      {
-        percentage: @percentage,
-        groups: groups,
-        users: users
-      }
+    def to_h
+      ret = JSON.parse(serialize, :symbolize_names => true)
+      ret[:groups] = groups if ret[:groups]
+      ret
     end
 
     def variant

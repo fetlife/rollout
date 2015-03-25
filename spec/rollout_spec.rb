@@ -3,7 +3,7 @@ require 'logger'
 
 class TestRolloutContext < Rollout::Context
   def uaid; SecureRandom.hex; end
-  def user_id; 1234; end
+  def user_id; 1; end
   def user_name; "test@tester.com"; end
   def admin?(user_id); false; end
   def admin?(user_id); false; end
@@ -49,9 +49,9 @@ describe "Rollout" do
     end
     it "should make user always enter the same bucket" do
       @rollout.should be_active(:background, stub(:id => 5))
-      @rollout.get(:background).active?.should == [:blue, "w"]
-      @rollout.get(:background).blue?.should == true
-      @rollout.get(:background).red?.should == false
+      @rollout.get(:background).active?.should == [:red, "w"]
+      @rollout.get(:background).blue?.should == false
+      @rollout.get(:background).red?.should == true
     end
   end
 
@@ -84,7 +84,7 @@ describe "Rollout" do
     before do
       @rollout.set(:background) do |f|
         f.variants = {:red => 100, :blue => 0} # NOTE: blue is 0 percent
-        f.users = { :blue => [1234] }
+        f.users = { :blue => [1] }
         f.bucketing = :random
         f.enabled = :rollout
       end
@@ -349,9 +349,17 @@ describe "Rollout" do
       feature.groups.should == {groups: [:caretakers, :greeters]}
       feature.percentage.should == 10
       feature.users.should == {users: [42]}
-      feature.to_hash.should == {
+      feature.to_h.should == {
+        admin: false,
+        bucketing: "uaid",
+        date_range: nil,
+        enabled: "rollout",
         groups: {groups: [:caretakers, :greeters]},
+        internal: false,
+        name: "chat",
         percentage: 10,
+        type: "gate",
+        url: "chat",
         users: {users: [42]}
       }
 
