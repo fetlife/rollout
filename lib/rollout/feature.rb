@@ -226,7 +226,8 @@ module Rollout
 
     def clear
       @enabled = :off
-      @value = :gate
+      @type = :gate
+      @value = nil
       @variants = {}
       @groups = {}
       @users = {}

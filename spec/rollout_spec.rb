@@ -39,6 +39,14 @@ describe "Rollout" do
     @rollout[:chat].enable
   end
 
+  describe "clear" do
+    it "should reset the type" do
+      @rollout.get(:chat).clear
+      @rollout.get(:chat).gate?.should == true
+      @rollout.get(:chat).value.should == nil
+    end
+  end
+
   describe "multi-variant basics" do
     before do
       @rollout.set(:background) do |f|
