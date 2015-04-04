@@ -3,10 +3,16 @@ module Rollout
     attr_accessor :storage
     attr_accessor :context
     attr_accessor :user_id_method
+    attr_accessor :env
 
     def initialize(storage, context, opts = {})
       @storage  = storage
       @context  = context
+      @env  = (opts[:env] ||
+              ENV["RACK_ENV"] ||
+              ENV["RAILS_ENV"] ||
+              (Object.const_defined?('Rails') ? Rails.env : nil) ||
+              "development")
       @groups = {:all => lambda { |user| true }}
       @user_id_method = opts[:user_id_method] || :id
     end
@@ -139,11 +145,11 @@ module Rollout
 
     private
       def key(name)
-        "rollout:feature:#{name}"
+        "rollout:#{env}:feature:#{name}"
       end
 
       def features_key
-        "rollout:features"
+        "rollout:#{env}:features"
       end
 
       def save(feature)
