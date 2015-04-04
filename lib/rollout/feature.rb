@@ -132,7 +132,6 @@ module Rollout
     end
 
     def variants=(value)
-      @type = :variant
       @variants = coerce_variants(value)
     end
 

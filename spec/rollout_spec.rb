@@ -21,9 +21,21 @@ describe "Rollout" do
     end
   end
 
+  describe "value basics" do
+    before do
+      @rollout.set(:key_value) do |f|
+        f.type = :value
+      end
+    end
+    it "should be a value type" do
+      @rollout.get(:key_value).value?.should == true
+    end
+  end
+
   describe "multi-variant basics" do
     before do
       @rollout.set(:background) do |f|
+        f.type = :variant
         f.variants = {:red => 50, :blue => 50}
         f.bucketing = :user
         f.enabled = :rollout
@@ -40,6 +52,7 @@ describe "Rollout" do
   describe "multi-variant random bucketing" do
     before do
       @rollout.set(:background) do |f|
+        f.type = :variant
         f.variants = {:red => 50, :blue => 50}
         f.bucketing = :random
         f.enabled = :rollout
@@ -53,6 +66,7 @@ describe "Rollout" do
   describe "multi-variant coerce" do
     before do
       @rollout.set(:background) do |f|
+        f.type = :variant
         f.variants = {"red" => "90", :blue => "10"} # NOTE: blue is 0 percent
         f.enabled = :rollout
       end
