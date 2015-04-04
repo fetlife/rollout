@@ -2,26 +2,26 @@ require 'redis'
 require 'logger'
 require 'rollout'
 
-class TestRolloutContext < Rollout::Context
+class Rollout::TestContext < Rollout::Context
   def self.rollout
-    Rollout::Roller.new(Redis.new, TestRolloutContext.new(nil, logger: Logger.new(STDOUT)))
+    Rollout::Roller.new(Redis.new, Rollout::TestContext.new(nil, logger: Logger.new(STDOUT)))
   end
 
   def uaid; SecureRandom.hex; end
-  def user_id; 1234; end
+  def user_id; 1; end
   def user_name; "test@tester.com"; end
   def admin?(id); false; end
   def in_group?(user_id, groups)
     # puts "in_group? #{user_id}," + groups.inspect
     ret = false
     groups.each do |group|
-      if group.to_sym == :fivesonly
+      if group == :fivesonly
         ret = user_id % 5 == 0
-      elsif group.to_sym == :admins
+      elsif group == :admins
         ret = user_id == 5
-      elsif group.to_sym == :fake
+      elsif group == :fake
         ret = false
-      elsif group.to_sym == :all
+      elsif group == :all
         ret = true
       end
     end

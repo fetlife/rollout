@@ -46,6 +46,7 @@ module Rollout
       @type = (raw[:type] || :gate).to_sym
       @value = raw[:value]
       @variants = raw[:variants] || {}
+      @descriptions = raw[:descriptions] || {}
       @users = raw[:users] || {}
       @groups = raw[:groups] || {}
       @internal = raw[:internal] || false
@@ -75,10 +76,10 @@ module Rollout
         @enabled = :rollout
       end
 
-      # make sure we coerce variants
-      if @variants.length > 0
-        self.variants = @variants
-      end
+      # make sure we coerce things...
+      self.variants = @variants if @variants.length > 0
+      self.groups = @groups if @groups.length > 0
+      self.users = @users if @users.length > 0
 
       # Now calculate
       compute_percentages!
@@ -135,6 +136,14 @@ module Rollout
       @variants = coerce_variants(value)
     end
 
+    def groups=(value)
+      @groups = coerce_groups(value)
+    end
+
+    def users=(value)
+      @users = coerce_users(value)
+    end
+
     def enable_options
       options = []
       options << :on if not multivariant?
@@ -180,7 +189,7 @@ module Rollout
     end
 
     def groups
-      Hash[@groups.symbolize_keys.map{|k,v| [k, v.map{|x| x.to_sym}]}]
+      Hash[@groups.symbolize_keys.map{|k,v| [k, v.map{|x| numeric?(x) ? x.to_i : x.to_sym}]}]
     end
 
     def users
@@ -225,7 +234,7 @@ module Rollout
     def remove_group(group)
       group = Group.new(group) if not group.is_a?(Group)
       @groups.each do |variant,items|
-        @groups[variant].delete(group.name.to_s)
+        @groups[variant].delete(group.name)
       end
       groups
     end
@@ -235,6 +244,7 @@ module Rollout
       @type = :gate
       @value = nil
       @variants = {}
+      @descriptions = {}
       @groups = {}
       @users = {}
       @percentages = []
@@ -460,10 +470,29 @@ module Rollout
     private
     def coerce_variants(hash)
       Hash[hash.map { |variant, percent|
-        # puts "bad type, variant: #{variant} percent: #{percent}" if percent.is_a?(String)
         variant = variant.to_sym 
         percent = percent.to_i if percent.is_a?(String)
         [variant, percent]
+      }]
+    end
+
+    def coerce_groups(hash)
+      Hash[hash.map { |variant, gids|
+        variant = variant.to_sym 
+        gids = gids.split(/\s*,\s*/) if gids.is_a?(String)
+        gids = gids.map {|gid| numeric?(gid) ? gid.to_i : gid.to_sym }
+        [variant, gids]
+      }]
+    end
+
+    def coerce_users(hash)
+      Hash[hash.map { |variant, uids|
+        variant = variant.to_sym 
+        if uids.is_a?(String)
+          uids = uids.split(/\s*,\s*/)
+        end
+        uids = uids.map {|uid| numeric?(uid) ? uid.to_i : uid }
+        [variant, uids]
       }]
     end
 
@@ -479,6 +508,10 @@ module Rollout
 
     def to_boolean(s)
       !!(s =~ /^(true|t|yes|y|1)$/i)
+    end
+
+    def numeric?(v)
+      Float(v) != nil rescue false
     end
   end
 end

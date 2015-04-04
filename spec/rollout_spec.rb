@@ -1,33 +1,7 @@
 require File.expand_path(File.dirname(__FILE__) + '/spec_helper')
-require 'logger'
+require 'rollout/test_context'
 
-class TestRolloutContext < Rollout::Context
-  def uaid; SecureRandom.hex; end
-  def user_id; 1; end
-  def user_name; "test@tester.com"; end
-  def admin?(user_id); false; end
-  def admin?(user_id); false; end
-  def internal_request; false; end
-  def in_group?(user_id, groups)
-    # puts "in_group? #{user_id}," + groups.inspect
-    ret = false
-    groups.each do |group|
-      if group.to_sym == :fivesonly
-        ret = user_id % 5 == 0
-      elsif group.to_sym == :admins
-        ret = user_id == 5
-      elsif group.to_sym == :fake
-        ret = false
-      elsif group.to_sym == :all
-        ret = true
-      end
-    end
-    ret
-  end
-  def features; ""; end
-end
-
-class TestRolloutContextWithUrl < TestRolloutContext
+class TestRolloutContextWithUrl < Rollout::TestContext
   def features
     "background:blue,element:water"
   end
@@ -35,7 +9,7 @@ end
 
 describe "Rollout" do
   before do
-    @rollout = Rollout::Roller.new(Redis.new, TestRolloutContext.new(nil, logger: Logger.new(STDOUT)))
+    @rollout = Rollout::TestContext.rollout
     @rollout[:chat].enable
   end
 
@@ -85,6 +59,30 @@ describe "Rollout" do
     end
     it "should coerce the strings to symbols" do
       @rollout[:background].variants.should == { red: 90, blue: 10 }
+    end
+  end
+
+  describe "multi-variant coerce users" do
+    before do
+      @rollout.set(:background) do |f|
+        f.users = {"red" => "1,2,3", :blue => "4,5,6"}
+        f.enabled = :rollout
+      end
+    end
+    it "should coerce the string to an array of integers" do
+      @rollout[:background].users.should == { red: [1,2,3], blue: [4,5,6] }
+    end
+  end
+
+  describe "multi-variant coerce groups" do
+    before do
+      @rollout.set(:background) do |f|
+        f.groups = {:red => "1,2,3", :blue => "fred, jim, bob"}
+        f.enabled = :rollout
+      end
+    end
+    it "should coerce the string to an array of symbols or integers" do
+      @rollout[:background].groups.should == { red: [1,2,3], blue: [:fred, :jim, :bob] }
     end
   end
 
