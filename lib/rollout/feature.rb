@@ -6,8 +6,8 @@ module Rollout
     attr_reader :roller, :variants
     attr_accessor :context, :cache, :persisted, :name, :enabled
     attr_accessor :users, :groups, :url, :internal, :admin
-    attr_accessor :bucketing, :percentages, :percentage
-    attr_accessor :type, :value
+    attr_accessor :bucketing, :percentages, :descriptions, :percentage
+    attr_accessor :description, :type, :value
 
     # Bucketing schemes
     # :uaid, :user, :random
@@ -42,6 +42,7 @@ module Rollout
     def parse_feature(string)
       raw = JSON.parse(string).with_indifferent_access
       @url = raw[:url]
+      @description = raw[:description]
       @type = (raw[:type] || :gate).to_sym
       @value = raw[:value]
       @variants = raw[:variants] || {}
@@ -62,6 +63,7 @@ module Rollout
       @groups = {} if not @groups.is_a?(Hash)
       @users = {} if not @users.is_a?(Hash)
       @variants = {} if not @variants.is_a?(Hash)
+      @descriptions = {} if not @descriptions.is_a?(Hash)
 
       @admin = to_boolean(@admin) if @admin.is_a?(String)
       @internal = to_boolean(@internal) if @internal.is_a?(String)
@@ -87,12 +89,14 @@ module Rollout
       if value?
         ret = {
           name: @name,
+          description: @description,
           type: @type,
           value: @value,
         }
       elsif gate?
         ret = {
           name: @name,
+          description: @description,
           enabled: enabled,
           type: @type,
           url: @url,
@@ -107,6 +111,7 @@ module Rollout
       else
         ret = {
           name: @name,
+          description: @description,
           enabled: enabled,
           type: @type,
           url: @url,
@@ -115,6 +120,7 @@ module Rollout
           groups: @groups,
           internal: @internal,
           variants: @variants,
+          descriptions: @descriptions,
           percentage: @percentage,
           date_range: @date_range,
           bucketing: @bucketing,
