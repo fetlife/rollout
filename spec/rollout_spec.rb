@@ -13,6 +13,16 @@ describe "Rollout" do
     @rollout[:chat].enable
   end
 
+  describe "version" do
+    it "should increment" do
+      previous_version = @rollout.version
+      @rollout.set(:key_value) do |f|
+        f.type = :value
+      end
+      @rollout.version.should > previous_version
+    end
+  end
+
   describe "clear" do
     it "should reset the type" do
       @rollout.get(:chat).clear

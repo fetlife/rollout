@@ -132,18 +132,32 @@ module Rollout
       @storage.smembers(features_key).map(&:to_sym)
     end
 
+    def version
+      @storage.get(version_key)
+    end
+
     def delete(feature)
-      @storage.del(key(feature))
-      @storage.srem(features_key, feature)
+      @storage.multi do |r|
+        r.del(key(feature))
+        r.srem(features_key, feature)
+        r.incr(version_key)
+      end
     end
 
     def rename(old_name, new_name)
-      @storage.rename(key(old_name), key(new_name))
-      @storage.srem(features_key, old_name)
-      @storage.sadd(features_key, new_name)
+      @storage.multi do |r|
+        r.rename(key(old_name), key(new_name))
+        r.srem(features_key, old_name)
+        r.sadd(features_key, new_name)
+        r.incr(version_key)
+      end
     end
 
     private
+      def version_key
+        "rollout:#{env}:version"
+      end
+
       def key(name)
         "rollout:#{env}:feature:#{name}"
       end
@@ -153,8 +167,11 @@ module Rollout
       end
 
       def save(feature)
-        @storage.set(key(feature.name), feature.serialize)
-        @storage.sadd(features_key, feature.name)
+        @storage.multi do |r|
+          r.set(key(feature.name), feature.serialize)
+          r.sadd(features_key, feature.name)
+          r.incr(version_key)
+        end
       end
 
   end
