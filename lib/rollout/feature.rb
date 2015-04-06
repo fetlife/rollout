@@ -72,7 +72,7 @@ module Rollout
       @internal = false if not (!!@internal == @internal)
 
       # No concept of on for a multi-variant
-      if multivariant? and @enabled == :on
+      if variant? and @enabled == :on
         @enabled = :rollout
       end
 
@@ -145,10 +145,10 @@ module Rollout
 
     def enable_options
       options = []
-      options << :on if not multivariant?
+      options << :on if not variant?
       options << :off
       options << :rollout
-      options += @variants.keys if multivariant?
+      options += @variants.keys if variant?
       options
     end
 
@@ -162,10 +162,6 @@ module Rollout
 
     def variant?
       type == :variant
-    end
-
-    def multivariant?
-      @variants.length > 0 and type == :variant
     end
 
     def compute_percentages!
@@ -276,7 +272,7 @@ module Rollout
       choose_variant(nil, true)[0]
     end
 
-    def variant?(variant, user_id = nil)
+    def multivariant?(variant, user_id = nil)
       user_id ||= context.user_id
       # puts "user_id: #{user_id}"
       var, selector = choose_variant(user_id)
@@ -289,7 +285,7 @@ module Rollout
         #find which variant, compare to variant_name_to_check
         # puts "checking for: #{variant_name_to_check}"
         user_id ||= context.user_id
-        variant?(variant_name_to_check.to_sym)
+        multivariant?(variant_name_to_check.to_sym)
       else
         super
       end
@@ -451,7 +447,7 @@ module Rollout
         variant ||= variant_for_group(user_id)
         variant ||= variant_for_admin(user_id)
         variant ||= variant_for_internal
-        variant ||= variant_by_percentage(user_id, multivariant?)
+        variant ||= variant_by_percentage(user_id, variant?)
         variant ||= [:off, 'w']
 
         # puts variant.inspect
