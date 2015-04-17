@@ -136,12 +136,17 @@ module Rollout
       @storage.get(version_key)
     end
 
+    def hash
+      @storage.get(hash_key)
+    end
+
     def delete(feature)
       @storage.multi do |r|
         r.del(key(feature))
         r.srem(features_key, feature)
         r.incr(version_key)
       end
+      hash_version
     end
 
     def rename(old_name, new_name)
@@ -151,19 +156,28 @@ module Rollout
         r.sadd(features_key, new_name)
         r.incr(version_key)
       end
+      hash_version
     end
 
     private
+      def hash_key
+        "rollout:hash"
+      end
+
       def version_key
-        "rollout:#{env}:version"
+        "rollout:version"
       end
 
       def key(name)
-        "rollout:#{env}:feature:#{name}"
+        "rollout:feature:#{name}"
       end
 
       def features_key
-        "rollout:#{env}:features"
+        "rollout:features"
+      end
+
+      def hash_version
+        @storage.set(hash_key, Digest::SHA256.hexdigest(@storage.get(version_key)))
       end
 
       def save(feature)
@@ -172,6 +186,7 @@ module Rollout
           r.sadd(features_key, feature.name)
           r.incr(version_key)
         end
+        hash_version
       end
 
   end

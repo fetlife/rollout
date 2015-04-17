@@ -21,6 +21,14 @@ describe "Rollout" do
       end
       @rollout.version.should > previous_version
     end
+
+    it "should hash version" do
+      previous_hash = @rollout.hash
+      @rollout.set(:key_value) do |f|
+        f.type = :value
+      end
+      @rollout.hash.should_not == previous_hash
+    end
   end
 
   describe "clear" do
