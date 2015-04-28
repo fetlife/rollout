@@ -325,7 +325,6 @@ describe "Rollout" do
       features[1].groups.should == [:greeters]
       features[2].name.should == :signup
       features[2].percentage.should == 100
-      features[0].name.should == :chat
       features.size.should == 3
     end
   end
