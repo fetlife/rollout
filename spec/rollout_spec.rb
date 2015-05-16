@@ -6,6 +6,25 @@ describe "Rollout" do
     @rollout = Rollout.new(@redis)
   end
 
+  describe "convenience wrapper" do
+    before { Rollout.reset! }
+
+    it "can be set up via methods" do
+      Rollout.storage = @redis
+      Rollout.activate(:test_accessor)
+      Rollout.should be_active(:test_accessor)
+    end
+
+    it "can set options via a block" do
+      Rollout.setup do |r|
+        r.storage = @redis
+      end
+
+      Rollout.activate(:test_blocked_accessor)
+      Rollout.should be_active(:test_blocked_accessor)
+    end
+  end
+
   describe "when a group is activated" do
     before do
       @rollout.define_group(:fivesonly) { |user| user.id == 5 }

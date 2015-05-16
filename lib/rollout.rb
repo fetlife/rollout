@@ -3,6 +3,39 @@ require "rollout/legacy"
 require "zlib"
 
 class Rollout
+
+  class << self
+    attr_accessor :storage
+
+    def setup
+      yield self
+    end
+
+    def opts
+      @opts || {}
+    end
+
+    def opts=(options)
+      @opts = options
+    end
+
+    def rollout_instance
+      @rollout_instance ||= Rollout.new(@storage, opts)
+    end
+
+    def reset!
+      @rollout_instance = nil
+    end
+
+    def method_missing(meth, *args, &blk)
+      if rollout_instance && rollout_instance.respond_to?(meth)
+        rollout_instance.send meth, *args, &blk
+      else
+        super
+      end
+    end
+  end
+
   class Feature
     attr_accessor :groups, :users, :percentage
     attr_reader :name, :options
