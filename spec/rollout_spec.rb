@@ -125,6 +125,36 @@ describe "Rollout" do
     end
   end
 
+  describe "activating a group of users" do
+    context "specified by user objects" do
+      let(:users) { [stub(id: 1), stub(id: 2), stub(id: 3)] }
+
+      before { @rollout.activate_users(:chat, users) }
+
+      it "is active for the given users" do
+        users.each { |user| @rollout.should be_active(:chat, user) }
+      end
+
+      it "remains inactive for other users" do
+        @rollout.should_not be_active(:chat, stub(:id => 4))
+      end
+    end
+
+    context "specified by user ids" do
+      let(:users) { [1, 2, 3] }
+
+      before { @rollout.activate_users(:chat, users) }
+
+      it "is active for the given users" do
+        users.each { |user| @rollout.should be_active(:chat, user) }
+      end
+
+      it "remains inactive for other users" do
+        @rollout.should_not be_active(:chat, 4)
+      end
+    end
+  end
+
   describe "deactivating a specific user" do
     before do
       @rollout.activate_user(:chat, stub(:id => 42))
@@ -140,6 +170,44 @@ describe "Rollout" do
 
     it "remains active for other active users" do
       @rollout.get(:chat).users.should == %w(24)
+    end
+  end
+
+  describe "deactivating a group of users" do
+    context "specified by user objects" do
+      let(:active_users) { [stub(id: 1), stub(id: 2)] }
+      let(:inactive_users) { [stub(id: 3), stub(id: 4)] }
+
+      before do
+        @rollout.activate_users(:chat, active_users + inactive_users)
+        @rollout.deactivate_users(:chat, inactive_users)
+      end
+
+      it "is active for the active users" do
+        active_users.each { |user| @rollout.should be_active(:chat, user) }
+      end
+
+      it "is not active for inactive users" do
+        inactive_users.each { |user| @rollout.should_not be_active(:chat, user) }
+      end
+    end
+
+    context "specified by user ids" do
+      let(:active_users) { [1, 2] }
+      let(:inactive_users) { [3, 4] }
+
+      before do
+        @rollout.activate_users(:chat, active_users + inactive_users)
+        @rollout.deactivate_users(:chat, inactive_users)
+      end
+
+      it "is active for the active users" do
+        active_users.each { |user| @rollout.should be_active(:chat, user) }
+      end
+
+      it "is not active for inactive users" do
+        inactive_users.each { |user| @rollout.should_not be_active(:chat, user) }
+      end
     end
   end
 
