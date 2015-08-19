@@ -4,7 +4,7 @@ require "zlib"
 
 class Rollout
   class Feature
-    attr_accessor :groups, :users, :percentage
+    attr_accessor :locales, :groups, :users, :percentage
     attr_reader :name, :options
 
     def initialize(name, string = nil, opts = {})
@@ -12,17 +12,18 @@ class Rollout
       @name    = name
 
       if string
-        raw_percentage,raw_users,raw_groups = string.split("|")
-        @percentage = raw_percentage.to_i
+        raw_percentage, raw_users, raw_groups, raw_locales = string.split("|")
+        @percentage = (raw_percentage || 0).to_i
         @users = (raw_users || "").split(",").map(&:to_s)
         @groups = (raw_groups || "").split(",").map(&:to_sym)
+        @locales = (raw_locales || "").split(",").map(&:to_s)
       else
         clear
       end
     end
 
     def serialize
-      "#{@percentage}|#{@users.join(",")}|#{@groups.join(",")}"
+      "#{@percentage}|#{@users.join(",")}|#{@groups.join(",")}|#{@locales.join(",")}"
     end
 
     def add_user(user)
@@ -42,9 +43,19 @@ class Rollout
       @groups.delete(group.to_sym)
     end
 
+    def add_locale(locale, percentage)
+      @locales = @locales.select { |l| l.split(":")[0] == locale }
+      @locales << "#{locale}:#{percentage}"
+    end
+
+    def remove_locale(locale)
+      @locales = @locales.select { |l| l.split(":")[0] == locale }
+    end
+
     def clear
       @groups = []
       @users = []
+      @locales = []
       @percentage = 0
     end
 
@@ -54,15 +65,17 @@ class Rollout
       else
         id = user_id(user)
         user_in_percentage?(id) ||
+          user_in_active_locale?(user) ||
           user_in_active_users?(id) ||
-            user_in_active_group?(user, rollout)
+          user_in_active_group?(user, rollout)
       end
     end
 
     def to_hash
       {:percentage => @percentage,
-       :groups     => @groups,
-       :users      => @users}
+        :groups    => @groups,
+        :locales   => @locales,
+        :users      => @users}
     end
 
     private
@@ -98,6 +111,13 @@ class Rollout
       def user_in_active_group?(user, rollout)
         @groups.any? do |g|
           rollout.active_in_group?(g, user)
+        end
+      end
+
+      def user_in_active_locale?(user)
+        @locales.any? do |l|
+          ls = l.split(":")
+          ls[0] == user.language && Zlib.crc32(user_id_for_percentage(user)) % 100 < ls[1].to_i
         end
       end
   end
@@ -162,6 +182,12 @@ class Rollout
   def active?(feature, user = nil)
     feature = get(feature)
     feature.active?(self, user)
+  end
+     
+  def activate_locale(feature, locale, percentage)
+    with_feature(feature) do |f|
+      f.add_locale(locale, percentage)
+    end
   end
 
   def activate_percentage(feature, percentage)

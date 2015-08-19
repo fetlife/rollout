@@ -26,6 +26,17 @@ describe "Rollout" do
     end
   end
 
+  describe "when a locale is activated" do
+    it "the feature is deactive for users whose language is not released to" do
+      @rollout.should_not be_active(:chat, stub(:id => 4, :language => 'zh-CN'))
+    end
+    it "the feature is active for users whose language is released to" do
+      @rollout.activate_locale(:chat, "zh-CN", 10)
+      @rollout.should be_active(:chat, stub(:id => 4, :language => 'zh-CN'))
+      @rollout.should_not be_active(:chat, stub(:id => 4, :language => "dummy"))
+    end
+  end
+
   describe "the default all group" do
     before do
       @rollout.activate_group(:chat, :all)
@@ -58,6 +69,7 @@ describe "Rollout" do
   describe "deactivating a feature completely" do
     before do
       @rollout.define_group(:fivesonly) { |user| user.id == 5 }
+      @rollout.activate_locale(:chat, "zh-CN", 10)
       @rollout.activate_group(:chat, :all)
       @rollout.activate_group(:chat, :fivesonly)
       @rollout.activate_user(:chat, stub(:id => 51))
@@ -76,6 +88,10 @@ describe "Rollout" do
 
     it "removes the percentage" do
       @rollout.should_not be_active(:chat, stub(:id => 24))
+    end
+
+    it "removes all languages" do
+      @rollout.should_not be_active(:chat, stub(:id => 4, :language => "zh-CN"))
     end
 
     it "removes globally" do
@@ -285,6 +301,7 @@ describe "Rollout" do
       @rollout.activate_percentage(:chat, 10)
       @rollout.activate_group(:chat, :caretakers)
       @rollout.activate_group(:chat, :greeters)
+      @rollout.activate_locale(:chat, "zh-CN", 10)
       @rollout.activate(:signup)
       @rollout.activate_user(:chat, stub(:id => 42))
     end
@@ -294,10 +311,12 @@ describe "Rollout" do
       feature.groups.should == [:caretakers, :greeters]
       feature.percentage.should == 10
       feature.users.should == %w(42)
+      feature.locales.should == ["zh-CN:10"]
       feature.to_hash.should == {
         :groups => [:caretakers, :greeters],
         :percentage => 10,
-        :users => %w(42)
+        :users => %w(42),
+        :locales => ["zh-CN:10"]
       }
 
       feature = @rollout.get(:signup)
@@ -321,7 +340,8 @@ describe "Rollout" do
         @rollout.get(feature).to_hash.should == {
           :percentage => 0,
           :users => [],
-          :groups => []
+          :groups => [],
+          :locales => []
         }
       end
     end
@@ -345,13 +365,15 @@ describe "Rollout" do
       @rollout.get(:chat).to_hash.should == {
         :percentage => 12,
         :users => %w(24 42),
-        :groups => [:dope_people]
+        :groups => [:dope_people],
+        :locales => []
       }
       @legacy.deactivate_all(:chat)
       @rollout.get(:chat).to_hash.should == {
         :percentage => 12,
         :users => %w(24 42),
-        :groups => [:dope_people]
+        :groups => [:dope_people],
+        :locales => []
       }
       @redis.get("feature:chat").should_not be_nil
     end
