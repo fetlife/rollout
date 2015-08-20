@@ -29,11 +29,15 @@ describe "Rollout" do
   describe "when a locale is activated" do
     it "the feature is deactive for users whose language is not released to" do
       @rollout.should_not be_active(:chat, stub(:id => 4, :language => 'zh-CN'))
+      @rollout.should_not be_active(:chat, stub(:id => 4, :language => 'zh-TW'))
+      @rollout.should_not be_active(:chat, stub(:id => 5, :language => 'zh-CN'))
     end
     it "the feature is active for users whose language is released to" do
       @rollout.activate_locale(:chat, "zh-CN", 10)
       @rollout.should be_active(:chat, stub(:id => 4, :language => 'zh-CN'))
       @rollout.should_not be_active(:chat, stub(:id => 4, :language => "dummy"))
+      @rollout.should_not be_active(:chat, stub(:id => 5, :language => "dummy"))
+      @rollout.should_not be_active(:chat, stub(:id => 5, :language => "zh-CN"))
     end
   end
 
