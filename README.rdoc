@@ -93,6 +93,23 @@ In some cases you might want to have a feature activated for a random set of use
 
 When on `randomize_percentage` will make sure that 50% of users for feature A are selected independently from users for feature B.
 
+== Locale Group
+
+If your product is an international one, you might need this feature.
+You can select which locale will receive this rollout with certain proportion.
+
+You can activate all the locale groups for the chat feature:
+
+  $rollout.activate_locale(:chat, :all)
+
+You need to define your own locale groups:
+
+  $rollout.define_locale("zh-CN") { |user| user.language == "zh-CN" }
+
+Roll out to certain percentage of locale looks like this:
+
+  $rollout.activate_locale(:chat, "zh-CN", 40)
+
 == Feature is broken
 
 Deactivate everybody at once:
