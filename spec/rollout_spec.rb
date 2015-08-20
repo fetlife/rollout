@@ -27,6 +27,11 @@ describe "Rollout" do
   end
 
   describe "when a locale is activated" do
+    before do
+      @rollout.define_locale("zh-CN") do |user|
+        user.language == "zh-CN"
+      end
+    end
     it "the feature is deactive for users whose language is not released to" do
       @rollout.should_not be_active(:chat, stub(:id => 4, :language => 'zh-CN'))
       @rollout.should_not be_active(:chat, stub(:id => 4, :language => 'zh-TW'))
@@ -73,6 +78,9 @@ describe "Rollout" do
   describe "deactivating a feature completely" do
     before do
       @rollout.define_group(:fivesonly) { |user| user.id == 5 }
+      @rollout.define_locale("zh-CN") do |user|
+        user.language == "zh-CN"
+      end
       @rollout.activate_locale(:chat, "zh-CN", 10)
       @rollout.activate_group(:chat, :all)
       @rollout.activate_group(:chat, :fivesonly)
@@ -306,6 +314,7 @@ describe "Rollout" do
       @rollout.activate_group(:chat, :caretakers)
       @rollout.activate_group(:chat, :greeters)
       @rollout.activate_locale(:chat, "zh-CN", 10)
+      @rollout.activate_locale(:chat, "zh-TW")
       @rollout.activate(:signup)
       @rollout.activate_user(:chat, stub(:id => 42))
     end
@@ -315,17 +324,18 @@ describe "Rollout" do
       feature.groups.should == [:caretakers, :greeters]
       feature.percentage.should == 10
       feature.users.should == %w(42)
-      feature.locales.should == ["zh-CN:10"]
+      feature.locales.should == ["zh-CN:10", "zh-TW:0"]
       feature.to_hash.should == {
         :groups => [:caretakers, :greeters],
         :percentage => 10,
         :users => %w(42),
-        :locales => ["zh-CN:10"]
+        :locales => ["zh-CN:10", "zh-TW:0"]
       }
 
       feature = @rollout.get(:signup)
       feature.groups.should be_empty
       feature.users.should be_empty
+      feature.locales.should be_empty
       feature.percentage.should == 100
     end
   end

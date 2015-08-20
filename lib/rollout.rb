@@ -23,7 +23,7 @@ class Rollout
     end
 
     def serialize
-      "#{@percentage}|#{@users.join(",")}|#{@groups.join(",")}|#{@locales.join(",")}"
+      "#{@percentage || 0}|#{@users.join(",")}|#{@groups.join(",")}|#{@locales.join(",")}"
     end
 
     def add_user(user)
@@ -43,9 +43,9 @@ class Rollout
       @groups.delete(group.to_sym)
     end
 
-    def add_locale(locale, percentage)
-      @locales = @locales.select { |l| l.split(":")[0] == locale }
-      @locales << "#{locale}:#{percentage}"
+    def add_locale(locale, percentage = nil)
+      @locales = @locales.select { |l| l.split(":")[0] != locale }
+      @locales << "#{locale}:#{percentage || 0}"
     end
 
     def remove_locale(locale)
@@ -65,7 +65,7 @@ class Rollout
       else
         id = user_id(user)
         user_in_percentage?(id) ||
-          user_in_active_locale?(user) ||
+          user_in_active_locale?(user, rollout) ||
           user_in_active_users?(id) ||
           user_in_active_group?(user, rollout)
       end
@@ -114,10 +114,10 @@ class Rollout
         end
       end
 
-      def user_in_active_locale?(user)
+      def user_in_active_locale?(user, rollout)
         @locales.any? do |l|
-          ls = l.split(":")
-          ls[0] == user.language && Zlib.crc32(user_id_for_percentage(user)) % 100 < ls[1].to_i
+          ls = l.split(':')
+          rollout.active_in_locale?(ls[0], user) && (ls[0] == "all" || Zlib.crc32(user_id_for_percentage(user)) % 100 < ls[1].to_i)
         end
       end
   end
@@ -125,6 +125,7 @@ class Rollout
   def initialize(storage, opts = {})
     @storage = storage
     @options = opts
+    @locales = {:all => lambda { |user| true }}
     @groups  = {:all => lambda { |user| true }}
     @legacy  = Legacy.new(opts[:legacy_storage] || @storage) if opts[:migrate]
   end
@@ -179,14 +180,24 @@ class Rollout
     @groups[group.to_sym] = block
   end
 
+  def define_locale(locale, &block)
+    @locales[locale.to_sym] = block
+  end
+
   def active?(feature, user = nil)
     feature = get(feature)
     feature.active?(self, user)
   end
      
-  def activate_locale(feature, locale, percentage)
+  def activate_locale(feature, locale, percentage = nil)
     with_feature(feature) do |f|
       f.add_locale(locale, percentage)
+    end
+  end
+
+  def deactivate_locale(feature, locale)
+    with_feature(feature) do |f|
+      f.remove_locale(locale)
     end
   end
 
@@ -204,6 +215,11 @@ class Rollout
 
   def active_in_group?(group, user)
     f = @groups[group.to_sym]
+    f && f.call(user)
+  end
+
+  def active_in_locale?(locale, user)
+    f = @locales[locale.to_sym]
     f && f.call(user)
   end
 
