@@ -1,6 +1,7 @@
 require "rollout/version"
 require "rollout/legacy"
 require "zlib"
+require 'set'
 
 class Rollout
   class Feature
@@ -14,15 +15,15 @@ class Rollout
       if string
         raw_percentage,raw_users,raw_groups = string.split("|")
         @percentage = raw_percentage.to_i
-        @users = (raw_users || "").split(",").map(&:to_s)
-        @groups = (raw_groups || "").split(",").map(&:to_sym)
+        @users = (raw_users || "").split(",").map(&:to_s).to_set
+        @groups = (raw_groups || "").split(",").map(&:to_sym).to_set
       else
         clear
       end
     end
 
     def serialize
-      "#{@percentage}|#{@users.join(",")}|#{@groups.join(",")}"
+      "#{@percentage}|#{@users.to_a.join(",")}|#{@groups.to_a.join(",")}"
     end
 
     def add_user(user)
@@ -43,8 +44,8 @@ class Rollout
     end
 
     def clear
-      @groups = []
-      @users = []
+      @groups = Set.new
+      @users = Set.new
       @percentage = 0
     end
 
