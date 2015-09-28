@@ -166,7 +166,7 @@ class Rollout
     @groups[group.to_sym] = block
   end
 
-  def define_id_collection(name, ids=[])
+  def define_id_collection(name, ids = [])
     @storage.set("collection:#{name}", ids.join(","))
     @storage.set(collection_key, (collections.keys | [name.to_sym]).join(","))
   end
