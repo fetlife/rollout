@@ -300,7 +300,7 @@ describe "Rollout" do
     end
 
     it "retrieves all ids from a specific collection" do
-      @rollout.ids_from_collection(:beta_testers).should == ["101", "103"]
+      @rollout.ids_from_collection(:beta_testers).should == %w[101 103]
     end
 
   end
