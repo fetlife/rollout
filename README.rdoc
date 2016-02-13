@@ -105,7 +105,7 @@ For many of our features, we keep track of error rates using redis, and deactiva
 
 Rollout separates its keys from other keys in the data store using the "feature" keyspace.
 
-If you're using redis, you can namespace keys further to support multiple environments by using the http://github.com/defunkt/redis-namespace gem.
+If you're using redis, you can namespace keys further to support multiple environments by using the [redis-namespace](https://github.com/resque/redis-namespace) gem.
 
   $ns = Redis::Namespace.new(Rails.env, :redis => $redis)
   $rollout = Rollout.new($ns)
