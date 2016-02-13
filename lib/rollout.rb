@@ -203,21 +203,21 @@ class Rollout
     f = @groups[group.to_sym]
     f && f.call(user)
   end
+  
+  def multi_get(*features)
+    feature_keys = features.map{|feature| key(feature) }
+    feature_strings = @storage.mget(*feature_keys)
+    collection = []
+    feature_strings.each_with_index do |string, index|
+      feature = features[index]
+      collection << load_feature(feature, string)
+    end
+    collection
+  end
 
   def get(feature)
     string = @storage.get(key(feature))
-    if string || !migrate?
-      Feature.new(feature, string, @options)
-    else
-      info = @legacy.info(feature)
-      f = Feature.new(feature)
-      f.percentage = info[:percentage]
-      f.percentage = 100 if info[:global].include? feature
-      f.groups = info[:groups].map { |g| g.to_sym }
-      f.users = info[:users].map { |u| u.to_s }
-      save(f)
-      f
-    end
+    load_feature(feature, string)
   end
 
   def features
@@ -234,6 +234,22 @@ class Rollout
   end
 
   private
+  
+    def load_feature(feature, string)
+      if string || !migrate?
+        Feature.new(feature, string, @options)
+      else
+        info = @legacy.info(feature)
+        f = Feature.new(feature)
+        f.percentage = info[:percentage]
+        f.percentage = 100 if info[:global].include? feature
+        f.groups = info[:groups].map { |g| g.to_sym }
+        f.users = info[:users].map { |u| u.to_s }
+        save(f)
+        f
+      end
+    end
+    
     def key(name)
       "feature:#{name}"
     end

@@ -392,6 +392,28 @@ describe "Rollout" do
       feature.percentage.should == 100
     end
   end
+  
+  describe "#multi_get" do
+    before do
+      @rollout.activate_percentage(:chat, 10)
+      @rollout.activate_group(:chat, :caretakers)
+      @rollout.activate_group(:videos, :greeters)
+      @rollout.activate(:signup)
+      @rollout.activate_user(:photos, stub(:id => 42))
+    end
+
+    it "returns an array of features" do
+      features = @rollout.multi_get(:chat, :videos, :signup)
+      features[0].name.should == :chat
+      features[0].groups.should == [:caretakers]
+      features[0].percentage.should == 10
+      features[1].name.should == :videos
+      features[1].groups.should == [:greeters]
+      features[2].name.should == :signup
+      features[2].percentage.should == 100
+      features.size.should == 3
+    end
+  end
 
   describe "#clear" do
     let(:features) { %w(signup beta alpha gm) }
