@@ -55,7 +55,8 @@ class Rollout
         id = user_id(user)
         user_in_percentage?(id) ||
           user_in_active_users?(id) ||
-            user_in_active_group?(user, rollout)
+            user_in_active_group?(user, rollout) ||
+              user_in_collections?(id, rollout)
       end
     end
 
@@ -98,6 +99,12 @@ class Rollout
       def user_in_active_group?(user, rollout)
         @groups.any? do |g|
           rollout.active_in_group?(g, user)
+        end
+      end
+
+      def user_in_collections?(id, rollout)
+        rollout.feature_collections(@name).keys.any? do |collection|
+          rollout.active_in_collection?(collection, id)
         end
       end
   end
@@ -178,6 +185,33 @@ class Rollout
     @groups[group.to_sym] = block
   end
 
+  def define_id_collection(name, ids = [])
+    @storage.set("collection:#{name}", ids.join(","))
+    @storage.set(collection_key, (collections.keys | [name.to_sym]).join(","))
+  end
+
+  def add_collection_to_feature(collection, feature)
+    with_feature(feature) do |feature|
+      @storage.set(collection_feature_key(feature.name), (feature_collections(feature.name).keys | [ collection.to_sym]).join(","))
+    end
+  end
+
+  def collections
+    Hash[*retrieve_from_storage(collection_key).map{ |collect| [ collect.to_sym, @storage.get("collection:#{collect}") ] }.flatten]
+  end
+
+  def retrieve_from_storage(key)
+    (@storage.get(key) || "").split(',')
+  end
+
+  def ids_from_collection(collection)
+    retrieve_from_storage(collection_key(collection))
+  end
+
+  def feature_collections(feature)
+    Hash[*retrieve_from_storage(collection_feature_key(feature)).map{ |collect| [ collect.to_sym, @storage.get("collection:#{collect}") ] }.flatten]
+  end
+
   def active?(feature, user = nil)
     feature = get(feature)
     feature.active?(self, user)
@@ -202,6 +236,11 @@ class Rollout
   def active_in_group?(group, user)
     f = @groups[group.to_sym]
     f && f.call(user)
+  end
+
+  def active_in_collection?(collection, id)
+    f = collections[collection.to_sym]
+    f && f.split(",").include?(id.to_s)
   end
 
   def get(feature)
@@ -240,6 +279,14 @@ class Rollout
 
     def features_key
       "feature:__features__"
+    end
+
+    def collection_key(collection="__collections__")
+      "collection:#{collection}"
+    end
+
+    def collection_feature_key(feature)
+      "collections_for:#{feature}"
     end
 
     def with_feature(feature)
