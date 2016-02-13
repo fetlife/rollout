@@ -329,6 +329,24 @@ describe "Rollout" do
     end
   end
 
+  describe "deleting a feature" do
+    before do
+      @rollout.set(:chat, true)
+    end
+
+    it "should be removed from features list" do
+      @rollout.features.size.should == 1
+      @rollout.delete(:chat)
+      @rollout.features.size.should == 0
+    end
+
+    it "should have metadata cleared" do
+      @rollout.get(:chat).percentage.should == 100
+      @rollout.delete(:chat)
+      @rollout.get(:chat).percentage.should == 0
+    end
+  end
+
   describe "keeps a list of features" do
     it "saves the feature" do
       @rollout.activate(:chat)
