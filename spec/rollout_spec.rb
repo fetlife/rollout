@@ -51,7 +51,7 @@ describe "Rollout" do
     end
 
     it "leaves the other groups active" do
-      @rollout.get(:chat).groups.should == [:fivesonly]
+      @rollout.get(:chat).groups.should == [:fivesonly].to_set
     end
   end
 
@@ -169,7 +169,7 @@ describe "Rollout" do
     end
 
     it "remains active for other active users" do
-      @rollout.get(:chat).users.should == %w(24)
+      @rollout.get(:chat).users.should == %w(24).to_set
     end
   end
 
@@ -377,13 +377,13 @@ describe "Rollout" do
 
     it "returns the feature object" do
       feature = @rollout.get(:chat)
-      feature.groups.should == [:caretakers, :greeters]
+      feature.groups.should == [:caretakers, :greeters].to_set
       feature.percentage.should == 10
-      feature.users.should == %w(42)
+      feature.users.should == %w(42).to_set
       feature.to_hash.should == {
-        :groups => [:caretakers, :greeters],
+        :groups => [:caretakers, :greeters].to_set,
         :percentage => 10,
-        :users => %w(42)
+        :users => %w(42).to_set
       }
 
       feature = @rollout.get(:signup)
@@ -406,8 +406,8 @@ describe "Rollout" do
       features.each do |feature|
         @rollout.get(feature).to_hash.should == {
           :percentage => 0,
-          :users => [],
-          :groups => []
+          :users => Set.new,
+          :groups => Set.new
         }
       end
     end
@@ -436,8 +436,8 @@ describe "Rollout" do
       @legacy.deactivate_all(:chat)
       @rollout.get(:chat).to_hash.should == {
         :percentage => 12,
-        :users => %w(24 42),
-        :groups => [:dope_people]
+        :users => %w(24 42).to_set,
+        :groups => [:dope_people].to_set
       }
       @redis.get("feature:chat").should_not be_nil
     end
