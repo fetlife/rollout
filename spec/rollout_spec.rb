@@ -51,7 +51,7 @@ RSpec.describe "Rollout" do
     end
 
     it "leaves the other groups active" do
-      expect(@rollout.get(:chat).groups).to eq([:fivesonly])
+      expect(@rollout.get(:chat).groups).to eq [:fivesonly].to_set
     end
   end
 
@@ -169,7 +169,7 @@ RSpec.describe "Rollout" do
     end
 
     it "remains active for other active users" do
-      expect(@rollout.get(:chat).users).to eq(%w(24))
+      expect(@rollout.get(:chat).users).to eq %w(24).to_set
     end
   end
 
@@ -377,14 +377,14 @@ RSpec.describe "Rollout" do
 
     it "returns the feature object" do
       feature = @rollout.get(:chat)
-      expect(feature.groups).to eq([:caretakers, :greeters])
-      expect(feature.percentage).to eq(10)
-      expect(feature.users).to eq(%w(42))
-      expect(feature.to_hash).to eq({
-        :groups => [:caretakers, :greeters],
+      expect(feature.groups).to eq [:caretakers, :greeters].to_set
+      expect(feature.percentage).to eq 10
+      expect(feature.users).to eq %w(42).to_set
+      expect(feature.to_hash).to eq(
+        :groups => [:caretakers, :greeters].to_set,
         :percentage => 10,
-        :users => %w(42)
-      })
+        :users => %w(42).to_set
+      )
 
       feature = @rollout.get(:signup)
       expect(feature.groups).to be_empty
@@ -404,11 +404,11 @@ RSpec.describe "Rollout" do
 
     it "each feature is cleared" do
       features.each do |feature|
-        expect(@rollout.get(feature).to_hash).to eq({
+        expect(@rollout.get(feature).to_hash).to eq(
           :percentage => 0,
-          :users => [],
-          :groups => []
-        })
+          :users => Set.new,
+          :groups => Set.new
+        )
       end
     end
 
@@ -436,8 +436,8 @@ RSpec.describe "Rollout" do
       @legacy.deactivate_all(:chat)
       expect(@rollout.get(:chat).to_hash).to eq({
         :percentage => 12,
-        :users => %w(24 42),
-        :groups => [:dope_people]
+        :users => %w(24 42).to_set,
+        :groups => [:dope_people].to_set
       })
       expect(@redis.get("feature:chat")).not_to be_nil
     end
