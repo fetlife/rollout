@@ -1,7 +1,7 @@
 require "rollout/version"
 require "rollout/legacy"
 require "zlib"
-require 'set'
+require "set"
 
 class Rollout
   class Feature
@@ -61,15 +61,16 @@ class Rollout
     end
 
     def to_hash
-      {:percentage => @percentage,
-       :groups     => @groups,
-       :users      => @users}
+      {
+        percentage: @percentage,
+        groups: @groups,
+        users: @users
+      }
     end
 
     private
       def user_id(user)
-        if user.is_a?(Fixnum) ||
-             user.is_a?(String)
+        if user.is_a?(Fixnum) || user.is_a?(String)
           user.to_s
         else
           user.send(id_user_by).to_s
@@ -106,7 +107,7 @@ class Rollout
   def initialize(storage, opts = {})
     @storage = storage
     @options = opts
-    @groups  = {:all => lambda { |user| true }}
+    @groups  = { all: lambda { |user| true } }
     @legacy  = Legacy.new(opts[:legacy_storage] || @storage) if opts[:migrate]
   end
 
