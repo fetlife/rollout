@@ -17,7 +17,7 @@ give it something that responds to `set(key,value)`, `get(key)` and
 `del(key)`.
 
 If you have been using the 1.x format, you can initialize Rollout with
-`:migrate => true` and it'll do its best to automatically migrate your old
+`migrate: true` and it'll do its best to automatically migrate your old
 features to the new format. There will be some performance impact, but it
 should be limited and short-lived since each feature only needs to get
 migrated once.
@@ -29,24 +29,32 @@ is a copy and paste of the old code :-).
 
 ## Install it
 
-    gem install rollout
+```bash
+gem install rollout
+```
 
 ## How it works
 
 Initialize a rollout object. I assign it to a global var.
 
-    require 'redis'
+```ruby
+require 'redis'
 
-    $redis   = Redis.new
-    $rollout = Rollout.new($redis)
+$redis   = Redis.new
+$rollout = Rollout.new($redis)
+```
 
 Check whether a feature is active for a particular user:
 
-    $rollout.active?(:chat, User.first) # => true/false
+```ruby
+$rollout.active?(:chat, User.first) # => true/false
+```
 
 Check whether a feature is active globally:
 
-    $rollout.active?(:chat)
+```ruby
+$rollout.active?(:chat)
+```
 
 You can activate features using a number of different mechanisms.
 
@@ -57,48 +65,64 @@ sounds like.
 
 You can activate the all group for the chat feature like this:
 
-    $rollout.activate_group(:chat, :all)
+```ruby
+$rollout.activate_group(:chat, :all)
+```
 
 You might also want to define your own groups. We have one for our caretakers:
 
-    $rollout.define_group(:caretakers) do |user|
-      user.caretaker?
-    end
+```ruby
+$rollout.define_group(:caretakers) do |user|
+  user.caretaker?
+end
+```
 
 You can activate multiple groups per feature.
 
 Deactivate groups like this:
 
-    $rollout.deactivate_group(:chat, :all)
+```ruby
+$rollout.deactivate_group(:chat, :all)
+```
 
 ## Specific Users
 
 You might want to let a specific user into a beta test or something. If that
 user isn't part of an existing group, you can let them in specifically:
 
-    $rollout.activate_user(:chat, @user)
+```ruby
+$rollout.activate_user(:chat, @user)
+```
 
 Deactivate them like this:
 
-    $rollout.deactivate_user(:chat, @user)
+```ruby
+$rollout.deactivate_user(:chat, @user)
+```
 
 ## User Percentages
 
 If you're rolling out a new feature, you might want to test the waters by
 slowly enabling it for a percentage of your users.
 
-    $rollout.activate_percentage(:chat, 20)
+```ruby
+$rollout.activate_percentage(:chat, 20)
+```
 
 The algorithm for determining which users get let in is this:
 
-    CRC32(user.id) % 100 < percentage
+```ruby
+CRC32(user.id) % 100 < percentage
+```
 
 So, for 20%, users 0, 1, 10, 11, 20, 21, etc would be allowed in. Those users
 would remain in as the percentage increases.
 
 Deactivate all percentages like this:
 
-    $rollout.deactivate_percentage(:chat)
+```ruby
+$rollout.deactivate_percentage(:chat)
+```
 
 _Note that activating a feature for 100% of users will also make it active
 "globally". That is when calling Rollout#active? without a user object._
@@ -106,7 +130,9 @@ _Note that activating a feature for 100% of users will also make it active
 In some cases you might want to have a feature activated for a random set of
 users. It can come specially handy when using Rollout for split tests.
 
-    $rollout = Rollout.new($redis, randomize_percentage: true)
+```ruby
+$rollout = Rollout.new($redis, randomize_percentage: true)
+```
 
 When on `randomize_percentage` will make sure that 50% of users for feature A
 are selected independently from users for feature B.
@@ -115,7 +141,9 @@ are selected independently from users for feature B.
 
 Deactivate everybody at once:
 
-    $rollout.deactivate(:chat)
+```ruby
+$rollout.deactivate(:chat)
+```
 
 For many of our features, we keep track of error rates using redis, and
 deactivate them automatically when a threshold is reached to prevent service
@@ -131,22 +159,13 @@ If you're using redis, you can namespace keys further to support multiple
 environments by using the
 [redis-namespace](https://github.com/resque/redis-namespace) gem.
 
-    $ns = Redis::Namespace.new(Rails.env, :redis => $redis)
-    $rollout = Rollout.new($ns)
-    $rollout.activate_group(:chat, :all)
+```ruby
+$ns = Redis::Namespace.new(Rails.env, redis: $redis)
+$rollout = Rollout.new($ns)
+$rollout.activate_group(:chat, :all)
+```
 
 This example would use the "development:feature:chat:groups" key.
-
-## misc/check_rollout.rb
-
-In our infrastructure, rollout obviously allows us to progressively enable new
-features but we also use it to automatically disable features and services
-that break or fail to prevent them from causing cascading failures and wiping
-out our entire system.
-
-When a feature reaches "maturity" - in other words, expected to be at 100%
-rollout all the time - we use check_rollout.rb to setup nagios alerts on the
-rollouts so that we get paged if one of them gets disabled.
 
 ## Implementations in other languages
 
