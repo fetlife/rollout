@@ -1,6 +1,6 @@
-require File.expand_path(File.dirname(__FILE__) + '/spec_helper')
+require "spec_helper"
 
-describe "Rollout::Legacy" do
+RSpec.describe "Rollout::Legacy" do
   before do
     @redis   = Redis.new
     @rollout = Rollout::Legacy.new(@redis)
@@ -13,16 +13,16 @@ describe "Rollout::Legacy" do
     end
 
     it "the feature is active for users for which the block evaluates to true" do
-      @rollout.should be_active(:chat, stub(:id => 5))
+      expect(@rollout).to be_active(:chat, double(:id => 5))
     end
 
     it "is not active for users for which the block evaluates to false" do
-      @rollout.should_not be_active(:chat, stub(:id => 1))
+      expect(@rollout).not_to be_active(:chat, double(:id => 1))
     end
 
     it "is not active if a group is found in Redis but not defined in Rollout" do
       @rollout.activate_group(:chat, :fake)
-      @rollout.should_not be_active(:chat, stub(:id => 1))
+      expect(@rollout).not_to be_active(:chat, double(:id => 1))
     end
   end
 
@@ -32,7 +32,7 @@ describe "Rollout::Legacy" do
     end
 
     it "evaluates to true no matter what" do
-      @rollout.should be_active(:chat, stub(:id => 0))
+      expect(@rollout).to be_active(:chat, double(:id => 0))
     end
   end
 
@@ -45,11 +45,11 @@ describe "Rollout::Legacy" do
     end
 
     it "deactivates the rules for that group" do
-      @rollout.should_not be_active(:chat, stub(:id => 10))
+      expect(@rollout).not_to be_active(:chat, double(:id => 10))
     end
 
     it "leaves the other groups active" do
-      @rollout.should be_active(:chat, stub(:id => 5))
+      expect(@rollout).to be_active(:chat, double(:id => 5))
     end
   end
 
@@ -58,56 +58,56 @@ describe "Rollout::Legacy" do
       @rollout.define_group(:fivesonly) { |user| user.id == 5 }
       @rollout.activate_group(:chat, :all)
       @rollout.activate_group(:chat, :fivesonly)
-      @rollout.activate_user(:chat, stub(:id => 51))
+      @rollout.activate_user(:chat, double(:id => 51))
       @rollout.activate_percentage(:chat, 100)
       @rollout.activate_globally(:chat)
       @rollout.deactivate_all(:chat)
     end
 
     it "removes all of the groups" do
-      @rollout.should_not be_active(:chat, stub(:id => 0))
+      expect(@rollout).not_to be_active(:chat, double(:id => 0))
     end
 
     it "removes all of the users" do
-      @rollout.should_not be_active(:chat, stub(:id => 51))
+      expect(@rollout).not_to be_active(:chat, double(:id => 51))
     end
 
     it "removes the percentage" do
-      @rollout.should_not be_active(:chat, stub(:id => 24))
+      expect(@rollout).not_to be_active(:chat, double(:id => 24))
     end
 
     it "removes globally" do
-      @rollout.should_not be_active(:chat)
+      expect(@rollout).not_to be_active(:chat)
     end
   end
 
   describe "activating a specific user" do
     before do
-      @rollout.activate_user(:chat, stub(:id => 42))
+      @rollout.activate_user(:chat, double(:id => 42))
     end
 
     it "is active for that user" do
-      @rollout.should be_active(:chat, stub(:id => 42))
+      expect(@rollout).to be_active(:chat, double(:id => 42))
     end
 
     it "remains inactive for other users" do
-      @rollout.should_not be_active(:chat, stub(:id => 24))
+      expect(@rollout).not_to be_active(:chat, double(:id => 24))
     end
   end
 
   describe "deactivating a specific user" do
     before do
-      @rollout.activate_user(:chat, stub(:id => 42))
-      @rollout.activate_user(:chat, stub(:id => 24))
-      @rollout.deactivate_user(:chat, stub(:id => 42))
+      @rollout.activate_user(:chat, double(:id => 42))
+      @rollout.activate_user(:chat, double(:id => 24))
+      @rollout.deactivate_user(:chat, double(:id => 42))
     end
 
     it "that user should no longer be active" do
-      @rollout.should_not be_active(:chat, stub(:id => 42))
+      expect(@rollout).not_to be_active(:chat, double(:id => 42))
     end
 
     it "remains active for other active users" do
-      @rollout.should be_active(:chat, stub(:id => 24))
+      expect(@rollout).to be_active(:chat, double(:id => 24))
     end
   end
 
@@ -117,7 +117,7 @@ describe "Rollout::Legacy" do
     end
 
     it "activates the feature" do
-      @rollout.should be_active(:chat)
+      expect(@rollout).to be_active(:chat)
     end
   end
 
@@ -127,7 +127,7 @@ describe "Rollout::Legacy" do
     end
 
     it "activates the feature for that percentage of the users" do
-      (1..120).select { |id| @rollout.active?(:chat, stub(:id => id)) }.length.should == 39
+      expect((1..120).select { |id| @rollout.active?(:chat, double(:id => id)) }.length).to eq(39)
     end
   end
 
@@ -137,7 +137,7 @@ describe "Rollout::Legacy" do
     end
 
     it "activates the feature for that percentage of the users" do
-      (1..200).select { |id| @rollout.active?(:chat, stub(:id => id)) }.length.should == 40
+      expect((1..200).select { |id| @rollout.active?(:chat, double(:id => id)) }.length).to eq(40)
     end
   end
 
@@ -147,7 +147,7 @@ describe "Rollout::Legacy" do
     end
 
     it "activates the feature for that percentage of the users" do
-      (1..100).select { |id| @rollout.active?(:chat, stub(:id => id)) }.length.should == 5
+      expect((1..100).select { |id| @rollout.active?(:chat, double(:id => id)) }.length).to eq(5)
     end
   end
 
@@ -159,7 +159,7 @@ describe "Rollout::Legacy" do
     end
 
     it "becomes inactivate for all users" do
-      @rollout.should_not be_active(:chat, stub(:id => 24))
+      expect(@rollout).not_to be_active(:chat, double(:id => 24))
     end
   end
 
@@ -170,7 +170,7 @@ describe "Rollout::Legacy" do
     end
 
     it "becomes inactivate" do
-      @rollout.should_not be_active(:chat)
+      expect(@rollout).not_to be_active(:chat)
     end
   end
 
@@ -185,7 +185,7 @@ describe "Rollout::Legacy" do
       end
 
       it "returns all global features" do
-        @rollout.info[:global].should include(*features)
+        expect(@rollout.info[:global]).to include(*features)
       end
     end
 
@@ -195,26 +195,26 @@ describe "Rollout::Legacy" do
         @rollout.activate_group(:chat, :caretakers)
         @rollout.activate_group(:chat, :greeters)
         @rollout.activate_globally(:signup)
-        @rollout.activate_user(:chat, stub(:id => 42))
+        @rollout.activate_user(:chat, double(:id => 42))
       end
 
       it "returns info about all the activations" do
         info = @rollout.info(:chat)
-        info[:percentage].should == 10
-        info[:groups].should include(:caretakers, :greeters)
-        info[:users].should include(42)
-        info[:global].should include(:signup)
+        expect(info[:percentage]).to eq(10)
+        expect(info[:groups]).to include(:caretakers, :greeters)
+        expect(info[:users]).to include(42)
+        expect(info[:global]).to include(:signup)
       end
     end
 
     describe "without a percentage set" do
       it "defaults to 0" do
-        @rollout.info(:chat).should == {
+        expect(@rollout.info(:chat)).to eq({
           :percentage => 0,
           :groups     => [],
           :users      => [],
           :global     => []
-        }
+        })
       end
     end
   end
