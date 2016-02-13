@@ -12,17 +12,19 @@ class Rollout
       @name    = name
 
       if string
-        raw_percentage,raw_users,raw_groups = string.split("|")
+        raw_percentage,raw_users,raw_groups,raw_splits = string.split("|")
         @percentage = raw_percentage.to_i
         @users = (raw_users || "").split(",").map(&:to_s)
         @groups = (raw_groups || "").split(",").map(&:to_sym)
+        @splits = (raw_splits || "").split(",").map(&:to_sym)
       else
         clear
       end
     end
 
     def serialize
-      "#{@percentage}|#{@users.join(",")}|#{@groups.join(",")}"
+      "#{@percentage}|#{@users.join(",")}|#{@groups.join(",")}|" +
+        "#{@splits.join(",")}"
     end
 
     def add_user(user)
@@ -38,6 +40,10 @@ class Rollout
       @groups << group.to_sym unless @groups.include?(group.to_sym)
     end
 
+    def add_split_groups(*versions)
+      @splits = versions
+    end
+
     def remove_group(group)
       @groups.delete(group.to_sym)
     end
@@ -45,6 +51,7 @@ class Rollout
     def clear
       @groups = []
       @users = []
+      @splits = []
       @percentage = 0
     end
 
@@ -59,10 +66,19 @@ class Rollout
       end
     end
 
+    def split_test_group(rollout, user)
+      if user.nil? || @splits.empty?
+        nil
+      else
+        @splits[user_index_for_group_count(user, @splits.count)]
+      end
+    end
+
     def to_hash
       {:percentage => @percentage,
        :groups     => @groups,
-       :users      => @users}
+       :users      => @users,
+       :splits     => @splits}
     end
 
     private
@@ -80,14 +96,17 @@ class Rollout
       end
 
       def user_in_percentage?(user)
-        Zlib.crc32(user_id_for_percentage(user)) % 100 < @percentage
+         user_index_for_group_count(user, 100) < @percentage
       end
 
-      def user_id_for_percentage(user)
+      def user_index_for_group_count(user, group_count)
+        id = user_id(user).to_s
         if @options[:randomize_percentage]
-          user_id(user).to_s + @name.to_s
+          crc1 = Zlib.crc32(id)
+          crc2 = Zlib.crc32(@name.to_s)
+          Zlib.crc32_combine(crc1, crc2, id.length ) % group_count
         else
-          user_id(user)
+          Zlib.crc32(id) % group_count
         end
       end
 
@@ -112,6 +131,12 @@ class Rollout
   def activate(feature)
     with_feature(feature) do |f|
       f.percentage = 100
+    end
+  end
+
+  def activate_split_test(feature, *versions)
+    with_feature(feature) do |f|
+      f.add_split_groups(*versions)
     end
   end
 
@@ -162,6 +187,11 @@ class Rollout
   def active?(feature, user = nil)
     feature = get(feature)
     feature.active?(self, user)
+  end
+
+  def split_test_group(feature, user)
+    feature = get(feature)
+    feature.split_test_group(self, user)
   end
 
   def activate_percentage(feature, percentage)

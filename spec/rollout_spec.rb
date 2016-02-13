@@ -6,6 +6,53 @@ describe "Rollout" do
     @rollout = Rollout.new(@redis)
   end
 
+  describe "when a split test is active" do
+    before do
+      options = @rollout.instance_variable_get('@options')
+      options[:randomize_percentage] = true
+      @test_groups = [:version_1, :version_2, :version_3]
+      @rollout.activate_split_test(:chat, *@test_groups)
+      @rollout.activate_split_test(:chat2, *@test_groups)
+    end
+
+    it "places users in different versions for different features" do
+      total_users = 120
+      same_group = 0
+      (1..total_users).each do |id|
+        group1 = @rollout.split_test_group(:chat, stub(:id => id))
+        group2 = @rollout.split_test_group(:chat2, stub(:id => id))
+        same_group +=1 if group1 == group2
+      end
+      same_group.should be_within(5).of(40)
+    end
+
+    it "places the user on one of the groups" do
+      @test_groups.should include(
+        @rollout.split_test_group(:chat, stub(:id => 5)))
+    end
+
+    it "always place the user on the same group" do
+      user = stub(:id => 20)
+      group = @rollout.split_test_group(:chat, user)
+      @rollout.split_test_group(:chat, user).should eq group
+    end
+
+    it "distributes the users in all groups" do
+      results = {}
+      @test_groups.each do |group|
+        results[group] = 0
+      end
+      (1..120).each do |id|
+        group = @rollout.split_test_group(:chat, stub(:id => id))
+        @test_groups.should include(group)
+        results[group] += 1
+      end
+      @test_groups.each do |group|
+        results[group].should be_within(5).of(40)
+      end
+    end
+  end
+
   describe "when a group is activated" do
     before do
       @rollout.define_group(:fivesonly) { |user| user.id == 5 }
@@ -287,6 +334,7 @@ describe "Rollout" do
       @rollout.activate_group(:chat, :greeters)
       @rollout.activate(:signup)
       @rollout.activate_user(:chat, stub(:id => 42))
+      @rollout.activate_split_test(:chat, :version_a, :version_b, :version_c)
     end
 
     it "returns the feature object" do
@@ -297,7 +345,8 @@ describe "Rollout" do
       feature.to_hash.should == {
         :groups => [:caretakers, :greeters],
         :percentage => 10,
-        :users => %w(42)
+        :users => %w(42),
+        :splits => [:version_a, :version_b, :version_c]
       }
 
       feature = @rollout.get(:signup)
@@ -321,7 +370,8 @@ describe "Rollout" do
         @rollout.get(feature).to_hash.should == {
           :percentage => 0,
           :users => [],
-          :groups => []
+          :groups => [],
+          :splits => []
         }
       end
     end
@@ -345,13 +395,15 @@ describe "Rollout" do
       @rollout.get(:chat).to_hash.should == {
         :percentage => 12,
         :users => %w(24 42),
-        :groups => [:dope_people]
+        :groups => [:dope_people],
+        :splits => []
       }
       @legacy.deactivate_all(:chat)
       @rollout.get(:chat).to_hash.should == {
         :percentage => 12,
         :users => %w(24 42),
-        :groups => [:dope_people]
+        :groups => [:dope_people],
+        :splits => []
       }
       @redis.get("feature:chat").should_not be_nil
     end
