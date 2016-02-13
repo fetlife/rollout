@@ -127,16 +127,16 @@ RSpec.describe "Rollout" do
 
   describe "activating a group of users" do
     context "specified by user objects" do
-      let(:users) { [stub(id: 1), stub(id: 2), stub(id: 3)] }
+      let(:users) { [double(id: 1), double(id: 2), double(id: 3)] }
 
       before { @rollout.activate_users(:chat, users) }
 
       it "is active for the given users" do
-        users.each { |user| @rollout.should be_active(:chat, user) }
+        users.each { |user| expect(@rollout).to be_active(:chat, user) }
       end
 
       it "remains inactive for other users" do
-        @rollout.should_not be_active(:chat, stub(:id => 4))
+        expect(@rollout).not_to be_active(:chat, double(:id => 4))
       end
     end
 
@@ -146,11 +146,11 @@ RSpec.describe "Rollout" do
       before { @rollout.activate_users(:chat, users) }
 
       it "is active for the given users" do
-        users.each { |user| @rollout.should be_active(:chat, user) }
+        users.each { |user| expect(@rollout).to be_active(:chat, user) }
       end
 
       it "remains inactive for other users" do
-        @rollout.should_not be_active(:chat, 4)
+        expect(@rollout).not_to be_active(:chat, 4)
       end
     end
   end
@@ -175,8 +175,8 @@ RSpec.describe "Rollout" do
 
   describe "deactivating a group of users" do
     context "specified by user objects" do
-      let(:active_users) { [stub(id: 1), stub(id: 2)] }
-      let(:inactive_users) { [stub(id: 3), stub(id: 4)] }
+      let(:active_users) { [double(id: 1), double(id: 2)] }
+      let(:inactive_users) { [double(id: 3), double(id: 4)] }
 
       before do
         @rollout.activate_users(:chat, active_users + inactive_users)
@@ -184,11 +184,11 @@ RSpec.describe "Rollout" do
       end
 
       it "is active for the active users" do
-        active_users.each { |user| @rollout.should be_active(:chat, user) }
+        active_users.each { |user| expect(@rollout).to be_active(:chat, user) }
       end
 
       it "is not active for inactive users" do
-        inactive_users.each { |user| @rollout.should_not be_active(:chat, user) }
+        inactive_users.each { |user| expect(@rollout).not_to be_active(:chat, user) }
       end
     end
 
@@ -202,11 +202,11 @@ RSpec.describe "Rollout" do
       end
 
       it "is active for the active users" do
-        active_users.each { |user| @rollout.should be_active(:chat, user) }
+        active_users.each { |user| expect(@rollout).to be_active(:chat, user) }
       end
 
       it "is not active for inactive users" do
-        inactive_users.each { |user| @rollout.should_not be_active(:chat, user) }
+        inactive_users.each { |user| expect(@rollout).not_to be_active(:chat, user) }
       end
     end
   end
@@ -335,15 +335,15 @@ RSpec.describe "Rollout" do
     end
 
     it "should be removed from features list" do
-      @rollout.features.size.should == 1
+      expect(@rollout.features.size).to eq 1
       @rollout.delete(:chat)
-      @rollout.features.size.should == 0
+      expect(@rollout.features.size).to eq 0
     end
 
     it "should have metadata cleared" do
-      @rollout.get(:chat).percentage.should == 100
+      expect(@rollout.get(:chat).percentage).to eq 100
       @rollout.delete(:chat)
-      @rollout.get(:chat).percentage.should == 0
+      expect(@rollout.get(:chat).percentage).to eq 0
     end
   end
 
