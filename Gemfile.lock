@@ -6,40 +6,37 @@ PATH
 GEM
   remote: https://rubygems.org/
   specs:
-    bourne (1.0)
-      mocha (= 0.9.8)
     diff-lcs (1.2.5)
     git (1.2.9.1)
     jeweler (1.6.4)
       bundler (~> 1.0)
       git (>= 1.2.5)
       rake
-    mocha (0.9.8)
-      rake
     rake (10.4.2)
     redis (3.2.1)
-    rspec (3.2.0)
-      rspec-core (~> 3.2.0)
-      rspec-expectations (~> 3.2.0)
-      rspec-mocks (~> 3.2.0)
-    rspec-core (3.2.3)
-      rspec-support (~> 3.2.0)
-    rspec-expectations (3.2.1)
+    rspec (3.4.0)
+      rspec-core (~> 3.4.0)
+      rspec-expectations (~> 3.4.0)
+      rspec-mocks (~> 3.4.0)
+    rspec-core (3.4.2)
+      rspec-support (~> 3.4.0)
+    rspec-expectations (3.4.0)
       diff-lcs (>= 1.2.0, < 2.0)
-      rspec-support (~> 3.2.0)
-    rspec-mocks (3.2.1)
+      rspec-support (~> 3.4.0)
+    rspec-mocks (3.4.1)
       diff-lcs (>= 1.2.0, < 2.0)
-      rspec-support (~> 3.2.0)
-    rspec-support (3.2.2)
+      rspec-support (~> 3.4.0)
+    rspec-support (3.4.1)
 
 PLATFORMS
   ruby
 
 DEPENDENCIES
-  bourne (= 1.0)
   bundler (>= 1.0.0)
   jeweler (~> 1.6.4)
-  mocha (= 0.9.8)
   redis
   rollout!
   rspec
+
+BUNDLED WITH
+   1.10.6
