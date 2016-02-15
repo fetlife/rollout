@@ -20,4 +20,5 @@ Gem::Specification.new do |s|
   s.add_development_dependency "bundler", ">= 1.0.0"
   s.add_development_dependency "jeweler", "~> 1.6.4"
   s.add_development_dependency "redis"
+  s.add_development_dependency "codeclimate-test-reporter"
 end
