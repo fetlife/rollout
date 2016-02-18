@@ -324,7 +324,7 @@ RSpec.describe "Rollout" do
       @rollout.set(:chat, false)
     end
 
-    it "becomes activated" do
+    it "becomes inactivated" do
       expect(@rollout).not_to be_active(:chat)
     end
   end
@@ -445,6 +445,83 @@ RSpec.describe "Rollout" do
     it "imports settings that were globally activated" do
       @legacy.activate_globally(:video_chat)
       expect(@rollout.get(:video_chat).to_hash[:percentage]).to eq(100)
+    end
+  end
+
+  describe "#feature_states" do
+    let(:user_double) { double(id: 7) }
+
+    before do
+      @rollout.activate(:chat)
+      @rollout.activate_user(:video, user_double)
+      @rollout.deactivate(:vr)
+    end
+
+    it "returns a hash" do
+      expect(@rollout.feature_states).to be_a(Hash)
+    end
+
+    context "with user argument" do
+      it "maps active feature as true" do
+        state = @rollout.feature_states(user_double)[:video]
+        expect(state).to eq(true)
+      end
+
+      it "maps inactive feature as false" do
+        state = @rollout.feature_states[:vr]
+        expect(state).to eq(false)
+      end
+    end
+
+    context "with no argument" do
+      it "maps active feature as true" do
+        state = @rollout.feature_states[:chat]
+        expect(state).to eq(true)
+      end
+
+      it "maps inactive feature as false" do
+        state = @rollout.feature_states[:video]
+        expect(state).to eq(false)
+      end
+    end
+  end
+
+  describe "#active_features" do
+    let(:user_double) { double(id: 19) }
+
+    before do
+      @rollout.activate(:chat)
+      @rollout.activate_user(:video, user_double)
+      @rollout.deactivate(:vr)
+    end
+
+    it "returns an array" do
+      expect(@rollout.active_features).to be_a(Array)
+    end
+
+    context "with user argument" do
+      it "includes active feature" do
+        features = @rollout.active_features(user_double)
+        expect(features).to include(:video)
+        expect(features).to include(:chat)
+      end
+
+      it "excludes inactive feature" do
+        features = @rollout.active_features(user_double)
+        expect(features).to_not include(:vr)
+      end
+    end
+
+    context "with no argument" do
+      it "includes active feature" do
+        features = @rollout.active_features
+        expect(features).to include(:chat)
+      end
+
+      it "excludes inactive feature" do
+        features = @rollout.active_features
+        expect(features).to_not include(:video)
+      end
     end
   end
 end

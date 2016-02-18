@@ -226,6 +226,18 @@ class Rollout
     (@storage.get(features_key) || "").split(",").map(&:to_sym)
   end
 
+  def feature_states(user = nil)
+    features.each_with_object({}) do |f, hash|
+      hash[f] = active?(f, user)
+    end
+  end
+
+  def active_features(user = nil)
+    features.select do |f|
+      active?(f, user)
+    end
+  end
+
   def clear!
     features.each do |feature|
       with_feature(feature) { |f| f.clear }
