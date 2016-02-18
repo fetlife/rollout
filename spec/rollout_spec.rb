@@ -16,14 +16,15 @@ describe "Rollout" do
     end
 
     it "places users in different versions for different features" do
-      total_users = 120
+      total_users = 1200
       same_group = 0
+
       (1..total_users).each do |id|
-        group1 = @rollout.split_test_group(:chat, stub(:id => id))
-        group2 = @rollout.split_test_group(:chat2, stub(:id => id))
+        group1 = @rollout.split_test_group(:chat, stub(:id => id + 1200000))
+        group2 = @rollout.split_test_group(:chat2, stub(:id => id + 1200000))
         same_group +=1 if group1 == group2
       end
-      same_group.should be_within(5).of(40)
+      same_group.should be_within(total_users/24).of(total_users/3)
     end
 
     it "places the user on one of the groups" do
@@ -38,17 +39,18 @@ describe "Rollout" do
     end
 
     it "distributes the users in all groups" do
+      total_users = 1200
       results = {}
       @test_groups.each do |group|
         results[group] = 0
       end
-      (1..120).each do |id|
-        group = @rollout.split_test_group(:chat, stub(:id => id))
+      (1..total_users).each do |id|
+        group = @rollout.split_test_group(:chat, stub(:id => id + 1200000))
         @test_groups.should include(group)
         results[group] += 1
       end
-      @test_groups.each do |group|
-        results[group].should be_within(5).of(40)
+      results.each do |group, count|
+        count.should be_within(total_users/24).of(total_users/3)
       end
     end
   end
