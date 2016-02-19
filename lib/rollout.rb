@@ -113,7 +113,7 @@ class Rollout
         if @options[:randomize_percentage]
           crc1 = Zlib.crc32(id)
           crc2 = Zlib.crc32(@name.to_s)
-          Zlib.crc32_combine(crc1, crc2, id.length ) % group_count
+          Zlib.crc32_combine(crc1, crc2, @name.to_s.length ) % group_count
         else
           Zlib.crc32(id) % group_count
         end
