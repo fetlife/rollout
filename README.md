@@ -138,7 +138,21 @@ $rollout = Rollout.new($redis, randomize_percentage: true)
 When on `randomize_percentage` will make sure that 50% of users for feature A
 are selected independently from users for feature B.
 
-## Feature is broken
+## Global actions
+
+While groups can come in handy, the actual global setter for a feature does not require a group to be passed.
+
+```ruby
+$rollout.activate(:chat)
+```
+
+In that case you can check the global availability of a feature using the following
+
+```ruby
+$rollout.active?(:chat)
+```
+
+And if something is wrong you can set a feature off for everybody using
 
 Deactivate everybody at once:
 
