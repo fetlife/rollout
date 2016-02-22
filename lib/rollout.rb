@@ -70,7 +70,7 @@ class Rollout
       if user.nil? || @splits.empty?
         nil
       else
-        @splits[user_index_for_group_count(user, @splits.count)]
+        @splits[user_index(user, @splits.count)]
       end
     end
 
@@ -96,26 +96,20 @@ class Rollout
       end
 
       def user_in_percentage?(user)
-        #user_index_for_group_count(user, 100) < @percentage
-        Zlib.crc32(user_id_for_percentage(user)) % 100 < @percentage
+        user_index(user) < @percentage
       end
 
-      def user_id_for_percentage(user)
-        if @options[:randomize_percentage]
-          user_id(user).to_s + @name.to_s
-        else
-          user_id(user)
-        end
+      def user_index(user, groups=100)
+        crc(user) % groups
       end
 
-      def user_index_for_group_count(user, group_count)
-        id = user_id(user).to_s
+      def crc(user)
+        user_id_crc = Zlib.crc32(user_id(user).to_s)
         if @options[:randomize_percentage]
-          crc1 = Zlib.crc32(id)
-          crc2 = Zlib.crc32(@name.to_s)
-          Zlib.crc32_combine(crc1, crc2, @name.to_s.length ) % group_count
+          name_crc = Zlib.crc32(@name.to_s)
+          Zlib.crc32_combine(user_id_crc, name_crc, @name.to_s.length)
         else
-          Zlib.crc32(id) % group_count
+          user_id_crc
         end
       end
 
