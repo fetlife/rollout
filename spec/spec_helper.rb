@@ -2,7 +2,7 @@ $LOAD_PATH.unshift(File.dirname(__FILE__))
 $LOAD_PATH.unshift(File.join(File.dirname(__FILE__), '..', 'lib'))
 require "rollout"
 require "rspec"
-require(p(ENV["TRAVIS_CI"] ? "redis" : "fakeredis"))
+require ENV["USE_REAL_REDIS"] == "true" ? "redis" : "fakeredis"
 require "codeclimate-test-reporter"
 
 SimpleCov.start do
