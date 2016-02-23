@@ -10,6 +10,8 @@ GEM
       simplecov (>= 0.7.1, < 1.0.0)
     diff-lcs (1.2.5)
     docile (1.1.5)
+    fakeredis (0.5.0)
+      redis (~> 3.0)
     git (1.2.9.1)
     jeweler (1.6.4)
       bundler (~> 1.0)
@@ -17,7 +19,7 @@ GEM
       rake
     json (1.8.3)
     rake (10.4.2)
-    redis (3.2.1)
+    redis (3.2.2)
     rspec (3.4.0)
       rspec-core (~> 3.4.0)
       rspec-expectations (~> 3.4.0)
@@ -43,6 +45,7 @@ PLATFORMS
 DEPENDENCIES
   bundler (>= 1.0.0)
   codeclimate-test-reporter
+  fakeredis
   jeweler (~> 1.6.4)
   redis
   rollout!
