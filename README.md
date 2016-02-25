@@ -19,17 +19,6 @@ This also has the effect of rollout no longer being dependent on redis. Just
 give it something that responds to `set(key,value)`, `get(key)` and
 `del(key)`.
 
-If you have been using the 1.x format, you can initialize Rollout with
-`migrate: true` and it'll do its best to automatically migrate your old
-features to the new format. There will be some performance impact, but it
-should be limited and short-lived since each feature only needs to get
-migrated once.
-
-## Rollout::Legacy
-
-If you'd prefer to continue to use the old layout in redis, `Rollout::Legacy`
-is a copy and paste of the old code :-).
-
 ## Install it
 
 ```bash
