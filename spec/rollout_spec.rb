@@ -417,37 +417,6 @@ RSpec.describe "Rollout" do
     end
   end
 
-  describe "migration mode" do
-    before do
-      @legacy = Rollout::Legacy.new(@redis)
-      @legacy.activate_percentage(:chat, 12)
-      @legacy.activate_user(:chat, double(id: 42))
-      @legacy.activate_user(:chat, double(id: 24))
-      @legacy.activate_group(:chat, :dope_people)
-      @rollout = Rollout.new(@redis, migrate: true)
-    end
-
-    it "imports the settings from the legacy rollout once" do
-      expect(@rollout.get(:chat).to_hash).to eq({
-        percentage: 12,
-        users: %w(24 42),
-        groups: [:dope_people]
-      })
-      @legacy.deactivate_all(:chat)
-      expect(@rollout.get(:chat).to_hash).to eq({
-        percentage: 12,
-        users: %w(24 42).to_set,
-        groups: [:dope_people].to_set
-      })
-      expect(@redis.get("feature:chat")).not_to be_nil
-    end
-
-    it "imports settings that were globally activated" do
-      @legacy.activate_globally(:video_chat)
-      expect(@rollout.get(:video_chat).to_hash[:percentage]).to eq(100)
-    end
-  end
-
   describe "#feature_states" do
     let(:user_double) { double(id: 7) }
 

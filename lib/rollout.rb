@@ -1,5 +1,4 @@
 require "rollout/version"
-require "rollout/legacy"
 require "zlib"
 require "set"
 
