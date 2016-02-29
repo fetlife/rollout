@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
   s.email       = ["jamesgolick@gmail.com"]
   s.description = "Feature flippers with redis."
   s.summary = "Feature flippers with redis."
-  s.homepage = "https://github.com/jamesgolick/rollout"
+  s.homepage = "https://github.com/FetLife/rollout"
 
   s.files         = `git ls-files`.split("\n")
   s.test_files    = `git ls-files -- {test,spec,features}/*`.split("\n")
