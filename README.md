@@ -153,7 +153,7 @@ $rollout.deactivate(:chat)
 
 For many of our features, we keep track of error rates using redis, and
 deactivate them automatically when a threshold is reached to prevent service
-failures from cascading. See http://github.com/jamesgolick/degrade for the
+failures from cascading. See https://github.com/jamesgolick/degrade for the
 failure detection code.
 
 ## Namespacing
@@ -175,9 +175,9 @@ This example would use the "development:feature:chat:groups" key.
 
 ## Implementations in other languages
 
-*   Python: http://github.com/asenchi/proclaim
+*   Python: https://github.com/asenchi/proclaim
 *   PHP: https://github.com/opensoft/rollout
-*   Clojure: https://github.com/tcrayford/shoutout
+*   Clojure: https://github.com/yeller/shoutout
 
 
 ## Contributors
