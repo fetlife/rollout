@@ -493,6 +493,18 @@ RSpec.describe "Rollout" do
       end
     end
   end
+
+  describe "#user_in_active_users?" do
+    it "returns true if activated for user" do
+      @rollout.activate_user(:chat, double(id: 5))
+      expect(@rollout.user_in_active_users?(:chat, "5")).to eq(true)
+    end
+
+    it "returns false if activated for group" do
+      @rollout.activate_group(:chat, :all)
+      expect(@rollout.user_in_active_users?(:chat, "5")).to eq(false)
+    end
+  end
 end
 
 describe "Rollout::Feature" do

@@ -59,6 +59,10 @@ class Rollout
       end
     end
 
+    def user_in_active_users?(user)
+      @users.include?(user_id(user))
+    end
+
     def to_hash
       {
         percentage: @percentage,
@@ -90,10 +94,6 @@ class Rollout
         else
           user_id(user)
         end
-      end
-
-      def user_in_active_users?(user)
-        @users.include?(user_id(user))
       end
 
       def user_in_active_group?(user, rollout)
@@ -181,6 +181,11 @@ class Rollout
   def active?(feature, user = nil)
     feature = get(feature)
     feature.active?(self, user)
+  end
+
+  def user_in_active_users?(feature, user = nil)
+    feature = get(feature)
+    feature.user_in_active_users?(user)
   end
 
   def inactive?(feature, user = nil)
