@@ -13,7 +13,7 @@ class Rollout
 
       if string
         raw_percentage,raw_users,raw_groups = string.split("|")
-        @percentage = raw_percentage.to_i
+        @percentage = raw_percentage.to_f
         @users = (raw_users || "").split(",").map(&:to_s).to_set
         @groups = (raw_groups || "").split(",").map(&:to_sym).to_set
       else
@@ -85,7 +85,7 @@ class Rollout
       end
 
       def user_in_percentage?(user)
-        Zlib.crc32(user_id_for_percentage(user)) % 100 < @percentage
+        Zlib.crc32(user_id_for_percentage(user)) % 100_000 < @percentage * 1_000
       end
 
       def user_id_for_percentage(user)

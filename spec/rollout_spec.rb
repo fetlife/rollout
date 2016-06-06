@@ -227,7 +227,7 @@ RSpec.describe "Rollout" do
     end
 
     it "activates the feature for that percentage of the users" do
-      expect((1..120).select { |id| @rollout.active?(:chat, double(id: id)) }.length).to be_within(1).of(20)
+      expect((1..100).select { |id| @rollout.active?(:chat, double(id: id)) }.length).to be_within(2).of(20)
     end
   end
 
@@ -237,7 +237,7 @@ RSpec.describe "Rollout" do
     end
 
     it "activates the feature for that percentage of the users" do
-      expect((1..200).select { |id| @rollout.active?(:chat, double(id: id)) }.length).to be_within(5).of(40)
+      expect((1..200).select { |id| @rollout.active?(:chat, double(id: id)) }.length).to be_within(4).of(40)
     end
   end
 
@@ -248,6 +248,16 @@ RSpec.describe "Rollout" do
 
     it "activates the feature for that percentage of the users" do
       expect((1..100).select { |id| @rollout.active?(:chat, double(id: id)) }.length).to be_within(2).of(5)
+    end
+  end
+
+  describe "activating a feature for a percentage of users" do
+    before do
+      @rollout.activate_percentage(:chat, 0.1)
+    end
+
+    it "activates the feature for that percentage of the users" do
+      expect((1..10_000).to_set.select { |id| @rollout.active?(:chat, double(id: id)) }.length).to be_within(2).of(10)
     end
   end
 
