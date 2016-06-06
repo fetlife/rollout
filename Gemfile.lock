@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    rollout (2.2.4)
+    rollout (2.3.0)
 
 GEM
   remote: https://rubygems.org/
@@ -45,4 +45,4 @@ DEPENDENCIES
   rspec
 
 BUNDLED WITH
-   1.10.6
+   1.12.5
