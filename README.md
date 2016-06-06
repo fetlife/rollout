@@ -103,7 +103,7 @@ $rollout.activate_percentage(:chat, 20)
 The algorithm for determining which users get let in is this:
 
 ```ruby
-CRC32(user.id) % 100 < percentage
+CRC32(user.id) % 100_000 < percentage * 1_000
 ```
 
 So, for 20%, users 0, 1, 10, 11, 20, 21, etc would be allowed in. Those users
