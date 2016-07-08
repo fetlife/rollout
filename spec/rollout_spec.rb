@@ -344,6 +344,14 @@ RSpec.describe "Rollout" do
       @rollout.set(:chat, true)
     end
 
+    context "when feature was passed as string" do
+      it "should be removed from features list" do
+        expect(@rollout.features.size).to eq 1
+        @rollout.delete('chat')
+        expect(@rollout.features.size).to eq 0
+      end
+    end
+
     it "should be removed from features list" do
       expect(@rollout.features.size).to eq 1
       @rollout.delete(:chat)
