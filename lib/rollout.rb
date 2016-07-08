@@ -122,8 +122,8 @@ class Rollout
   end
 
   def delete(feature)
-    features = (@storage.get(features_key) || "").split(",").map(&:to_sym)
-    features.delete(feature.to_sym)
+    features = (@storage.get(features_key) || "").split(",")
+    features.delete(feature.to_s)
     @storage.set(features_key, features.join(","))
     @storage.del(key(feature))
   end
