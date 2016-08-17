@@ -523,6 +523,36 @@ RSpec.describe "Rollout" do
       expect(@rollout.user_in_active_users?(:chat, "5")).to eq(false)
     end
   end
+
+  describe "#set_feature_data" do
+    before do
+      @rollout.set_feature_data(:chat, description: 'foo', release_date: 'bar')
+    end
+
+    it 'sets the data attribute on feature' do
+      expect(@rollout.get(:chat).data).to include(description: 'foo', release_date: 'bar')
+    end
+
+    it 'updates a data attribute' do
+      @rollout.set_feature_data(:chat, description: 'baz')
+      expect(@rollout.get(:chat).data).to include(description: 'baz', release_date: 'bar')
+    end
+
+    it 'only sets data on specified feature' do
+      @rollout.set_feature_data(:talk, image_url: 'kittens.png')
+      expect(@rollout.get(:chat).data).not_to include(image_url: 'kittens.png')
+      expect(@rollout.get(:chat).data).to include(description: 'foo', release_date: 'bar')
+    end
+  end
+
+  describe "#clear_feature_data" do
+    it 'resets data to empty hash' do
+      @rollout.set_feature_data(:chat, description: 'foo')
+      expect(@rollout.get(:chat).data).to include(description: 'foo')
+      @rollout.clear_feature_data(:chat)
+      expect(@rollout.get(:chat).data).to eq({})
+    end
+  end
 end
 
 describe "Rollout::Feature" do
