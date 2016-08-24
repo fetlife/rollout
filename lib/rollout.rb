@@ -1,6 +1,7 @@
 require "rollout/version"
 require "zlib"
 require "set"
+require "json"
 
 class Rollout
   class Feature
@@ -12,18 +13,18 @@ class Rollout
       @name    = name
 
       if string
-        raw_percentage,raw_users,raw_groups,*raw_data = string.split("|")
+        raw_percentage,raw_users,raw_groups,raw_data = string.split("|")
         @percentage = raw_percentage.to_f
         @users = (raw_users || "").split(",").map(&:to_s).to_set
         @groups = (raw_groups || "").split(",").map(&:to_sym).to_set
-        @data = (raw_data || "").each_with_object({}){|x, hsh| y = x.split('=>'); hsh[y[0].to_sym] = y[1]}
+        @data = JSON.parse(raw_data || "{}", symbolize_names: true)
       else
         clear
       end
     end
 
     def serialize
-      "#{@percentage}|#{@users.to_a.join(",")}|#{@groups.to_a.join(",")}#{serialize_data}"
+      "#{@percentage}|#{@users.to_a.join(",")}|#{@groups.to_a.join(",")}|#{@data.to_json}"
     end
 
     def add_user(user)
@@ -102,10 +103,6 @@ class Rollout
         @groups.any? do |g|
           rollout.active_in_group?(g, user)
         end
-      end
-
-      def serialize_data
-        @data.each_with_object("") {|(k,v),str| str << "|" << k.to_s << "=>" << v}
       end
   end
 
@@ -220,13 +217,7 @@ class Rollout
     Feature.new(feature, string, @options)
   end
 
-  def set_feature_opts(feature, **opts)
-    with_feature(feature) do |f|
-      f.options.merge!(opts)
-    end
-  end
-
-  def set_feature_data(feature, **data)
+  def set_feature_data(feature, data)
     with_feature(feature) do |f|
       f.data.merge!(data)
     end
