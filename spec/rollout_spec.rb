@@ -219,6 +219,10 @@ RSpec.describe "Rollout" do
     it "activates the feature" do
       expect(@rollout).to be_active(:chat)
     end
+
+    it "sets @data to empty hash" do
+      expect(@rollout.get(:chat).data).to eq({})
+    end
   end
 
   describe "activating a feature for a percentage of users" do
@@ -530,25 +534,39 @@ RSpec.describe "Rollout" do
     end
 
     it 'sets the data attribute on feature' do
-      expect(@rollout.get(:chat).data).to include(description: 'foo', release_date: 'bar')
+      expect(@rollout.get(:chat).data).to include('description' => 'foo', 'release_date' => 'bar')
     end
 
     it 'updates a data attribute' do
       @rollout.set_feature_data(:chat, description: 'baz')
-      expect(@rollout.get(:chat).data).to include(description: 'baz', release_date: 'bar')
+      expect(@rollout.get(:chat).data).to include('description' => 'baz', 'release_date' => 'bar')
     end
 
     it 'only sets data on specified feature' do
       @rollout.set_feature_data(:talk, image_url: 'kittens.png')
-      expect(@rollout.get(:chat).data).not_to include(image_url: 'kittens.png')
-      expect(@rollout.get(:chat).data).to include(description: 'foo', release_date: 'bar')
+      expect(@rollout.get(:chat).data).not_to include('image_url' => 'kittens.png')
+      expect(@rollout.get(:chat).data).to include('description' => 'foo', 'release_date' => 'bar')
+    end
+
+    it 'does not modify @data if param is nil' do
+      expect(@rollout.get(:chat).data).to include('description' => 'foo', 'release_date' => 'bar')
+      @rollout.set_feature_data(:chat, nil)
+      expect(@rollout.get(:chat).data).to include('description' => 'foo', 'release_date' => 'bar')
+    end
+
+    it 'properly parses data when it contains a |' do
+      user = double("User", id: 8)
+      @rollout.activate_user(:chat, user)
+      @rollout.set_feature_data(:chat, "|call||text|" => "a|bunch|of|stuff")
+      expect(@rollout.get(:chat).data).to include("|call||text|" => "a|bunch|of|stuff")
+      expect(@rollout.active?(:chat, user)).to be true
     end
   end
 
   describe "#clear_feature_data" do
-    it 'resets data to empty hash' do
+    it 'resets data to empty string' do
       @rollout.set_feature_data(:chat, description: 'foo')
-      expect(@rollout.get(:chat).data).to include(description: 'foo')
+      expect(@rollout.get(:chat).data).to include('description' => 'foo')
       @rollout.clear_feature_data(:chat)
       expect(@rollout.get(:chat).data).to eq({})
     end
@@ -556,15 +574,47 @@ RSpec.describe "Rollout" do
 end
 
 describe "Rollout::Feature" do
-  before do
-    @user    = double("User", email: "test@test.com")
-    @feature = Rollout::Feature.new(:chat, nil, id_user_by: :email)
-  end
-
   describe "#add_user" do
     it "ids a user using id_user_by" do
-      @feature.add_user(@user)
-      expect(@user).to have_received :email
+      user    = double("User", email: "test@test.com")
+      feature = Rollout::Feature.new(:chat, nil, id_user_by: :email)
+      feature.add_user(user)
+      expect(user).to have_received :email
+    end
+  end
+
+  describe "#initialize" do
+    describe "when string does not exist" do
+      it 'clears feature attributes when string is not given' do
+        feature = Rollout::Feature.new(:chat)
+        expect(feature.groups).to be_empty
+        expect(feature.users).to be_empty
+        expect(feature.percentage).to eq 0
+        expect(feature.data).to eq({})
+      end
+
+      it 'clears feature attributes when string is nil' do
+        feature = Rollout::Feature.new(:chat, nil)
+        expect(feature.groups).to be_empty
+        expect(feature.users).to be_empty
+        expect(feature.percentage).to eq 0
+        expect(feature.data).to eq({})
+      end
+
+      it 'clears feature attributes when string is empty string' do
+        feature = Rollout::Feature.new(:chat, "")
+        expect(feature.groups).to be_empty
+        expect(feature.users).to be_empty
+        expect(feature.percentage).to eq 0
+        expect(feature.data).to eq({})
+      end
+
+      describe "when there is no data" do
+        it 'sets @data to empty hash' do
+          feature = Rollout::Feature.new(:chat, "0||")
+          expect(feature.data).to eq({})
+        end
+      end
     end
   end
 end

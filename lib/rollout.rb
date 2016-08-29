@@ -13,18 +13,18 @@ class Rollout
       @name    = name
 
       if string
-        raw_percentage,raw_users,raw_groups,raw_data = string.split("|")
+        raw_percentage,raw_users,raw_groups,raw_data = string.split(/(?<!\\)\|/)
         @percentage = raw_percentage.to_f
         @users = (raw_users || "").split(",").map(&:to_s).to_set
         @groups = (raw_groups || "").split(",").map(&:to_sym).to_set
-        @data = JSON.parse(raw_data || "{}", symbolize_names: true)
+        @data = raw_data ? JSON.parse(raw_data) : {}
       else
         clear
       end
     end
 
     def serialize
-      "#{@percentage}|#{@users.to_a.join(",")}|#{@groups.to_a.join(",")}|#{@data.to_json}"
+      "#{@percentage}|#{@users.to_a.join(",")}|#{@groups.to_a.join(",")}|#{serialize_data}"
     end
 
     def add_user(user)
@@ -103,6 +103,12 @@ class Rollout
         @groups.any? do |g|
           rollout.active_in_group?(g, user)
         end
+      end
+
+      def serialize_data
+        return "" if @data.to_s.strip.empty?
+
+        @data.to_json.gsub("|", "\\|")
       end
   end
 
@@ -219,7 +225,7 @@ class Rollout
 
   def set_feature_data(feature, data)
     with_feature(feature) do |f|
-      f.data.merge!(data)
+      f.data.merge!(Hash.new(data))
     end
   end
 
