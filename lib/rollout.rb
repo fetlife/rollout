@@ -225,7 +225,7 @@ class Rollout
 
   def set_feature_data(feature, data)
     with_feature(feature) do |f|
-      f.data.merge!(Hash.new(data))
+      f.data.merge!(data) if data.is_a? Hash
     end
   end
 
