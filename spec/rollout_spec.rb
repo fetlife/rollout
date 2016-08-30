@@ -614,6 +614,11 @@ describe "Rollout::Feature" do
           feature = Rollout::Feature.new(:chat, "0||")
           expect(feature.data).to eq({})
         end
+
+        it 'sets @data to empty hash' do
+          feature = Rollout::Feature.new(:chat, "|||   ")
+          expect(feature.data).to eq({})
+        end
       end
     end
   end

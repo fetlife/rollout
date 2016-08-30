@@ -13,11 +13,11 @@ class Rollout
       @name    = name
 
       if string
-        raw_percentage,raw_users,raw_groups,raw_data = string.split(/(?<!\\)\|/)
+        raw_percentage,raw_users,raw_groups,raw_data = string.split('|', 4)
         @percentage = raw_percentage.to_f
         @users = (raw_users || "").split(",").map(&:to_s).to_set
         @groups = (raw_groups || "").split(",").map(&:to_sym).to_set
-        @data = raw_data ? JSON.parse(raw_data) : {}
+        @data = raw_data.nil? || raw_data.strip.empty? ? {} : JSON.parse(raw_data)
       else
         clear
       end
@@ -106,7 +106,7 @@ class Rollout
       end
 
       def serialize_data
-        return "" if @data.to_s.strip.empty?
+        return "" unless @data.is_a? Hash
 
         @data.to_json.gsub("|", "\\|")
       end
