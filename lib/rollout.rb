@@ -108,7 +108,7 @@ class Rollout
       def serialize_data
         return "" unless @data.is_a? Hash
 
-        @data.to_json.gsub("|", "\\|")
+        @data.to_json
       end
   end
 

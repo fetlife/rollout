@@ -554,6 +554,12 @@ RSpec.describe "Rollout" do
       expect(@rollout.get(:chat).data).to include('description' => 'foo', 'release_date' => 'bar')
     end
 
+    it 'does not modify @data if param is empty string' do
+      expect(@rollout.get(:chat).data).to include('description' => 'foo', 'release_date' => 'bar')
+      @rollout.set_feature_data(:chat, "   ")
+      expect(@rollout.get(:chat).data).to include('description' => 'foo', 'release_date' => 'bar')
+    end
+
     it 'properly parses data when it contains a |' do
       user = double("User", id: 8)
       @rollout.activate_user(:chat, user)
