@@ -1,10 +1,11 @@
 require "rollout/version"
 require "zlib"
 require "set"
+require "json"
 
 class Rollout
   class Feature
-    attr_accessor :groups, :users, :percentage
+    attr_accessor :groups, :users, :percentage, :data
     attr_reader :name, :options
 
     def initialize(name, string = nil, opts = {})
@@ -12,17 +13,18 @@ class Rollout
       @name    = name
 
       if string
-        raw_percentage,raw_users,raw_groups = string.split("|")
+        raw_percentage,raw_users,raw_groups,raw_data = string.split('|', 4)
         @percentage = raw_percentage.to_f
         @users = (raw_users || "").split(",").map(&:to_s).to_set
         @groups = (raw_groups || "").split(",").map(&:to_sym).to_set
+        @data = raw_data.nil? || raw_data.strip.empty? ? {} : JSON.parse(raw_data)
       else
         clear
       end
     end
 
     def serialize
-      "#{@percentage}|#{@users.to_a.join(",")}|#{@groups.to_a.join(",")}"
+      "#{@percentage}|#{@users.to_a.join(",")}|#{@groups.to_a.join(",")}|#{serialize_data}"
     end
 
     def add_user(user)
@@ -46,6 +48,7 @@ class Rollout
       @groups = Set.new
       @users = Set.new
       @percentage = 0
+      @data = {}
     end
 
     def active?(rollout, user)
@@ -100,6 +103,12 @@ class Rollout
         @groups.any? do |g|
           rollout.active_in_group?(g, user)
         end
+      end
+
+      def serialize_data
+        return "" unless @data.is_a? Hash
+
+        @data.to_json
       end
   end
 
@@ -212,6 +221,18 @@ class Rollout
   def get(feature)
     string = @storage.get(key(feature))
     Feature.new(feature, string, @options)
+  end
+
+  def set_feature_data(feature, data)
+    with_feature(feature) do |f|
+      f.data.merge!(data) if data.is_a? Hash
+    end
+  end
+
+  def clear_feature_data(feature)
+    with_feature(feature) do |f|
+      f.data = {}
+    end
   end
 
   def features
