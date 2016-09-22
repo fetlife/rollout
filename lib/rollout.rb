@@ -15,8 +15,8 @@ class Rollout
       if string
         raw_percentage,raw_users,raw_groups,raw_data = string.split('|', 4)
         @percentage = raw_percentage.to_f
-        @users = (raw_users || "").split(",").map(&:to_s).to_set
-        @groups = (raw_groups || "").split(",").map(&:to_sym).to_set
+        @users = users_from_string(raw_users)
+        @groups = groups_from_string(raw_groups)
         @data = raw_data.nil? || raw_data.strip.empty? ? {} : JSON.parse(raw_data)
       else
         clear
@@ -45,8 +45,8 @@ class Rollout
     end
 
     def clear
-      @groups = Set.new
-      @users = Set.new
+      @groups = groups_from_string("")
+      @users = users_from_string("")
       @percentage = 0
       @data = {}
     end
@@ -109,6 +109,24 @@ class Rollout
         return "" unless @data.is_a? Hash
 
         @data.to_json
+      end
+
+      def users_from_string(raw_users)
+        users = (raw_users || "").split(",").map(&:to_s)
+        if @options[:use_sets]
+          users.to_set
+        else
+          users
+        end
+      end
+
+      def groups_from_string(raw_groups)
+        groups = (raw_groups || "").split(",").map(&:to_sym)
+        if @options[:use_sets]
+          groups.to_set
+        else
+          groups
+        end
       end
   end
 
