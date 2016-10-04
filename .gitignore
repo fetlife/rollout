@@ -20,3 +20,4 @@ pkg
 *.gem
 
 ## PROJECT::SPECIFIC
+.idea
