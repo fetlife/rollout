@@ -59,6 +59,10 @@ class Rollout
             user_in_active_group?(user, rollout)
       else
         @percentage == 100
+
+        @groups.any? do |g|
+          rollout.active_in_group?(g)
+        end
       end
     end
 
@@ -231,9 +235,15 @@ class Rollout
     end
   end
 
-  def active_in_group?(group, user)
+  def active_in_group?(group, user = nil)
     f = @groups[group.to_sym]
-    f && f.call(user)
+
+    if user.nil?
+      f && f.call
+    else
+      f && f.call(user)
+    end
+
   end
 
   def get(feature)

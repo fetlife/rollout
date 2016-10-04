@@ -26,6 +26,29 @@ RSpec.describe "Rollout" do
     end
   end
 
+  describe "a non-user group" do
+    before do
+      @rollout.define_group(:arbitrary_group) { result }
+      @rollout.activate_group(:chat, :arbitrary_group)
+    end
+
+    context "when the result is true" do
+      let(:result) { true }
+
+      it "the feature is active" do
+        expect(@rollout).to be_active(:chat)
+      end
+    end
+
+    context "when the result is false" do
+      let(:result) { false }
+
+      it "the feature is active" do
+        expect(@rollout).not_to be_active(:chat)
+      end
+    end
+  end
+
   describe "the default all group" do
     before do
       @rollout.activate_group(:chat, :all)
