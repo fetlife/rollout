@@ -38,7 +38,7 @@ $rollout = Rollout.new($redis)
 Update data specific to a feature:
 
 ```ruby
-@rollout.set_feature_data(:chat, description: 'foo', release_date: 'bar', whatever: 'baz')
+$rollout.set_feature_data(:chat, description: 'foo', release_date: 'bar', whatever: 'baz')
 ```
 
 Check whether a feature is active for a particular user:
