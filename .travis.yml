@@ -12,5 +12,8 @@ rvm:
   - jruby-19mode
 env:
   - USE_REAL_REDIS=true
+gemfile:
+  - gemfiles/redis_3.gemfile
+  - gemfiles/redis_4.gemfile
 script:
   - bundle exec rspec
