@@ -18,5 +18,6 @@ coverage
 rdoc
 pkg
 *.gem
+gemfiles/*.lock
 
 ## PROJECT::SPECIFIC
