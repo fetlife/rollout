@@ -207,12 +207,12 @@ class Rollout
 
   def active?(feature, user = nil)
     feature = get(feature)
-    feature.active?(self, user)
+    feature && feature.active?(self, user)
   end
 
   def user_in_active_users?(feature, user = nil)
     feature = get(feature)
-    feature.user_in_active_users?(user)
+    feature && feature.user_in_active_users?(user)
   end
 
   def inactive?(feature, user = nil)
@@ -238,6 +238,8 @@ class Rollout
 
   def get(feature)
     string = @storage.get(key(feature))
+    return nil if string.nil?
+
     Feature.new(feature, string, @options)
   end
 
@@ -295,6 +297,8 @@ class Rollout
 
   def with_feature(feature)
     f = get(feature)
+    return nil if f.nil?
+
     yield(f)
     save(f)
   end
