@@ -167,6 +167,10 @@ $rollout.activate_group(:chat, :all)
 
 This example would use the "development:feature:chat:groups" key.
 
+## Frontend / UI
+
+* [Rollout-Dashboard](https://github.com/fiverr/rollout_dashboard/)
+
 ## Implementations in other languages
 
 *   Python: https://github.com/asenchi/proclaim
