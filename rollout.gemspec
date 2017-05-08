@@ -10,7 +10,7 @@ Gem::Specification.new do |s|
   s.description = "Feature flippers with redis."
   s.summary     = "Feature flippers with redis."
   s.homepage    = "https://github.com/FetLife/rollout"
-  s.licene      = "MIT"
+  s.license     = "MIT"
 
   s.files         = `git ls-files`.split("\n")
   s.test_files    = `git ls-files -- {test,spec,features}/*`.split("\n")
