@@ -88,7 +88,7 @@ class Rollout
       end
 
       def user_in_percentage?(user)
-        Zlib.crc32(user_id_for_percentage(user)) % 100_000 < @percentage * 1_000
+        Zlib.crc32(user_id_for_percentage(user)) < (2**32 - 1) / 100.0 * @percentage
       end
 
       def user_id_for_percentage(user)
