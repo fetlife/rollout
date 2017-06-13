@@ -4,6 +4,8 @@ require "set"
 require "json"
 
 class Rollout
+  RAND_BASE = (2**32 - 1) / 100.0
+  
   class Feature
     attr_accessor :groups, :users, :percentage, :data
     attr_reader :name, :options
@@ -88,7 +90,7 @@ class Rollout
       end
 
       def user_in_percentage?(user)
-        Zlib.crc32(user_id_for_percentage(user)) % 100_000 < @percentage * 1_000
+        Zlib.crc32(user_id_for_percentage(user)) < RAND_BASE * @percentage
       end
 
       def user_id_for_percentage(user)
