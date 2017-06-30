@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    rollout (2.4.1)
+    rollout (2.4.2)
 
 GEM
   remote: https://rubygems.org/
