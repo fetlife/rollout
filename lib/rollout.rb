@@ -203,6 +203,13 @@ class Rollout
     end
   end
 
+  def set_users(feature, users)
+    with_feature(feature) do |f|
+      f.users = []
+      users.each{|user| f.add_user(user)}
+    end
+  end
+
   def define_group(group, &block)
     @groups[group.to_sym] = block
   end
