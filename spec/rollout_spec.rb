@@ -646,6 +646,17 @@ RSpec.describe "Rollout" do
       expect(@rollout.get(:chat).data).to eq({})
     end
   end
+
+  describe 'Check if feature exists' do
+    it 'it should return true if the feature is exist' do
+      @rollout.activate_percentage(:chat, 1)
+      expect(@rollout.exists?(:chat)).to be true
+    end
+
+    it 'it should return false if the feature is not exist' do
+      expect(@rollout.exists?(:chat)).to be false
+    end
+  end
 end
 
 describe "Rollout::Feature" do
