@@ -285,6 +285,10 @@ class Rollout
     @storage.del(features_key)
   end
 
+  def exists?(feature)
+    @storage.exists(key(feature))
+  end
+
   private
 
   def key(name)
