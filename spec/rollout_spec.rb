@@ -311,6 +311,24 @@ RSpec.describe "Rollout" do
     end
   end
 
+  describe 'activating a feature in an arbitrary context' do
+    before do
+      @rollout.define_context :context_example do |arbitrary_object|
+        arbitrary_object.supports_feature?
+      end
+
+      @rollout.activate_context :chat, :context_example
+    end
+
+    it "the feature is active for objects for which the block evaluates to true" do
+      expect(@rollout).to be_active(:chat, double(supports_feature?: true), context: :context_example)
+    end
+
+    it "is not active for objects for which the block evaluates to false" do
+      expect(@rollout).not_to be_active(:chat, double(supports_feature?: false), context: :context_example)
+    end
+  end
+
   describe "activating a feature for a group as a string" do
     before do
       @rollout.define_group(:admins) { |user| user.id == 5 }
@@ -425,10 +443,12 @@ RSpec.describe "Rollout" do
     it "returns the feature object" do
       feature = @rollout.get(:chat)
       expect(feature.groups).to eq [:caretakers, :greeters]
+      expect(feature.contexts).to eq []
       expect(feature.percentage).to eq 10
       expect(feature.users).to eq %w(42)
       expect(feature.to_hash).to eq(
         groups: [:caretakers, :greeters],
+	contexts: [],
         percentage: 10,
         users: %w(42)
       )
@@ -436,6 +456,7 @@ RSpec.describe "Rollout" do
       feature = @rollout.get(:signup)
       expect(feature.groups).to be_empty
       expect(feature.users).to be_empty
+      expect(feature.contexts).to be_empty
       expect(feature.percentage).to eq(100)
     end
 
@@ -449,6 +470,7 @@ RSpec.describe "Rollout" do
       expect(feature.users).to eq %w(42).to_set
       expect(feature.to_hash).to eq(
         groups: [:caretakers, :greeters].to_set,
+	contexts: [].to_set,
         percentage: 10,
         users: %w(42).to_set
       )
@@ -474,7 +496,8 @@ RSpec.describe "Rollout" do
         expect(@rollout.get(feature).to_hash).to eq(
           percentage: 0,
           users: [],
-          groups: []
+          groups: [],
+          contexts: []
         )
       end
     end
@@ -486,7 +509,8 @@ RSpec.describe "Rollout" do
         expect(@rollout.get(feature).to_hash).to eq(
           percentage: 0,
           users: Set.new,
-          groups: Set.new
+          groups: Set.new,
+	  contexts: Set.new
         )
       end
     end

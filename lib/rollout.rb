@@ -7,7 +7,7 @@ class Rollout
   RAND_BASE = (2**32 - 1) / 100.0
   
   class Feature
-    attr_accessor :groups, :users, :percentage, :data
+    attr_accessor :groups, :contexts, :users, :percentage, :data
     attr_reader :name, :options
 
     def initialize(name, string = nil, opts = {})
@@ -15,10 +15,11 @@ class Rollout
       @name    = name
 
       if string
-        raw_percentage,raw_users,raw_groups,raw_data = string.split('|', 4)
+        raw_percentage,raw_users,raw_groups,raw_contexts,raw_data = string.split('|', 5)
         @percentage = raw_percentage.to_f
         @users = users_from_string(raw_users)
         @groups = groups_from_string(raw_groups)
+        @contexts = contexts_from_string(raw_contexts)
         @data = raw_data.nil? || raw_data.strip.empty? ? {} : JSON.parse(raw_data)
       else
         clear
@@ -26,7 +27,7 @@ class Rollout
     end
 
     def serialize
-      "#{@percentage}|#{@users.to_a.join(",")}|#{@groups.to_a.join(",")}|#{serialize_data}"
+	    "#{@percentage}|#{@users.to_a.join(",")}|#{@groups.to_a.join(",")}|#{@contexts.to_a.join(",")}|#{serialize_data}"
     end
 
     def add_user(user)
@@ -36,6 +37,14 @@ class Rollout
 
     def remove_user(user)
       @users.delete(user_id(user))
+    end
+
+    def add_context(context)
+      @contexts << context.to_sym unless @contexts.include?(context.to_sym)
+    end
+
+    def remove_context(context)
+      @contexts.delete(context.to_sym)
     end
 
     def add_group(group)
@@ -48,17 +57,20 @@ class Rollout
 
     def clear
       @groups = groups_from_string("")
+      @contexts = groups_from_string("")
       @users = users_from_string("")
       @percentage = 0
       @data = {}
     end
 
-    def active?(rollout, user)
-      if user
-        id = user_id(user)
+    def active?(rollout, user_or_object, context: nil)
+      if context
+        in_active_context? context, user_or_object, rollout
+      elsif user_or_object
+        id = user_id(user_or_object)
         user_in_percentage?(id) ||
           user_in_active_users?(id) ||
-            user_in_active_group?(user, rollout)
+            user_in_active_group?(user_or_object, rollout)
       else
         @percentage == 100
       end
@@ -72,6 +84,7 @@ class Rollout
       {
         percentage: @percentage,
         groups: @groups,
+        contexts: @contexts,
         users: @users
       }
     end
@@ -99,6 +112,10 @@ class Rollout
         else
           user_id(user)
         end
+      end
+
+      def in_active_context?(context, object, rollout)
+        rollout.active_in_context?(context, object)
       end
 
       def user_in_active_group?(user, rollout)
@@ -130,12 +147,22 @@ class Rollout
           groups
         end
       end
+
+      def contexts_from_string(raw_contexts)
+        contexts = (raw_contexts || "").split(",").map(&:to_sym)
+        if @options[:use_sets]
+          contexts.to_set
+        else
+          contexts
+        end
+      end
   end
 
   def initialize(storage, opts = {})
     @storage = storage
     @options = opts
     @groups  = { all: lambda { |user| true } }
+    @contexts  = { all: lambda { |context| true } }
   end
 
   def activate(feature)
@@ -179,6 +206,18 @@ class Rollout
     end
   end
 
+  def activate_context(feature, context)
+    with_feature(feature) do |f|
+      f.add_context(context)
+    end
+  end
+
+  def deactivate_context(feature, context)
+    with_feature(feature) do |f|
+      f.remove_context(context)
+    end
+  end
+
   def activate_user(feature, user)
     with_feature(feature) do |f|
       f.add_user(user)
@@ -210,13 +249,17 @@ class Rollout
     end
   end
 
+  def define_context(context, &block)
+    @contexts[context.to_sym] = block
+  end
+
   def define_group(group, &block)
     @groups[group.to_sym] = block
   end
 
-  def active?(feature, user = nil)
+  def active?(feature, user = nil, context: nil)
     feature = get(feature)
-    feature.active?(self, user)
+    feature.active?(self, user, context: context)
   end
 
   def user_in_active_users?(feature, user = nil)
@@ -238,6 +281,11 @@ class Rollout
     with_feature(feature) do |f|
       f.percentage = 0
     end
+  end
+
+  def active_in_context?(context, object)
+    f = @contexts[context.to_sym]
+    f && f.call(object)
   end
 
   def active_in_group?(group, user)
