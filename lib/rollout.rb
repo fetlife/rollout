@@ -1,11 +1,12 @@
-require "rollout/version"
-require "zlib"
-require "set"
-require "json"
+require 'rollout/version'
+require_relative './rollout/persistent_groups'
+require 'zlib'
+require 'set'
+require 'json'
 
 class Rollout
   RAND_BASE = (2**32 - 1) / 100.0
-  
+
   class Feature
     attr_accessor :groups, :users, :percentage, :data
     attr_reader :name, :options
@@ -136,6 +137,7 @@ class Rollout
     @storage = storage
     @options = opts
     @groups  = { all: lambda { |user| true } }
+    @persistent_groups = PersistentGroups.new(@storage)
   end
 
   def activate(feature)
@@ -209,7 +211,8 @@ class Rollout
 
   def active?(feature, user = nil)
     feature = get(feature)
-    feature.active?(self, user)
+    feature.active?(self, user) ||
+        @persistent_groups.include_in_groups?(feature.groups, user)
   end
 
   def user_in_active_users?(feature, user = nil)
@@ -231,6 +234,10 @@ class Rollout
     with_feature(feature) do |f|
       f.percentage = 0
     end
+  end
+
+  def active_in_persistent_group?(group, user)
+    @persistent_groups.include_in_group?(group, user)
   end
 
   def active_in_group?(group, user)
