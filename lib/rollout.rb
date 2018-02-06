@@ -220,6 +220,12 @@ class Rollout
     end
   end
 
+  def remove_user(feature, user)
+    with_feature(feature) do |f|
+      f.remove_user(user)
+    end
+  end
+
   def activate_users(feature, users)
     with_feature(feature) do |f|
       users.each{|user| f.add_active_user(user)}

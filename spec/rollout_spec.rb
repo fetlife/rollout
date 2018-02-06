@@ -238,6 +238,35 @@ RSpec.describe "Rollout" do
     end
   end
 
+  describe '#removing an user' do
+    let(:user) { double(id: 42) }
+
+    context 'when user is deactivated' do
+      before do
+        @rollout.activate_group(:chat, :all)
+
+        @rollout.deactivate_user(:chat, user)
+
+        @rollout.remove_user(:chat, user)
+      end
+
+      it "that remove the user from deactive users" do
+        expect(@rollout).to be_active(:chat, user)
+      end
+    end
+
+    context 'when user is activated' do
+      before do
+        @rollout.activate_user(:chat, user)
+
+        @rollout.remove_user(:chat, user)
+      end
+
+      it "that remove the user from active users" do
+        expect(@rollout).not_to be_active(:chat, user)
+      end
+    end
+  end
 
   describe 'set a group of users' do
     it 'should replace the users with the given array' do
