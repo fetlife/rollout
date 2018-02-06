@@ -67,7 +67,7 @@ class Rollout
 
     def active?(rollout, user)
       if user
-        # deactivate takes highest precedent
+        # deactivate takes highest precedence
         return false if user_in_deactivated_users?(user)
 
         id = active_user_id(user)
