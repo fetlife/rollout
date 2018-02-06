@@ -200,7 +200,7 @@ RSpec.describe "Rollout" do
     end
   end
 
-  describe "deactivating a group of users" do
+  describe "#deactivating a group of users" do
     context "specified by user objects" do
       let(:active_users) { [double(id: 1), double(id: 2)] }
       let(:inactive_users) { [double(id: 3), double(id: 4)] }
