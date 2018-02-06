@@ -71,9 +71,9 @@ class Rollout
         return false if user_in_deactivated_users?(user)
 
         id = active_user_id(user)
-        user_in_percentage?(id) ||
           user_in_active_users?(id) ||
-            user_in_active_group?(user, rollout)
+            user_in_active_group?(user, rollout) ||
+              user_in_percentage?(id)
       else
         @percentage == 100
       end
