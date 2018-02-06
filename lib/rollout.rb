@@ -5,7 +5,7 @@ require "json"
 
 class Rollout
   RAND_BASE = (2**32 - 1) / 100.0
-  
+
   class Feature
     attr_accessor :groups, :users, :percentage, :data
     attr_reader :name, :options
@@ -30,12 +30,12 @@ class Rollout
     end
 
     def add_user(user)
-      id = user_id(user)
+      id = active_user_id(user)
       @users << id unless @users.include?(id)
     end
 
     def remove_user(user)
-      @users.delete(user_id(user))
+      @users.delete(active_user_id(user))
     end
 
     def add_group(group)
@@ -55,7 +55,7 @@ class Rollout
 
     def active?(rollout, user)
       if user
-        id = user_id(user)
+        id = active_user_id(user)
         user_in_percentage?(id) ||
           user_in_active_users?(id) ||
             user_in_active_group?(user, rollout)
@@ -65,7 +65,7 @@ class Rollout
     end
 
     def user_in_active_users?(user)
-      @users.include?(user_id(user))
+      @users.include?(active_user_id(user))
     end
 
     def to_hash
@@ -77,7 +77,7 @@ class Rollout
     end
 
     private
-      def user_id(user)
+      def active_user_id(user)
         if user.is_a?(Integer) || user.is_a?(String)
           user.to_s
         else
@@ -95,9 +95,9 @@ class Rollout
 
       def user_id_for_percentage(user)
         if @options[:randomize_percentage]
-          user_id(user).to_s + @name.to_s
+          active_user_id(user).to_s + @name.to_s
         else
-          user_id(user)
+          active_user_id(user)
         end
       end
 
