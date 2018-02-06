@@ -188,6 +188,18 @@ RSpec.describe "Rollout" do
     end
   end
 
+  describe '#deactivating a specific user in a group' do
+    before do
+      @rollout.activate_group(:chat, :all)
+
+      @rollout.deactivate_user(:chat, double(id: 42))
+    end
+
+    it "that user should no longer be active" do
+      expect(@rollout).not_to be_active(:chat, double(id: 42))
+    end
+  end
+
   describe "deactivating a group of users" do
     context "specified by user objects" do
       let(:active_users) { [double(id: 1), double(id: 2)] }
