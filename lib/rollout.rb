@@ -37,17 +37,17 @@ class Rollout
       @users << id
     end
 
-    def add_deactive_user(user)
+    def add_deactivated_user(user)
       remove_user(user)
 
-      id = deactive_user_id(user)
+      id = deactivated_user_id(user)
 
       @users << id
     end
 
     def remove_user(user)
       @users.delete(active_user_id(user))
-      @users.delete(deactive_user_id(user))
+      @users.delete(deactivated_user_id(user))
     end
 
     def add_group(group)
@@ -68,7 +68,7 @@ class Rollout
     def active?(rollout, user)
       if user
         # deactivate takes highest precedent
-        return false if user_in_deactive_users?(user)
+        return false if user_in_deactivated_users?(user)
 
         id = active_user_id(user)
         user_in_percentage?(id) ||
@@ -83,8 +83,8 @@ class Rollout
       @users.include?(active_user_id(user))
     end
 
-    def user_in_deactive_users?(user)
-      @users.include?(deactive_user_id(user))
+    def user_in_deactivated_users?(user)
+      @users.include?(deactivated_user_id(user))
     end
 
     def to_hash
@@ -101,7 +101,7 @@ class Rollout
         user_id(user)
       end
 
-      def deactive_user_id(user)
+      def deactivated_user_id(user)
         'x' + user_id(user)
       end
 
@@ -216,7 +216,7 @@ class Rollout
 
   def deactivate_user(feature, user)
     with_feature(feature) do |f|
-      f.add_deactive_user(user)
+      f.add_deactivated_user(user)
     end
   end
 
@@ -234,7 +234,7 @@ class Rollout
 
   def deactivate_users(feature, users)
     with_feature(feature) do |f|
-      users.each{|user| f.add_deactive_user(user)}
+      users.each{|user| f.add_deactivated_user(user)}
     end
   end
 

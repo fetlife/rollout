@@ -250,7 +250,7 @@ RSpec.describe "Rollout" do
         @rollout.remove_user(:chat, user)
       end
 
-      it "that remove the user from deactive users" do
+      it "that remove the user from deactivated users" do
         expect(@rollout).to be_active(:chat, user)
       end
     end
@@ -270,13 +270,13 @@ RSpec.describe "Rollout" do
 
   describe '#removing a group of users' do
     let(:active_users) { [double(id: 42), double(id: 4242)]  }
-    let(:deactive_users) { [double(id: 32), double(id: 3232)] }
+    let(:deactivated_users) { [double(id: 32), double(id: 3232)] }
 
     before do
       @rollout.activate_users(:chat, active_users)
-      @rollout.deactivate_users(:chat, deactive_users)
+      @rollout.deactivate_users(:chat, deactivated_users)
 
-      @rollout.remove_users(:chat, active_users + deactive_users)
+      @rollout.remove_users(:chat, active_users + deactivated_users)
     end
 
     it 'removes users from the features' do
