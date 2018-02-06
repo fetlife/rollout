@@ -234,7 +234,7 @@ class Rollout
 
   def deactivate_users(feature, users)
     with_feature(feature) do |f|
-      users.each{|user| f.remove_user(user)}
+      users.each{|user| f.add_deactive_user(user)}
     end
   end
 
