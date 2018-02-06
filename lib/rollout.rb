@@ -30,12 +30,24 @@ class Rollout
     end
 
     def add_active_user(user)
+      remove_user(user)
+
       id = active_user_id(user)
-      @users << id unless @users.include?(id)
+
+      @users << id
+    end
+
+    def add_deactive_user(user)
+      remove_user(user)
+
+      id = deactive_user_id(user)
+
+      @users << id
     end
 
     def remove_user(user)
       @users.delete(active_user_id(user))
+      @users.delete(deactive_user_id(user))
     end
 
     def add_group(group)
@@ -78,12 +90,21 @@ class Rollout
 
     private
       def active_user_id(user)
+        user_id(user)
+      end
+
+      def deactive_user_id(user)
+        'x' + user_id(user)
+      end
+
+      def user_id(user)
         if user.is_a?(Integer) || user.is_a?(String)
           user.to_s
         else
           user.send(id_user_by).to_s
         end
       end
+
 
       def id_user_by
         @options[:id_user_by] || :id
