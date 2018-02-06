@@ -238,6 +238,12 @@ class Rollout
     end
   end
 
+  def remove_users(feature, users)
+    with_feature(feature) do |f|
+      users.each{|user| f.remove_user(user)}
+    end
+  end
+
   def set_users(feature, users)
     with_feature(feature) do |f|
       f.users = []

@@ -268,6 +268,24 @@ RSpec.describe "Rollout" do
     end
   end
 
+  describe '#removing a group of users' do
+    let(:active_users) { [double(id: 42), double(id: 4242)]  }
+    let(:deactive_users) { [double(id: 32), double(id: 3232)] }
+
+    before do
+      @rollout.activate_users(:chat, active_users)
+      @rollout.deactivate_users(:chat, deactive_users)
+
+      @rollout.remove_users(:chat, active_users + deactive_users)
+    end
+
+    it 'removes users from the features' do
+      feature = @rollout.get(:chat)
+
+      expect(feature.users).to be_empty
+    end
+  end
+
   describe 'set a group of users' do
     it 'should replace the users with the given array' do
       users = %w(1 2 3 4)
