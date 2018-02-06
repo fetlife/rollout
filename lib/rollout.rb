@@ -96,6 +96,7 @@ class Rollout
     end
 
     private
+
       def active_user_id(user)
         user_id(user)
       end

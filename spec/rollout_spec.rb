@@ -177,14 +177,14 @@ RSpec.describe "Rollout" do
     it "remains active for other active users" do
       @options = @rollout.instance_variable_get("@options")
       @options[:use_sets] = false
-      expect(@rollout.get(:chat).users).to eq %w(24)
+      expect(@rollout).to be_active(:chat, double(id: 24))
     end
 
     it "remains active for other active users using sets" do
       @options = @rollout.instance_variable_get("@options")
       @options[:use_sets] = true
 
-      expect(@rollout.get(:chat).users).to eq %w(24).to_set
+      expect(@rollout).to be_active(:chat, double(id: 24))
     end
   end
 
@@ -675,7 +675,8 @@ describe "Rollout::Feature" do
       user    = double("User", email: "test@test.com")
       feature = Rollout::Feature.new(:chat, nil, id_user_by: :email)
       feature.add_active_user(user)
-      expect(user).to have_received :email
+
+      expect(feature.users).to eq %w(test@test.com)
     end
   end
 
