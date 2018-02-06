@@ -67,6 +67,9 @@ class Rollout
 
     def active?(rollout, user)
       if user
+        # deactivate takes highest precedent
+        return false if user_in_deactive_users?(user)
+
         id = active_user_id(user)
         user_in_percentage?(id) ||
           user_in_active_users?(id) ||
@@ -78,6 +81,10 @@ class Rollout
 
     def user_in_active_users?(user)
       @users.include?(active_user_id(user))
+    end
+
+    def user_in_deactive_users?(user)
+      @users.include?(deactive_user_id(user))
     end
 
     def to_hash
