@@ -670,11 +670,11 @@ RSpec.describe "Rollout" do
 end
 
 describe "Rollout::Feature" do
-  describe "#add_user" do
+  describe "#add_active_user" do
     it "ids a user using id_user_by" do
       user    = double("User", email: "test@test.com")
       feature = Rollout::Feature.new(:chat, nil, id_user_by: :email)
-      feature.add_user(user)
+      feature.add_active_user(user)
       expect(user).to have_received :email
     end
   end

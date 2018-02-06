@@ -29,7 +29,7 @@ class Rollout
       "#{@percentage}|#{@users.to_a.join(",")}|#{@groups.to_a.join(",")}|#{serialize_data}"
     end
 
-    def add_user(user)
+    def add_active_user(user)
       id = active_user_id(user)
       @users << id unless @users.include?(id)
     end
@@ -181,7 +181,7 @@ class Rollout
 
   def activate_user(feature, user)
     with_feature(feature) do |f|
-      f.add_user(user)
+      f.add_active_user(user)
     end
   end
 
@@ -193,7 +193,7 @@ class Rollout
 
   def activate_users(feature, users)
     with_feature(feature) do |f|
-      users.each{|user| f.add_user(user)}
+      users.each{|user| f.add_active_user(user)}
     end
   end
 
@@ -206,7 +206,7 @@ class Rollout
   def set_users(feature, users)
     with_feature(feature) do |f|
       f.users = []
-      users.each{|user| f.add_user(user)}
+      users.each{|user| f.add_active_user(user)}
     end
   end
 
