@@ -150,6 +150,37 @@ deactivate them automatically when a threshold is reached to prevent service
 failures from cascading. See https://github.com/jamesgolick/degrade for the
 failure detection code.
 
+## Bulk Operations
+
+When using Redis AOF for persistence, activating many users for one feature results in 
+"quadratic writes" (see [issue 74](https://github.com/fetlife/rollout/issues/74)).
+This can use up a huge amount of storage very quickly.
+
+Bulk mode allows performing multiple operations without saving after each one.
+The save only happens once, at the end:
+
+```ruby
+
+$rollout.bulk do
+  large_list_of_users.each do |user|
+    $rollout.activate_user(:some_feature, user)
+  end
+end
+```
+
+You can update multiple features and the saves will be queued up and done at the end:
+ 
+```ruby
+$rollout.bulk do
+  $rollout.activate_user(:feature_x, user)
+  $rollout.activate_user(:feature_y, user)
+  $rollout.activate(:disabled_feature)
+  $rollout.activate_group(:admin_feature, :admins)
+end
+```
+
+Note: Calling `$rollout.bulk` again while in bulk mode will warn but continue safely.
+
 ## Namespacing
 
 Rollout separates its keys from other keys in the data store using the
