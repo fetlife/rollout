@@ -667,6 +667,48 @@ RSpec.describe "Rollout" do
       expect(@rollout.exists?(:chat)).to be false
     end
   end
+
+  describe "#bulk" do
+    it "delays saving until the end of the block" do
+      expect(@redis).to receive(:set).with("feature:feature_one", anything).once
+      expect(@redis).to receive(:set).with("feature:feature_two", anything).once
+      expect(@redis).to receive(:set).with("feature:feature_three", anything).exactly(5)
+      expect(@redis).to receive(:set).exactly(2 + 5).times # saving feature list
+
+      @rollout.bulk do
+        5.times { |i| @rollout.activate_user(:feature_one, double(id: i)) }
+        5.times { |i| @rollout.activate_user(:feature_two, double(id: i)) }
+      end
+
+      5.times { |i| @rollout.activate_user(:feature_three, double(id: i)) }
+    end
+
+    it "disables bulk mode after an exception" do
+      expect(@rollout.bulk_mode?).to eq false
+      expect {
+        @rollout.bulk do
+          expect(@rollout.bulk_mode?).to eq true
+          raise "testing failure"
+        end
+      }.to raise_error("testing failure")
+      expect(@rollout.bulk_mode?).to eq false
+    end
+
+    it "warns if nested bulk mode is attempted (but still works)" do
+      expect(@rollout).to receive(:warn).with("Already in bulk mode; continuing safely")
+      @rollout.bulk do
+        5.times do |i|
+          @rollout.activate("feature_#{i}")
+          expect(@redis).to receive(:set).twice
+        end
+
+        @rollout.bulk do
+          @rollout.activate("another_feature")
+          expect(@redis).to receive(:set).twice
+        end
+      end
+    end
+  end
 end
 
 describe "Rollout::Feature" do

@@ -296,6 +296,30 @@ class Rollout
     @storage.exists(key(feature))
   end
 
+  def bulk(&block)
+    if @bulk_mode
+      warn "Already in bulk mode; continuing safely"
+      yield
+    else
+      begin
+        @bulk_mode = true
+        @features_to_save = []
+        yield
+        until @features_to_save.empty? do
+          f = get(@features_to_save.pop)
+          save(f)
+        end
+      ensure
+        @bulk_mode = false
+        @features_to_save = nil
+      end
+    end
+  end
+
+  def bulk_mode?
+    !!@bulk_mode
+  end
+
   private
 
   def key(name)
@@ -309,7 +333,11 @@ class Rollout
   def with_feature(feature)
     f = get(feature)
     yield(f)
-    save(f)
+    if @bulk_mode
+      @features_to_save << feature unless @features_to_save.include?(feature)
+    else
+      save(f)
+    end
   end
 
   def save(feature)
