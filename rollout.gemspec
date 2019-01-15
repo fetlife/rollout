@@ -5,8 +5,8 @@ require "rollout/version"
 Gem::Specification.new do |s|
   s.name        = "rollout"
   s.version     = Rollout::VERSION
-  s.authors     = ["James Golick"]
-  s.email       = ["jamesgolick@gmail.com"]
+  s.authors     = ["James Golick", "Gary Burns"]
+  s.email       = ["jamesgolick@gmail.com", "gary@barkbox.com"]
   s.description = "Feature flippers with redis."
   s.summary     = "Feature flippers with redis."
   s.homepage    = "https://github.com/FetLife/rollout"
