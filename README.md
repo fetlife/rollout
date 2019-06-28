@@ -3,9 +3,8 @@
 Fast feature flags based on Redis.
 
 [![Build Status](https://travis-ci.org/fetlife/rollout.svg?branch=master)](https://travis-ci.org/fetlife/rollout)
-[![Code Climate](https://codeclimate.com/github/FetLife/rollout/badges/gpa.svg)](https://codeclimate.com/github/fetlife/rollout)
-[![Test Coverage](https://codeclimate.com/github/FetLife/rollout/badges/coverage.svg)](https://codeclimate.com/github/fetlife/rollout/coverage)
-[![Dependency Status](https://gemnasium.com/FetLife/rollout.svg)](https://gemnasium.com/fetlife/rollout)
+[![Code Climate](https://codeclimate.com/github/fetlife/rollout/badges/gpa.svg)](https://codeclimate.com/github/fetlife/rollout)
+[![Test Coverage](https://codeclimate.com/github/fetlife/rollout/badges/coverage.svg)](https://codeclimate.com/github/fetlife/rollout/coverage)
 
 ## Install it
 
