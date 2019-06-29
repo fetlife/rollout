@@ -7,6 +7,9 @@ workflows:
       - ruby25
       - ruby24
       - ruby23
+      - ruby22
+      - ruby21
+      - ruby20
 
 executors:
   ruby26:
@@ -21,6 +24,15 @@ executors:
   ruby23:
     docker:
       - image: circleci/ruby:2.3
+  ruby22:
+    docker:
+      - image: circleci/ruby:2.2
+  ruby21:
+    docker:
+      - image: circleci/ruby:2.1
+  ruby20:
+    docker:
+      - image: circleci/ruby:2.0
 
 commands:
   test:
@@ -75,6 +87,24 @@ jobs:
 
   ruby23:
     executor: ruby23
+    steps:
+      - checkout
+      - test
+
+  ruby22:
+    executor: ruby22
+    steps:
+      - checkout
+      - test
+
+  ruby21:
+    executor: ruby21
+    steps:
+      - checkout
+      - test
+
+  ruby20:
+    executor: ruby20
     steps:
       - checkout
       - test
