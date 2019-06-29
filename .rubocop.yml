@@ -1,0 +1,11 @@
+AllCops:
+  Exclude:
+    - 'spec/**/*'
+
+Metrics/LineLength:
+  Max: 120
+Metrics/MethodLength:
+  Max: 20
+
+Style/TrailingCommaInArguments:
+  EnforcedStyleForMultiline: comma

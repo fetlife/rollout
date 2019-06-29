@@ -4,13 +4,13 @@ sudo: false
 services:
   - redis-server
 rvm:
-  - 2.4.1
-  - 2.3.1
+  - 2.6
+  - 2.5
+  - 2.4
+  - 2.3
   - 2.2
   - 2.1
-  - 2.0.0
-  - 1.9.3
-  - jruby-19mode
+  - 2.0
 env:
   - USE_REAL_REDIS=true
 gemfile:
