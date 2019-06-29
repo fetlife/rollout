@@ -176,6 +176,7 @@ This example would use the "development:feature:chat:groups" key.
 *   Python: https://github.com/asenchi/proclaim
 *   PHP: https://github.com/opensoft/rollout
 *   Clojure: https://github.com/yeller/shoutout
+*   Perl: https://metacpan.org/pod/Toggle
 
 
 ## Contributors
