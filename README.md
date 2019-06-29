@@ -71,6 +71,9 @@ Deactivate groups like this:
 $rollout.deactivate_group(:chat, :all)
 ```
 
+Groups need to be defined every time your app starts. The logic is not persisted
+anywhere.
+
 ## Specific Users
 
 You might want to let a specific user into a beta test or something. If that
