@@ -4,8 +4,8 @@ Fast feature flags based on Redis.
 
 [![Gem Version](https://badge.fury.io/rb/rollout.svg)](https://badge.fury.io/rb/rollout)
 [![CircleCI](https://circleci.com/gh/fetlife/rollout.svg?style=svg)](https://circleci.com/gh/fetlife/rollout)
-[![Code Climate](https://codeclimate.com/github/FetLife/rollout/badges/gpa.svg)](https://codeclimate.com/github/fetlife/rollout)
-[![Test Coverage](https://codeclimate.com/github/FetLife/rollout/badges/coverage.svg)](https://codeclimate.com/github/fetlife/rollout/coverage)
+[![Code Climate](https://codeclimate.com/github/FetLife/rollout/badges/gpa.svg)](https://codeclimate.com/github/FetLife/rollout)
+[![Test Coverage](https://codeclimate.com/github/FetLife/rollout/badges/coverage.svg)](https://codeclimate.com/github/FetLife/rollout/coverage)
 
 ## Install it
 
