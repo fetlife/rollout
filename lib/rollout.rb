@@ -1,11 +1,13 @@
-require "rollout/version"
-require "zlib"
-require "set"
-require "json"
+# frozen_string_literal: true
+
+require 'rollout/version'
+require 'zlib'
+require 'set'
+require 'json'
 
 class Rollout
   RAND_BASE = (2**32 - 1) / 100.0
-  
+
   class Feature
     attr_accessor :groups, :users, :percentage, :data
     attr_reader :name, :options
@@ -15,7 +17,7 @@ class Rollout
       @name    = name
 
       if string
-        raw_percentage,raw_users,raw_groups,raw_data = string.split('|', 4)
+        raw_percentage, raw_users, raw_groups, raw_data = string.split('|', 4)
         @percentage = raw_percentage.to_f
         @users = users_from_string(raw_users)
         @groups = groups_from_string(raw_groups)
@@ -26,7 +28,7 @@ class Rollout
     end
 
     def serialize
-      "#{@percentage}|#{@users.to_a.join(",")}|#{@groups.to_a.join(",")}|#{serialize_data}"
+      "#{@percentage}|#{@users.to_a.join(',')}|#{@groups.to_a.join(',')}|#{serialize_data}"
     end
 
     def add_user(user)
@@ -47,8 +49,8 @@ class Rollout
     end
 
     def clear
-      @groups = groups_from_string("")
-      @users = users_from_string("")
+      @groups = groups_from_string('')
+      @users = users_from_string('')
       @percentage = 0
       @data = {}
     end
@@ -58,7 +60,7 @@ class Rollout
         id = user_id(user)
         user_in_percentage?(id) ||
           user_in_active_users?(id) ||
-            user_in_active_group?(user, rollout)
+          user_in_active_group?(user, rollout)
       else
         @percentage == 100
       end
@@ -77,65 +79,66 @@ class Rollout
     end
 
     private
-      def user_id(user)
-        if user.is_a?(Integer) || user.is_a?(String)
-          user.to_s
-        else
-          user.send(id_user_by).to_s
-        end
-      end
 
-      def id_user_by
-        @options[:id_user_by] || :id
+    def user_id(user)
+      if user.is_a?(Integer) || user.is_a?(String)
+        user.to_s
+      else
+        user.send(id_user_by).to_s
       end
+    end
 
-      def user_in_percentage?(user)
-        Zlib.crc32(user_id_for_percentage(user)) < RAND_BASE * @percentage
+    def id_user_by
+      @options[:id_user_by] || :id
+    end
+
+    def user_in_percentage?(user)
+      Zlib.crc32(user_id_for_percentage(user)) < RAND_BASE * @percentage
+    end
+
+    def user_id_for_percentage(user)
+      if @options[:randomize_percentage]
+        user_id(user).to_s + @name.to_s
+      else
+        user_id(user)
       end
+    end
 
-      def user_id_for_percentage(user)
-        if @options[:randomize_percentage]
-          user_id(user).to_s + @name.to_s
-        else
-          user_id(user)
-        end
+    def user_in_active_group?(user, rollout)
+      @groups.any? do |g|
+        rollout.active_in_group?(g, user)
       end
+    end
 
-      def user_in_active_group?(user, rollout)
-        @groups.any? do |g|
-          rollout.active_in_group?(g, user)
-        end
+    def serialize_data
+      return '' unless @data.is_a? Hash
+
+      @data.to_json
+    end
+
+    def users_from_string(raw_users)
+      users = (raw_users || '').split(',').map(&:to_s)
+      if @options[:use_sets]
+        users.to_set
+      else
+        users
       end
+    end
 
-      def serialize_data
-        return "" unless @data.is_a? Hash
-
-        @data.to_json
+    def groups_from_string(raw_groups)
+      groups = (raw_groups || '').split(',').map(&:to_sym)
+      if @options[:use_sets]
+        groups.to_set
+      else
+        groups
       end
-
-      def users_from_string(raw_users)
-        users = (raw_users || "").split(",").map(&:to_s)
-        if @options[:use_sets]
-          users.to_set
-        else
-          users
-        end
-      end
-
-      def groups_from_string(raw_groups)
-        groups = (raw_groups || "").split(",").map(&:to_sym)
-        if @options[:use_sets]
-          groups.to_set
-        else
-          groups
-        end
-      end
+    end
   end
 
   def initialize(storage, opts = {})
     @storage = storage
     @options = opts
-    @groups  = { all: lambda { |user| true } }
+    @groups  = { all: ->(_user) { true } }
   end
 
   def activate(feature)
@@ -145,15 +148,13 @@ class Rollout
   end
 
   def deactivate(feature)
-    with_feature(feature) do |f|
-      f.clear
-    end
+    with_feature(feature, &:clear)
   end
 
   def delete(feature)
-    features = (@storage.get(features_key) || "").split(",")
+    features = (@storage.get(features_key) || '').split(',')
     features.delete(feature.to_s)
-    @storage.set(features_key, features.join(","))
+    @storage.set(features_key, features.join(','))
     @storage.del(key(feature))
   end
 
@@ -193,20 +194,20 @@ class Rollout
 
   def activate_users(feature, users)
     with_feature(feature) do |f|
-      users.each{|user| f.add_user(user)}
+      users.each { |user| f.add_user(user) }
     end
   end
 
   def deactivate_users(feature, users)
     with_feature(feature) do |f|
-      users.each{|user| f.remove_user(user)}
+      users.each { |user| f.remove_user(user) }
     end
   end
 
   def set_users(feature, users)
     with_feature(feature) do |f|
       f.users = []
-      users.each{|user| f.add_user(user)}
+      users.each { |user| f.add_user(user) }
     end
   end
 
@@ -242,7 +243,7 @@ class Rollout
 
   def active_in_group?(group, user)
     f = @groups[group.to_sym]
-    f && f.call(user)
+    f&.call(user)
   end
 
   def get(feature)
@@ -263,12 +264,12 @@ class Rollout
   end
 
   def multi_get(*features)
-    feature_keys = features.map{ |feature| key(feature) }
+    feature_keys = features.map { |feature| key(feature) }
     @storage.mget(*feature_keys).map.with_index { |string, index| Feature.new(features[index], string, @options) }
   end
 
   def features
-    (@storage.get(features_key) || "").split(",").map(&:to_sym)
+    (@storage.get(features_key) || '').split(',').map(&:to_sym)
   end
 
   def feature_states(user = nil)
@@ -285,7 +286,7 @@ class Rollout
 
   def clear!
     features.each do |feature|
-      with_feature(feature) { |f| f.clear }
+      with_feature(feature, &:clear)
       @storage.del(key(feature))
     end
 
@@ -303,7 +304,7 @@ class Rollout
   end
 
   def features_key
-    "feature:__features__"
+    'feature:__features__'
   end
 
   def with_feature(feature)
@@ -314,6 +315,6 @@ class Rollout
 
   def save(feature)
     @storage.set(key(feature.name), feature.serialize)
-    @storage.set(features_key, (features | [feature.name.to_sym]).join(","))
+    @storage.set(features_key, (features | [feature.name.to_sym]).join(','))
   end
 end
