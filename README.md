@@ -2,9 +2,10 @@
 
 Fast feature flags based on Redis.
 
-[![Build Status](https://travis-ci.org/fetlife/rollout.svg?branch=master)](https://travis-ci.org/fetlife/rollout)
-[![Code Climate](https://codeclimate.com/github/fetlife/rollout/badges/gpa.svg)](https://codeclimate.com/github/fetlife/rollout)
-[![Test Coverage](https://codeclimate.com/github/fetlife/rollout/badges/coverage.svg)](https://codeclimate.com/github/fetlife/rollout/coverage)
+[![Gem Version](https://badge.fury.io/rb/rollout.svg)](https://badge.fury.io/rb/rollout)
+[![CircleCI](https://circleci.com/gh/fetlife/rollout.svg?style=svg)](https://circleci.com/gh/fetlife/rollout)
+[![Code Climate](https://codeclimate.com/github/FetLife/rollout/badges/gpa.svg)](https://codeclimate.com/github/fetlife/rollout)
+[![Test Coverage](https://codeclimate.com/github/FetLife/rollout/badges/coverage.svg)](https://codeclimate.com/github/fetlife/rollout/coverage)
 
 ## Install it
 
@@ -19,7 +20,7 @@ Initialize a rollout object. I assign it to a global var.
 ```ruby
 require 'redis'
 
-$redis   = Redis.new
+$redis = Redis.new
 $rollout = Rollout.new($redis)
 ```
 
