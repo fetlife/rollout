@@ -1,0 +1,80 @@
+version: 2.1
+
+workflows:
+  main:
+    jobs:
+      - ruby26
+      - ruby25
+      - ruby24
+      - ruby23
+
+executors:
+  ruby26:
+    docker:
+      - image: circleci/ruby:2.6
+  ruby25:
+    docker:
+      - image: circleci/ruby:2.5
+  ruby24:
+    docker:
+      - image: circleci/ruby:2.4
+  ruby23:
+    docker:
+      - image: circleci/ruby:2.3
+
+commands:
+  test:
+    steps:
+      - restore_cache:
+          keys:
+            - bundler-{{ checksum "Gemfile.lock" }}
+
+      - run:
+          name: Bundle Install
+          command: bundle check --path vendor/bundle || bundle install --deployment
+
+      - save_cache:
+          key: bundler-{{ checksum "Gemfile.lock" }}
+          paths:
+            - vendor/bundle
+
+      - run:
+          name: Run rspec
+          command: |
+            bundle exec rspec --format documentation --format RspecJunitFormatter --out test_results/rspec.xml
+
+jobs:
+  ruby26:
+    executor: ruby26
+    steps:
+      - checkout
+      - test
+
+      - run:
+          name: Report Test Coverage
+          command: |
+            wget https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 -O cc-test-reporter
+            chmod +x cc-test-reporter
+            ./cc-test-reporter format-coverage -t simplecov -o coverage/codeclimate.json coverage/.resultset.json
+            ./cc-test-reporter upload-coverage -i coverage/codeclimate.json
+
+      - store_test_results:
+          path: test_results
+
+  ruby25:
+    executor: ruby25
+    steps:
+      - checkout
+      - test
+
+  ruby24:
+    executor: ruby24
+    steps:
+      - checkout
+      - test
+
+  ruby23:
+    executor: ruby23
+    steps:
+      - checkout
+      - test
