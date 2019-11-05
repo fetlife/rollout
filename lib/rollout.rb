@@ -273,15 +273,15 @@ class Rollout
   end
 
   def feature_states(user = nil)
-    features.each_with_object({}) do |f, hash|
-      hash[f] = active?(f, user)
+    multi_get(*features).each_with_object({}) do |f, hash|
+      hash[f.name] = f.active?(self, user)
     end
   end
 
   def active_features(user = nil)
-    features.select do |f|
-      active?(f, user)
-    end
+    multi_get(*features).select do |f|
+      f.active?(self, user)
+    end.map(&:name)
   end
 
   def clear!
