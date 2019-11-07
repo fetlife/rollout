@@ -264,6 +264,8 @@ class Rollout
   end
 
   def multi_get(*features)
+    return [] if features.empty?
+
     feature_keys = features.map { |feature| key(feature) }
     @storage.mget(*feature_keys).map.with_index { |string, index| Feature.new(features[index], string, @options) }
   end

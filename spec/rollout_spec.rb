@@ -605,6 +605,12 @@ RSpec.describe "Rollout" do
       expect(features[2].percentage).to eq 100
       expect(features.size).to eq 3
     end
+
+    describe 'when given feature keys is empty' do
+      it 'returns empty array' do
+        expect(@rollout.multi_get(*[])).to match_array([])
+      end
+    end
   end
 
   describe "#set_feature_data" do
