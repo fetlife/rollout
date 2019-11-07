@@ -19,5 +19,6 @@ rdoc
 pkg
 *.gem
 gemfiles/*.lock
+.rspec_status
 
 ## PROJECT::SPECIFIC
