@@ -275,6 +275,12 @@ class Rollout
     (@storage.get(features_key) || '').split(',').map(&:to_sym)
   end
 
+  def groups_user_blongs_to(user)
+    @groups.select do |group, _|
+      active_in_group?(group, user)
+    end.keys
+  end
+
   def feature_states(user = nil)
     multi_get(*features).each_with_object({}) do |f, hash|
       hash[f.name] = f.active?(self, user)

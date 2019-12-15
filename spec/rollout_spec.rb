@@ -649,6 +649,19 @@ RSpec.describe "Rollout" do
     end
   end
 
+  describe "#groups_user_blongs_to" do
+    let(:user) { double(id: 5, level: 4) }
+    before do
+      @rollout.define_group(:alpha) { |user| user.level > 5 }
+      @rollout.define_group(:beta) { |user| user.level > 3 }
+      @rollout.define_group(:gama) { |user| user.level > 1 }
+    end
+
+    it "returns an array conatins groups the user blogns to" do
+      expect(@rollout.groups_user_blongs_to(user)).to match_array([:all, :beta, :gama])
+    end
+  end
+
   describe "#user_in_active_users?" do
     it "returns true if activated for user" do
       @rollout.activate_user(:chat, double(id: 5))
