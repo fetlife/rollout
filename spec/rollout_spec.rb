@@ -413,6 +413,82 @@ RSpec.describe "Rollout" do
     end
   end
 
+  describe "indexes all related fields of feature" do
+    let(:features) { %i(chat blog) }
+
+    context "when users was changed" do
+      let(:user) { double(id: 42) }
+
+      before do
+        features.each do |feature|
+          @rollout.activate_user(feature, user)
+        end
+      end
+
+      it "adds the new feature to the user index" do
+        @rollout.activate_user(:video, user)
+        index_key = @rollout.send("field_index", "users:#{user.id}")
+        expect(@redis.sismember(index_key, :video)).to be_truthy
+      end
+
+      it "removes the new feature from the user index" do
+        @rollout.deactivate_user(features[0], user)
+        index_key = @rollout.send("field_index", "users:#{user.id}")
+        expect(@redis.sismember(index_key, features[0])).to be_falsey
+      end
+    end
+
+    context "when groups was changed" do
+      let(:group) { :caretakers }
+
+      before do
+        features.each do |feature|
+          @rollout.activate_group(feature, group)
+        end
+      end
+
+      it "adds the new group to the group index" do
+        @rollout.activate_group(:video, group)
+        index_key = @rollout.send("field_index", "groups:#{group}")
+        expect(@redis.sismember(index_key, :video)).to be_truthy
+      end
+
+      it "removes the group from the group index" do
+        @rollout.deactivate_group(features[0], group)
+        index_key = @rollout.send("field_index", "groups:#{group}")
+        expect(@redis.sismember(index_key, features[0])).to be_falsey
+      end
+    end
+
+    context "when percentage was changed" do
+      let(:percentage) { 36 }
+      let(:user) { double(id: 42) }
+
+      before do
+        features.each do |feature|
+          @rollout.activate_user(feature, user)
+          @rollout.activate_percentage(feature, percentage)
+        end
+      end
+
+      it "adds the feature to the percentage scale index" do
+        feature_name = :video
+        @rollout.activate_percentage(feature_name, percentage)
+        scale = @rollout.send("percentage_scale", percentage)
+        index_key = @rollout.send("field_index", "percentage:#{scale}")
+        expect(@redis.sismember(index_key, feature_name)).to be_truthy
+      end
+
+      it "removed the feature form the percentage scale index" do
+        feature_name = features[0] 
+        @rollout.activate_percentage(feature_name, 0)
+        scale = @rollout.send("percentage_scale", 0)
+        index_key = @rollout.send("field_index", "percentage:#{scale}")
+        expect(@redis.sismember(index_key, feature_name)).to be_falsey
+      end
+    end
+  end
+
   describe "#get" do
     before do
       @rollout.activate_percentage(:chat, 10)

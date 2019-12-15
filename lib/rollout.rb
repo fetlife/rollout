@@ -7,6 +7,7 @@ require 'json'
 
 class Rollout
   RAND_BASE = (2**32 - 1) / 100.0
+  PERCENTAGE_INDEX_SCALE = 10
 
   class Feature
     attr_accessor :groups, :users, :percentage, :data
@@ -305,6 +306,10 @@ class Rollout
     "feature:#{name}"
   end
 
+  def field_index(name)
+    "rollout:indices:#{name}"
+  end
+
   def features_key
     'feature:__features__'
   end
@@ -315,8 +320,43 @@ class Rollout
     save(f)
   end
 
+  def percentage_scale(percentage)
+    (percentage / PERCENTAGE_INDEX_SCALE).to_i
+  end
+
+  def reindex_percentage(origin_feature, changed_feature)
+    return if origin_feature.percentage == 0 && changed_feature.percentage == 0 
+
+    origin_percentage = percentage_scale(origin_feature.percentage)
+    changed_percentage = percentage_scale(changed_feature.percentage)
+    return if origin_percentage == changed_percentage 
+
+    @storage.sadd(field_index("percentage:#{changed_percentage}"), changed_feature.name) unless changed_feature.percentage == 0
+    @storage.srem(field_index("percentage:#{origin_percentage}"), changed_feature.name) unless origin_feature.percentage == 0
+  end
+
+  def reindex_field(origin_feature, changed_feature, name) 
+    activated_keys = changed_feature.send(name) - origin_feature.send(name)
+    deactivated_keys = origin_feature.send(name) - changed_feature.send(name) 
+
+    activated_keys.each do |key|
+      @storage.sadd(field_index("#{name}:#{key}"), changed_feature.name)
+    end
+    deactivated_keys.each do |key|
+      @storage.srem(field_index("#{name}:#{key}"), changed_feature.name)
+    end
+  end
+
   def save(feature)
-    @storage.set(key(feature.name), feature.serialize)
-    @storage.set(features_key, (features | [feature.name.to_sym]).join(','))
+    origin_feature  = get(feature.name)
+    origin_features = features
+
+    @storage.multi do
+      reindex_field(origin_feature, feature, "users")
+      reindex_field(origin_feature, feature, "groups")
+      reindex_percentage(origin_feature, feature)
+      @storage.set(key(feature.name), feature.serialize)
+      @storage.set(features_key, (origin_features | [feature.name.to_sym]).join(','))
+    end
   end
 end
