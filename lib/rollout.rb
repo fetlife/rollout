@@ -82,15 +82,7 @@ class Rollout
     private
 
     def user_id(user)
-      if user.is_a?(Integer) || user.is_a?(String)
-        user.to_s
-      else
-        user.send(id_user_by).to_s
-      end
-    end
-
-    def id_user_by
-      @options[:id_user_by] || :id
+      Rollout.user_id(user, @options[:id_user_by])
     end
 
     def user_in_percentage?(user)
@@ -133,6 +125,14 @@ class Rollout
       else
         groups
       end
+    end
+  end
+
+  def self.user_id(user, id_user_by = nil)
+    if user.is_a?(Integer) || user.is_a?(String)
+      user.to_s
+    else
+      user.send(id_user_by || :id).to_s
     end
   end
 
@@ -307,6 +307,10 @@ class Rollout
   end
 
   private
+
+  def user_id(user)
+    Rollout.user_id(user, @options[:id_user_by])
+  end
 
   def key(name)
     "feature:#{name}"

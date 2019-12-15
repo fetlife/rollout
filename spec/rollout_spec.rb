@@ -743,6 +743,22 @@ RSpec.describe "Rollout" do
     end
   end
 
+  describe "#user_id" do
+    let(:user) { double(id: "12", email: "test@test.com") }
+
+    it "returns a string" do
+      expect(Rollout.user_id(123)).to be_a(String) 
+    end
+
+    it "extracts the id attribute as user id" do
+      expect(Rollout.user_id(user)).to be(user.id) 
+    end
+
+    it "extracts the specific attribute as user id" do
+      expect(Rollout.user_id(user, "email")).to be(user.email) 
+    end
+  end
+
   describe "#clear_feature_data" do
     it 'resets data to empty string' do
       @rollout.set_feature_data(:chat, description: 'foo')
