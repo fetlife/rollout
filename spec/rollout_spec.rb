@@ -414,11 +414,10 @@ RSpec.describe "Rollout" do
   end
 
   describe "indexes all related fields of feature" do
+    let(:user)     { double(id: 42) }
     let(:features) { %i(chat blog) }
 
     context "when users was changed" do
-      let(:user) { double(id: 42) }
-
       before do
         features.each do |feature|
           @rollout.activate_user(feature, user)
@@ -461,7 +460,6 @@ RSpec.describe "Rollout" do
     end
 
     context "when percentage was changed" do
-      let(:user) { double(id: 42) }
       let(:feature) { :blog }
       let(:percentage_key_100) { @rollout.send("percentage_field_index", 100) }
       let(:percentage_key_normal) { @rollout.send("percentage_field_index") }
@@ -538,6 +536,30 @@ RSpec.describe "Rollout" do
           expect(@redis.exists(@rollout.send("field_index", "users:#{user.id}"))).to be_falsey
           expect(@redis.exists(@rollout.send("field_index", "groups:alpha"))).to be_falsey
           expect(@redis.exists(@rollout.send("field_index", @rollout.send("percentage_field_index")))).to be_falsey
+        end
+      end
+
+      context "when features created by earlier version" do
+        let(:group)           { :reindexed_group }
+        let(:grouped_feature) { :grouped_feature }
+        let(:global_feature)  { :feature_100_percent }
+
+        before do
+          allow(@rollout).to receive(:reindex).and_return(nil)
+          @rollout.define_group(group) do |user|
+            user.id == 42
+          end
+
+          features.each do |feature|
+            @rollout.activate_user(feature, user)
+          end
+          @rollout.activate_group(grouped_feature, group)
+          @rollout.activate_percentage(global_feature, 100)
+        end
+
+        it "reindex all of features" do
+          @rollout.reindex_all
+          expect(@rollout.active_features(user)).to contain_exactly(*features, grouped_feature, global_feature)
         end
       end
     end

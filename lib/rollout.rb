@@ -283,7 +283,7 @@ class Rollout
   def groups_user_belongs_to(user = nil)
     return [@groups.keys.first] if user.nil?
 
-    @groups.select do |group, _|
+    groups = @groups.select do |group, _|
       active_in_group?(group, user)
     end.keys
   end
@@ -316,46 +316,49 @@ class Rollout
     @storage.exists(key(feature))
   end
 
-  # attr_accessor :groups, :users, :percentage, :data
   def reindex_all
     users              = {}
     groups             = {}
     percentages_of_100 = [] 
     percentages        = [] 
 
-    multi_get(*features).select do |f|
-      @users.each do |user|
+    multi_get(*features).select do |feature|
+      feature.users.each do |user|
         users[user] ||= []
-        users[user].push(f.name)
+        users[user].push(feature.name)
       end
-      @groups.each do |group|
-        gropus[group] ||= []
-        gropus[group].push(f.name)
+
+      feature.groups.each do |group|
+        groups[group] ||= []
+        groups[group].push(feature.name)
       end
-      percentages_of_100.push(f.name) if f.percentage == 100 
-      percentages.push(f.name)        if f.percentage < 100  && f.percentage > 0 
+
+      percentages_of_100.push(feature.name) if feature.percentage == 100 
+      percentages.push(feature.name)        if feature.percentage < 100  && feature.percentage > 0 
     end
 
     @storage.multi do
       users.each do |user, features|
         @storage.del(field_index("users:#{user}"))
-        @storage.sadd(field_index("users:#{user}"), features)
+        @storage.sadd(field_index("users:#{user}"), features) if features.size > 0
       end
+
       groups.each do |group, features|
         @storage.del(field_index("groups:#{group}"))
-        @storage.sadd(field_index("groups:#{group}"), features)
+        @storage.sadd(field_index("groups:#{group}"), features) if features.size > 0
       end
+
       @storage.del(field_index("percentage:100"))
-      @storage.sadd(field_index("percentage:100"), percentages_of_100)
+      @storage.sadd(field_index("percentage:100"), percentages_of_100) if percentages_of_100.size > 0
       @storage.del(field_index("percentage"))
-      @storage.sadd(field_index("percentage"), percentages)
+      @storage.sadd(field_index("percentage"), percentages) if percentages.size > 0
     end
   end
 
   private
 
   def active_features_by_groups(user)
-    groups_user_belongs_to(user).each_with_object([]) do |group, result| 
+    groups_user_belongs_to(user).inject([]) do |result, group| 
       result += @storage.smembers(field_index("groups:#{group}"))
     end.map(&:to_sym)
   end
