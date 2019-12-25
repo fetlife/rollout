@@ -461,30 +461,84 @@ RSpec.describe "Rollout" do
     end
 
     context "when percentage was changed" do
-      let(:percentage) { 36 }
       let(:user) { double(id: 42) }
+      let(:feature) { :blog }
+      let(:percentage_key_100) { @rollout.send("percentage_field_index", 100) }
+      let(:percentage_key_normal) { @rollout.send("percentage_field_index") }
 
-      before do
-        features.each do |feature|
-          @rollout.activate_user(feature, user)
-          @rollout.activate_percentage(feature, percentage)
+      context "when the percentage was 100" do
+        before do
+          @rollout.activate_percentage(feature, 100) 
+        end
+
+        it "set the feature into 100 percentage index" do
+          expect(@redis.sismember(percentage_key_100, feature)).to be_truthy
+        end
+
+        context "when changed the percentage to 85" do
+          it "moves the feature to the normal percentage index" do
+            @rollout.activate_percentage(feature, 85) 
+            expect(@redis.sismember(percentage_key_100, feature)).to be_falsy
+            expect(@redis.sismember(percentage_key_normal, feature)).to be_truthy
+          end
+        end
+
+        context "when changed the percentage to 0" do
+          it "removes the feature from all percentage index" do
+            @rollout.activate_percentage(feature, 0) 
+            expect(@redis.sismember(percentage_key_100, feature)).to be_falsy
+            expect(@redis.sismember(percentage_key_normal, feature)).to be_falsy
+          end
         end
       end
 
-      it "adds the feature to the percentage scale index" do
-        feature_name = :video
-        @rollout.activate_percentage(feature_name, percentage)
-        scale = @rollout.send("percentage_scale", percentage)
-        index_key = @rollout.send("field_index", "percentage:#{scale}")
-        expect(@redis.sismember(index_key, feature_name)).to be_truthy
+      context "when the percentage was 85" do
+        before do
+          @rollout.activate_percentage(feature, 85) 
+        end
+
+        it "set the feature into normal percentage index" do
+          expect(@redis.sismember(percentage_key_normal, feature)).to be_truthy
+        end
+
+        context "when changed the percentage to 95" do
+          it "moves the feature to the normal percentage index" do
+            @rollout.activate_percentage(feature, 95) 
+            expect(@redis.sismember(percentage_key_100, feature)).to be_falsy
+            expect(@redis.sismember(percentage_key_normal, feature)).to be_truthy
+          end
+        end
+
+        context "when changed the percentage to 100" do
+          it "removes the feature from all percentage index" do
+            @rollout.activate_percentage(feature, 100) 
+            expect(@redis.sismember(percentage_key_100, feature)).to be_truthy
+            expect(@redis.sismember(percentage_key_normal, feature)).to be_falsy
+          end
+        end
+
+        context "when changed the percentage to 0" do
+          it "removes the feature from all percentage index" do
+            @rollout.activate_percentage(feature, 0) 
+            expect(@redis.sismember(percentage_key_100, feature)).to be_falsy
+            expect(@redis.sismember(percentage_key_normal, feature)).to be_falsy
+          end
+        end
       end
 
-      it "removed the feature form the percentage scale index" do
-        feature_name = features[0] 
-        @rollout.activate_percentage(feature_name, 0)
-        scale = @rollout.send("percentage_scale", 0)
-        index_key = @rollout.send("field_index", "percentage:#{scale}")
-        expect(@redis.sismember(index_key, feature_name)).to be_falsey
+      context "when the feature was deleted" do
+        before do
+          @rollout.activate_group(feature, :alpha)
+          @rollout.activate_percentage(feature, 10)
+          @rollout.activate_user(feature, user)
+        end
+
+        it "empty all of indices" do
+          @rollout.delete(feature)
+          expect(@redis.exists(@rollout.send("field_index", "users:#{user.id}"))).to be_falsey
+          expect(@redis.exists(@rollout.send("field_index", "groups:alpha"))).to be_falsey
+          expect(@redis.exists(@rollout.send("field_index", @rollout.send("percentage_field_index")))).to be_falsey
+        end
       end
     end
   end
@@ -649,7 +703,7 @@ RSpec.describe "Rollout" do
     end
   end
 
-  describe "#groups_user_blongs_to" do
+  describe "#groups_user_belongs_to" do
     let(:user) { double(id: 5, level: 4) }
     before do
       @rollout.define_group(:alpha) { |user| user.level > 5 }
@@ -658,7 +712,7 @@ RSpec.describe "Rollout" do
     end
 
     it "returns an array conatins groups the user blogns to" do
-      expect(@rollout.groups_user_blongs_to(user)).to match_array([:all, :beta, :gama])
+      expect(@rollout.groups_user_belongs_to(user)).to match_array([:all, :beta, :gama])
     end
   end
 
