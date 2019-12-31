@@ -24,6 +24,14 @@ $redis = Redis.new
 $rollout = Rollout.new($redis)
 ```
 
+or even simpler
+
+```ruby
+require 'redis'
+$rollout = Rollout.new(Redis.current) # Will use REDIS_URL env var or default redis url
+```
+
+
 Update data specific to a feature:
 
 ```ruby

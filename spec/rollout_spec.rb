@@ -2,8 +2,7 @@ require "spec_helper"
 
 RSpec.describe "Rollout" do
   before do
-    @redis   = Redis.new
-    @rollout = Rollout.new(@redis)
+    @rollout = Rollout.new(Redis.current)
   end
 
   describe "when a group is activated" do
