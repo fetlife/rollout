@@ -170,7 +170,13 @@ class Rollout
   end
 
   def exists?(feature)
-    @storage.exists(key(feature))
+    # since redis-rb v4.2, `#exists?` replaces `#exists` which now returns integer value instead of boolean
+    # https://github.com/redis/redis-rb/pull/918
+    if @storage.respond_to?(:exists?)
+      @storage.exists?(key(feature))
+    else
+      @storage.exists(key(feature))
+    end
   end
 
   private
