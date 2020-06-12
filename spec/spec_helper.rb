@@ -5,8 +5,14 @@ require 'simplecov'
 SimpleCov.start
 
 require 'bundler/setup'
-require ENV["USE_REAL_REDIS"] == "true" ? "redis" : "fakeredis"
-require "rollout"
+require 'redis'
+require 'rollout'
+
+Redis.current = Redis.new(
+  host: ENV.fetch('REDIS_HOST', '127.0.0.1'),
+  port: ENV.fetch('REDIS_PORT', '6379'),
+  db: ENV.fetch('REDIS_DB', '7'),
+)
 
 RSpec.configure do |config|
   config.example_status_persistence_file_path = '.rspec_status'
@@ -17,5 +23,5 @@ RSpec.configure do |config|
     c.syntax = :expect
   end
 
-  config.before { Redis.new.flushdb }
+  config.before { Redis.current.flushdb }
 end
