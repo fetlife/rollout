@@ -1,18 +1,26 @@
 # frozen_string_literal: true
 
 require 'rollout/feature'
+require 'rollout/logging'
 require 'rollout/version'
 require 'zlib'
 require 'set'
 require 'json'
+require 'observer'
 
 class Rollout
+  include Observable
+
   RAND_BASE = (2**32 - 1) / 100.0
+
+  attr_reader :options, :storage
 
   def initialize(storage, opts = {})
     @storage = storage
     @options = opts
     @groups  = { all: ->(_user) { true } }
+
+    self.extend(Logging) unless opts[:logging].nil?
   end
 
   def activate(feature)
@@ -191,8 +199,17 @@ class Rollout
 
   def with_feature(feature)
     f = get(feature)
-    yield(f)
-    save(f)
+
+    if count_observers > 0
+      before = Marshal.load(Marshal.dump(f))
+      yield(f)
+      save(f)
+      changed
+      notify_observers(:update, before, f)
+    else
+      yield(f)
+      save(f)
+    end
   end
 
   def save(feature)
