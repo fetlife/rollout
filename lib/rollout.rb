@@ -20,7 +20,7 @@ class Rollout
     @options = opts
     @groups  = { all: ->(_user) { true } }
 
-    self.extend(Logging) unless opts[:logging].nil?
+    extend(Logging) if opts[:logging]
   end
 
   def activate(feature)

@@ -1,8 +1,7 @@
-
 class Rollout
   module Logging
     def self.extended(rollout)
-      options = rollout.options[:logging]
+      options = rollout.options[:logging].dup
       options = {} unless options.is_a?(Hash)
       options[:storage] ||= rollout.storage
 
@@ -80,6 +79,7 @@ class Rollout
 
         keys.each do |key|
           next if before_hash[key] == after_hash[key]
+
           change[:before][key] = before_hash[key]
           change[:after][key] = after_hash[key]
         end
@@ -93,13 +93,14 @@ class Rollout
 
       def log(event, *args)
         unless respond_to?(event)
-          raise ArgumentError.new("Invalid log event: #{event}")
+          raise ArgumentError, "Invalid log event: #{event}"
         end
 
         expected_arity = method(event).arity
         unless args.count == expected_arity
-          raise ArgumentError.new(
-            "Invalid number of arguments for event '#{event}': expected #{expected_arity} but got #{args.count}"
+          raise(
+            ArgumentError,
+            "Invalid number of arguments for event '#{event}': expected #{expected_arity} but got #{args.count}",
           )
         end
 
