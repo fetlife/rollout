@@ -23,6 +23,10 @@ class Rollout
     extend(Logging) if opts[:logging]
   end
 
+  def groups
+    @groups.keys
+  end
+
   def activate(feature)
     with_feature(feature) do |f|
       f.percentage = 100
@@ -187,16 +191,6 @@ class Rollout
     end
   end
 
-  private
-
-  def key(name)
-    "feature:#{name}"
-  end
-
-  def features_key
-    'feature:__features__'
-  end
-
   def with_feature(feature)
     f = get(feature)
 
@@ -210,6 +204,16 @@ class Rollout
       yield(f)
       save(f)
     end
+  end
+
+  private
+
+  def key(name)
+    "feature:#{name}"
+  end
+
+  def features_key
+    'feature:__features__'
   end
 
   def save(feature)

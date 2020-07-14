@@ -65,5 +65,21 @@ RSpec.describe "Rollout::Logging" do
       expect(rollout.logging.events(feature)).to eq [second_event]
     end
   end
+
+  context 'with context' do
+    let(:current_user) { double(nickname: 'lester') }
+
+    it "adds context to the event" do
+      rollout.logging.with_context(actor: current_user.nickname) do
+        rollout.activate_percentage(feature, 25)
+      end
+
+      event = rollout.logging.last_event(feature)
+
+      expect(event.name).to eq "update"
+      expect(event.data).to eq(before: { percentage: 0 }, after: { percentage: 25 })
+      expect(event.context).to eq(actor: current_user.nickname)
+    end
+  end
 end
 

@@ -14,20 +14,22 @@ class Rollout
     end
 
     class Event
-      attr_reader :name, :data, :created_at
+      attr_reader :name, :data, :context, :created_at
 
       def self.from_raw(value, score)
         hash = JSON.parse(value, symbolize_names: true)
         name = hash.fetch(:name)
         data = hash.fetch(:data)
+        context = hash[:context]
         created_at = Time.at(-score.to_f / 1_000_000)
 
-        new(name, data, created_at)
+        new(name: name, data: data, context: context, created_at: created_at)
       end
 
-      def initialize(name, data, created_at)
+      def initialize(name:, data:, context:, created_at:)
         @name = name
         @data = data
+        @context = context
         @created_at = created_at
       end
 
@@ -36,7 +38,7 @@ class Rollout
       end
 
       def serialize
-        JSON.dump(name: @name, data: @data)
+        JSON.dump(name: @name, data: @data, context: @context)
       end
 
       def ==(other)
@@ -83,7 +85,7 @@ class Rollout
           change[:before][key] = before_hash[key]
           change[:after][key] = after_hash[key]
         end
-        event = Event.new(:update, change, Time.now)
+        event = Event.new(name: :update, data: change, context: current_context, created_at: Time.now)
 
         storage_key = events_storage_key(after.name)
 
@@ -105,6 +107,18 @@ class Rollout
         end
 
         public_send(event, *args)
+      end
+
+      def with_context(context)
+        raise ArgumentError, "block is required" unless block_given?
+        Thread.current[:rollout_logging_context] = context
+        yield
+      ensure
+        Thread.current[:rollout_logging_context] = nil
+      end
+
+      def current_context
+        Thread.current[:rollout_logging_context]
       end
 
       private
