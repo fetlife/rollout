@@ -1,8 +1,8 @@
 class Rollout
   module Logging
     def self.extended(rollout)
-      options = rollout.options[:logging].dup
-      options = {} unless options.is_a?(Hash)
+      options = rollout.options[:logging]
+      options = options.is_a?(Hash) ? options.dup : {}
       options[:storage] ||= rollout.storage
 
       logger = Logger.new(**options)
