@@ -113,5 +113,17 @@ RSpec.describe 'Rollout::Logging' do
       expect(rollout.logging.global_events).to eq [event_foo, event_bar]
     end
   end
+
+  context 'no logging for block' do
+    it 'doesnt log' do
+      rollout.logging.without do
+        rollout.activate_percentage(feature, 25)
+      end
+
+      event = rollout.logging.last_event(feature)
+
+      expect(event).to be_nil
+    end
+  end
 end
 

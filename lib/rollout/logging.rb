@@ -123,6 +123,8 @@ class Rollout
       end
 
       def log(event, *args)
+        return unless logging_enabled?
+
         unless respond_to?(event)
           raise ArgumentError, "Invalid log event: #{event}"
         end
@@ -138,18 +140,32 @@ class Rollout
         public_send(event, *args)
       end
 
+      CONTEXT_THREAD_KEY = :rollout_logging_context
+      WITHOUT_THREAD_KEY = :rollout_logging_disabled
+
       def with_context(context)
         raise ArgumentError, "context must be a Hash" unless context.is_a?(Hash)
         raise ArgumentError, "block is required" unless block_given?
 
-        Thread.current[:rollout_logging_context] = context
+        Thread.current[CONTEXT_THREAD_KEY] = context
         yield
       ensure
-        Thread.current[:rollout_logging_context] = nil
+        Thread.current[CONTEXT_THREAD_KEY] = nil
       end
 
       def current_context
-        Thread.current[:rollout_logging_context] || {}
+        Thread.current[CONTEXT_THREAD_KEY] || {}
+      end
+
+      def without
+        Thread.current[WITHOUT_THREAD_KEY] = true
+        yield
+      ensure
+        Thread.current[WITHOUT_THREAD_KEY] = nil
+      end
+
+      def logging_enabled?
+        !Thread.current[WITHOUT_THREAD_KEY]
       end
 
       private
