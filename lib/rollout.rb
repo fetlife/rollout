@@ -42,6 +42,10 @@ class Rollout
     features.delete(feature.to_s)
     @storage.set(features_key, features.join(','))
     @storage.del(key(feature))
+
+    if respond_to?(:logging)
+      logging.delete(feature)
+    end
   end
 
   def set(feature, desired_state)
