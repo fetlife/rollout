@@ -18,15 +18,11 @@ class Rollout
 
       def self.from_raw(value, score)
         hash = JSON.parse(value, symbolize_names: true)
-        name = hash.fetch(:feature)
-        name = hash.fetch(:name)
-        data = hash.fetch(:data)
-        context = hash[:context]
 
         new(**hash.merge(created_at: Time.at(-score.to_f / 1_000_000)))
       end
 
-      def initialize(feature:, name:, data:, context: {}, created_at:)
+      def initialize(feature: nil, name:, data:, context: {}, created_at:)
         @feature = feature
         @name = name
         @data = data
@@ -91,7 +87,7 @@ class Rollout
 
       def delete(feature_name)
         storage_key = events_storage_key(feature_name)
-        @storage.rem(storage_key)
+        @storage.del(storage_key)
       end
 
       def update(before, after)
