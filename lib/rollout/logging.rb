@@ -92,9 +92,15 @@ class Rollout
 
       def update(before, after)
         before_hash = before.to_hash
+        before_hash.delete(:data).each do |k, v|
+          before_hash["data.#{k}"] = v
+        end
         after_hash = after.to_hash
+        after_hash.delete(:data).each do |k, v|
+          after_hash["data.#{k}"] = v
+        end
 
-        keys = before_hash.keys & after_hash.keys
+        keys = before_hash.keys | after_hash.keys
         change = { before: {}, after: {} }
 
         keys.each do |key|

@@ -429,7 +429,8 @@ RSpec.describe "Rollout" do
       expect(feature.to_hash).to eq(
         groups: [:caretakers, :greeters],
         percentage: 10,
-        users: %w(42)
+        users: %w(42),
+        data: {},
       )
 
       feature = @rollout.get(:signup)
@@ -449,7 +450,8 @@ RSpec.describe "Rollout" do
       expect(feature.to_hash).to eq(
         groups: [:caretakers, :greeters].to_set,
         percentage: 10,
-        users: %w(42).to_set
+        users: %w(42).to_set,
+        data: {},
       )
 
       feature = @rollout.get(:signup)
@@ -473,7 +475,8 @@ RSpec.describe "Rollout" do
         expect(@rollout.get(feature).to_hash).to eq(
           percentage: 0,
           users: [],
-          groups: []
+          groups: [],
+          data: {},
         )
       end
     end
@@ -485,7 +488,8 @@ RSpec.describe "Rollout" do
         expect(@rollout.get(feature).to_hash).to eq(
           percentage: 0,
           users: Set.new,
-          groups: Set.new
+          groups: Set.new,
+          data: {},
         )
       end
     end

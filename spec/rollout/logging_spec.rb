@@ -34,6 +34,20 @@ RSpec.describe 'Rollout::Logging' do
     expect(rollout.logging.events(feature)).to eq [first_event, second_event, third_event]
   end
 
+  context 'logging data changes' do
+    it 'logs changes' do
+      expect(rollout.logging.last_event(feature)).to be_nil
+
+      rollout.set_feature_data(feature, description: "foo")
+
+      event = rollout.logging.last_event(feature)
+
+      expect(event).not_to be_nil
+      expect(event.name).to eq 'update'
+      expect(event.data).to eq(before: { "data.description": nil }, after: { "data.description": "foo" })
+    end
+  end
+
   context 'no logging' do
     let(:logging) { nil }
 
