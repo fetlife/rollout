@@ -102,13 +102,19 @@ class Rollout
 
         keys = before_hash.keys | after_hash.keys
         change = { before: {}, after: {} }
+        changed_count = 0
 
         keys.each do |key|
           next if before_hash[key] == after_hash[key]
 
           change[:before][key] = before_hash[key]
           change[:after][key] = after_hash[key]
+
+          changed_count += 1
         end
+
+        return if changed_count == 0
+
         event = Event.new(
           feature: after.name,
           name: :update,
