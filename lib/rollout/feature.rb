@@ -67,7 +67,8 @@ class Rollout
       {
         percentage: @percentage,
         groups: @groups,
-        users: @users
+        users: @users,
+        data: @data,
       }
     end
 
