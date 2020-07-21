@@ -180,6 +180,7 @@ This example would use the "development:feature:chat:groups" key.
 
 ## Frontend / UI
 
+* [rollout-ui](https://github.com/fetlife/rollout-ui)
 * [Rollout-Dashboard](https://github.com/fiverr/rollout_dashboard/)
 
 ## Implementations in other languages
