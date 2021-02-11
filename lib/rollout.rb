@@ -107,7 +107,7 @@ class Rollout
 
   def active?(feature, user = nil)
     feature = get(feature)
-    feature.active?(self, user)
+    feature.active?(user)
   end
 
   def user_in_active_users?(feature, user = nil)
@@ -138,7 +138,7 @@ class Rollout
 
   def get(feature)
     string = @storage.get(key(feature))
-    Feature.new(feature, string, @options)
+    Feature.new(feature, state: string, rollout: self, options: @options)
   end
 
   def set_feature_data(feature, data)
@@ -157,7 +157,13 @@ class Rollout
     return [] if features.empty?
 
     feature_keys = features.map { |feature| key(feature) }
-    @storage.mget(*feature_keys).map.with_index { |string, index| Feature.new(features[index], string, @options) }
+
+    @storage
+      .mget(*feature_keys)
+      .map
+      .with_index do |string, index|
+        Feature.new(features[index], state: string, rollout: self, options: @options)
+      end
   end
 
   def features
@@ -166,13 +172,13 @@ class Rollout
 
   def feature_states(user = nil)
     multi_get(*features).each_with_object({}) do |f, hash|
-      hash[f.name] = f.active?(self, user)
+      hash[f.name] = f.active?(user)
     end
   end
 
   def active_features(user = nil)
     multi_get(*features).select do |f|
-      f.active?(self, user)
+      f.active?(user)
     end.map(&:name)
   end
 
@@ -199,7 +205,7 @@ class Rollout
     f = get(feature)
 
     if count_observers > 0
-      before = Marshal.load(Marshal.dump(f))
+      before = f.deep_clone
       yield(f)
       save(f)
       changed

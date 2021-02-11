@@ -5,12 +5,13 @@ class Rollout
     attr_accessor :groups, :users, :percentage, :data
     attr_reader :name, :options
 
-    def initialize(name, string = nil, opts = {})
-      @options = opts
-      @name    = name
+    def initialize(name, rollout:, state: nil, options: {})
+      @name = name
+      @rollout = rollout
+      @options = options
 
-      if string
-        raw_percentage, raw_users, raw_groups, raw_data = string.split('|', 4)
+      if state
+        raw_percentage, raw_users, raw_groups, raw_data = state.split('|', 4)
         @percentage = raw_percentage.to_f
         @users = users_from_string(raw_users)
         @groups = groups_from_string(raw_groups)
@@ -48,12 +49,12 @@ class Rollout
       @data = {}
     end
 
-    def active?(rollout, user)
+    def active?(user)
       if user
         id = user_id(user)
         user_in_percentage?(id) ||
           user_in_active_users?(id) ||
-          user_in_active_group?(user, rollout)
+          user_in_active_group?(user)
       else
         @percentage == 100
       end
@@ -70,6 +71,14 @@ class Rollout
         users: @users,
         data: @data,
       }
+    end
+
+    def deep_clone
+      c = self.clone
+      c.instance_variable_set('@rollout', nil)
+      c = Marshal.load(Marshal.dump(c))
+      c.instance_variable_set('@rollot', @rollout)
+      c
     end
 
     private
@@ -98,9 +107,9 @@ class Rollout
       end
     end
 
-    def user_in_active_group?(user, rollout)
+    def user_in_active_group?(user)
       @groups.any? do |g|
-        rollout.active_in_group?(g, user)
+        @rollout.active_in_group?(g, user)
       end
     end
 
