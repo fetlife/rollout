@@ -247,6 +247,20 @@ RSpec.describe "Rollout" do
     end
   end
 
+  describe "activating a feature triggers callback" do
+    before do
+      rollout.activate(:chat)
+    end
+
+    def after_feature_update(feature)
+      puts "I ran"
+    end
+
+    it "activates the feature" do
+      expect(rollout).to be_active(:chat)
+    end
+  end
+
   describe "activating a feature for a percentage of users" do
     before do
       rollout.activate_percentage(:chat, 20)

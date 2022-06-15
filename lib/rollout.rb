@@ -12,7 +12,8 @@ class Rollout
   include Observable
 
   RAND_BASE = (2**32 - 1) / 100.0
-
+  
+  attr_accessor :after_feature_update
   attr_reader :options, :storage
 
   def initialize(storage, opts = {})
@@ -214,6 +215,8 @@ class Rollout
       yield(f)
       save(f)
     end
+
+    @@after_feature_update.call(f) if @@after_feature_update
   end
 
   private
