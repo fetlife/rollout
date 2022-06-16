@@ -1,7 +1,7 @@
 require 'spec_helper'
 
 RSpec.describe 'Rollout::Logging' do
-  let(:rollout) { Rollout.new(Redis.current, logging: logging) }
+  let(:rollout) { Rollout.new($redis, logging: logging) }
   let(:logging) { true }
   let(:feature) { :foo }
 

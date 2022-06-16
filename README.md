@@ -28,9 +28,8 @@ or even simpler
 
 ```ruby
 require 'redis'
-$rollout = Rollout.new(Redis.current) # Will use REDIS_URL env var or default redis url
+$rollout = Rollout.new($redis) # Will use REDIS_URL env var or default redis url
 ```
-
 
 Update data specific to a feature:
 
@@ -180,22 +179,20 @@ This example would use the "development:feature:chat:groups" key.
 
 ## Frontend / UI
 
-* [rollout-ui](https://github.com/fetlife/rollout-ui)
-* [Rollout-Dashboard](https://github.com/fiverr/rollout_dashboard/)
+- [rollout-ui](https://github.com/fetlife/rollout-ui)
+- [Rollout-Dashboard](https://github.com/fiverr/rollout_dashboard/)
 
 ## Implementations in other languages
 
-*   Python: https://github.com/asenchi/proclaim
-*   PHP: https://github.com/opensoft/rollout
-*   Clojure: https://github.com/yeller/shoutout
-*   Perl: https://metacpan.org/pod/Toggle
-
+- Python: https://github.com/asenchi/proclaim
+- PHP: https://github.com/opensoft/rollout
+- Clojure: https://github.com/yeller/shoutout
+- Perl: https://metacpan.org/pod/Toggle
 
 ## Contributors
 
-*   James Golick - Creator - https://github.com/jamesgolick
-*   Eric Rafaloff - Maintainer - https://github.com/EricR
-
+- James Golick - Creator - https://github.com/jamesgolick
+- Eric Rafaloff - Maintainer - https://github.com/EricR
 
 ## Copyright
 
