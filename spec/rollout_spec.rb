@@ -1,7 +1,7 @@
 require "spec_helper"
 
 RSpec.describe "Rollout" do
-  let(:rollout) { Rollout.new(Redis.current) }
+  let(:rollout) { Rollout.new($redis) }
 
   describe "when a group is activated" do
     before do
@@ -244,6 +244,33 @@ RSpec.describe "Rollout" do
 
     it "sets @data to empty hash" do
       expect(rollout.get(:chat).data).to eq({})
+    end
+  end
+
+  describe "activating a feature triggers callback" do
+      def fake_callback_method(feature)
+        @feature_toggled = feature.name.to_s + ': ' + feature.percentage.to_s
+      end
+
+    it "does not error if callback is not set" do
+      rollout.activate(:chat)
+      expect(rollout).to be_active(:chat)
+      expect(@feature_toggled).to eq(nil)
+      rollout.deactivate(:chat)
+    end
+
+    it "calls the method after activation if set" do
+      rollout.after_feature_update = method(:fake_callback_method)
+      rollout.activate(:chat)
+      expect(rollout).to be_active(:chat)
+      expect(@feature_toggled).to eq('chat: 100')
+    end
+
+    it "calls the method after deactivation if set" do
+      rollout.after_feature_update = method(:fake_callback_method)
+      rollout.deactivate(:chat)
+      expect(rollout).not_to be_active(:chat)
+      expect(@feature_toggled).to eq('chat: 0')
     end
   end
 
