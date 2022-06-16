@@ -217,6 +217,7 @@ class Rollout
       save(f)
     end
 
+    # puts f.name
     @after_feature_update.call(f) if @after_feature_update
   end
 

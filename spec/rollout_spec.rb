@@ -249,26 +249,28 @@ RSpec.describe "Rollout" do
 
   describe "activating a feature triggers callback" do
       def fake_callback_method(feature)
-        puts "Feature activated: " + feature.name.to_s
+        @feature_toggled = feature.name.to_s + ': ' + feature.percentage.to_s
       end
 
-    before do
+    it "does not error if callback is not set" do
+      rollout.activate(:chat)
+      expect(rollout).to be_active(:chat)
+      expect(@feature_toggled).to eq(nil)
+      rollout.deactivate(:chat)
+    end
+
+    it "calls the method after activation if set" do
       rollout.after_feature_update = method(:fake_callback_method)
       rollout.activate(:chat)
+      expect(rollout).to be_active(:chat)
+      expect(@feature_toggled).to eq('chat: 100')
     end
 
-    it "does not error if callback is not set" do
+    it "calls the method after deactivation if set" do
+      rollout.after_feature_update = method(:fake_callback_method)
       rollout.deactivate(:chat)
-      rollout.after_feature_update = nil
-      rollout.activate(:chat)
-      expect(rollout).to be_active(:chat)
-      expect(fake_callback_method).not_to have_received(:chat)
-    end
-
-    it "calls the method after activation" do
-      rollout.activate(:chat)
-      expect(rollout).to be_active(:chat)
-      expect(method(:fake_callback_method)).to have_received(:chat)
+      expect(rollout).not_to be_active(:chat)
+      expect(@feature_toggled).to eq('chat: 0')
     end
   end
 
