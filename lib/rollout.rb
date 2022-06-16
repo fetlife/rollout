@@ -16,10 +16,11 @@ class Rollout
   attr_accessor :after_feature_update
   attr_reader :options, :storage
 
-  def initialize(storage, opts = {})
+  def initialize(storage, opts = {}, after_feature_update = nil)
     @storage = storage
     @options = opts
     @groups  = { all: ->(_user) { true } }
+    @after_feature_update = after_feature_update
 
     extend(Logging) if opts[:logging]
   end
@@ -216,7 +217,7 @@ class Rollout
       save(f)
     end
 
-    @@after_feature_update.call(f) if @@after_feature_update
+    @after_feature_update.call(f) if @after_feature_update
   end
 
   private
