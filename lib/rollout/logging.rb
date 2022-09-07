@@ -40,6 +40,7 @@ class Rollout
           name: @name,
           data: @data,
           context: @context,
+          created_at: @created_at,
         )
       end
 
