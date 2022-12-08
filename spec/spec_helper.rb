@@ -8,10 +8,11 @@ require 'bundler/setup'
 require 'redis'
 require 'rollout'
 
-Redis.current = Redis.new(
+REDIS_CURRENT = Redis.new(
   host: ENV.fetch('REDIS_HOST', '127.0.0.1'),
   port: ENV.fetch('REDIS_PORT', '6379'),
   db: ENV.fetch('REDIS_DB', '7'),
+  reconnect_attempts: [0.05, 0.1, 0.2]
 )
 
 RSpec.configure do |config|
@@ -23,5 +24,5 @@ RSpec.configure do |config|
     c.syntax = :expect
   end
 
-  config.before { Redis.current.flushdb }
+  config.before { REDIS_CURRENT.flushdb }
 end

@@ -18,7 +18,7 @@ coverage
 rdoc
 pkg
 *.gem
-gemfiles/*.lock
+Gemfile.lock
 .rspec_status
 
 ## PROJECT::SPECIFIC

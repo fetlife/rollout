@@ -1,7 +1,7 @@
 require "spec_helper"
 
 describe "Rollout::Feature" do
-  let(:rollout) { Rollout.new(Redis.current) }
+  let(:rollout) { Rollout.new(REDIS_CURRENT) }
 
   describe "#add_user" do
     it "ids a user using id_user_by" do
