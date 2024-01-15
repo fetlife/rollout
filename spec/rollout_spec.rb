@@ -1,7 +1,7 @@
 require "spec_helper"
 
 RSpec.describe "Rollout" do
-  let(:rollout) { Rollout.new(Redis.current) }
+  let(:rollout) { Rollout.new($redis) }
 
   describe "when a group is activated" do
     before do

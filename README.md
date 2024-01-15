@@ -28,7 +28,7 @@ or even simpler
 
 ```ruby
 require 'redis'
-$rollout = Rollout.new(Redis.current) # Will use REDIS_URL env var or default redis url
+$rollout = Rollout.new($redis) # Will use REDIS_URL env var or default redis url
 ```
 
 
