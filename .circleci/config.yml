@@ -10,16 +10,16 @@ workflows:
 executors:
   ruby33:
     docker:
-      - image: circleci/ruby:3.3
-      - image: circleci/redis:alpine
+      - image: cimg/ruby:3.3
+      - image: cimg/redis:7.2
   ruby30:
     docker:
-      - image: circleci/ruby:3.0
-      - image: circleci/redis:alpine
+      - image: cimg/ruby:3.0
+      - image: cimg/redis:7.2
   ruby27:
     docker:
-      - image: circleci/ruby:2.7
-      - image: circleci/redis:alpine
+      - image: cimg/ruby:2.7
+      - image: cimg/redis:7.2
 
 commands:
   test:
