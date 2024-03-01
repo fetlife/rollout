@@ -8,6 +8,8 @@ workflows:
       - ruby32
       - ruby30
       - ruby27
+      - ruby26
+      - ruby25
       - ruby24
 
 executors:
@@ -28,6 +30,14 @@ executors:
       - image: cimg/ruby:3.0
       - image: cimg/redis:7.2
   ruby27:
+    docker:
+      - image: cimg/ruby:2.7
+      - image: cimg/redis:7.2
+  ruby26:
+    docker:
+      - image: cimg/ruby:2.7
+      - image: cimg/redis:7.2
+  ruby25:
     docker:
       - image: cimg/ruby:2.7
       - image: cimg/redis:7.2
@@ -85,6 +95,18 @@ jobs:
       - test
 
   ruby27:
+    executor: ruby27
+    steps:
+      - checkout
+      - test
+
+  ruby26:
+    executor: ruby27
+    steps:
+      - checkout
+      - test
+
+  ruby25:
     executor: ruby27
     steps:
       - checkout
