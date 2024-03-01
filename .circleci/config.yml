@@ -4,13 +4,24 @@ workflows:
   main:
     jobs:
       - ruby33
+      - ruby31
+      - ruby32
       - ruby30
       - ruby27
+      - ruby24
 
 executors:
   ruby33:
     docker:
       - image: cimg/ruby:3.3
+      - image: cimg/redis:7.2
+  ruby32:
+    docker:
+      - image: cimg/ruby:3.2
+      - image: cimg/redis:7.2
+  ruby31:
+    docker:
+      - image: cimg/ruby:3.1
       - image: cimg/redis:7.2
   ruby30:
     docker:
@@ -19,6 +30,10 @@ executors:
   ruby27:
     docker:
       - image: cimg/ruby:2.7
+      - image: cimg/redis:7.2
+  ruby24:
+    docker:
+      - image: cimg/ruby:2.4
       - image: cimg/redis:7.2
 
 commands:
@@ -51,6 +66,18 @@ jobs:
       - store_test_results:
           path: test_results
 
+  ruby32:
+    executor: ruby30
+    steps:
+      - checkout
+      - test
+
+  ruby31:
+    executor: ruby30
+    steps:
+      - checkout
+      - test
+
   ruby30:
     executor: ruby30
     steps:
@@ -59,6 +86,12 @@ jobs:
 
   ruby27:
     executor: ruby27
+    steps:
+      - checkout
+      - test
+
+  ruby24:
+    executor: ruby24
     steps:
       - checkout
       - test
