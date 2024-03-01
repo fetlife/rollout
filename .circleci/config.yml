@@ -24,18 +24,9 @@ executors:
 commands:
   test:
     steps:
-      - restore_cache:
-          keys:
-            - bundler-{{ checksum "Gemfile.lock" }}
-
       - run:
           name: Bundle Install
           command: bundle check --path vendor/bundle || bundle install
-
-      - save_cache:
-          key: bundler-{{ checksum "Gemfile.lock" }}
-          paths:
-            - vendor/bundle
 
       - run:
           name: Run rspec
