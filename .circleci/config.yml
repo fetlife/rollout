@@ -3,32 +3,22 @@ version: 2.1
 workflows:
   main:
     jobs:
+      - ruby33
+      - ruby30
       - ruby27
-      - ruby26
-      - ruby25
-      - ruby24
-      - ruby23
 
 executors:
+  ruby33:
+    docker:
+      - image: circleci/ruby:3.3
+      - image: circleci/redis:alpine
+  ruby30:
+    docker:
+      - image: circleci/ruby:3.0
+      - image: circleci/redis:alpine
   ruby27:
     docker:
       - image: circleci/ruby:2.7
-      - image: circleci/redis:alpine
-  ruby26:
-    docker:
-      - image: circleci/ruby:2.6
-      - image: circleci/redis:alpine
-  ruby25:
-    docker:
-      - image: circleci/ruby:2.5
-      - image: circleci/redis:alpine
-  ruby24:
-    docker:
-      - image: circleci/ruby:2.4
-      - image: circleci/redis:alpine
-  ruby23:
-    docker:
-      - image: circleci/ruby:2.3
       - image: circleci/redis:alpine
 
 commands:
@@ -53,8 +43,8 @@ commands:
             bundle exec rspec --format documentation --format RspecJunitFormatter --out test_results/rspec.xml
 
 jobs:
-  ruby27:
-    executor: ruby27
+  ruby33:
+    executor: ruby33
     steps:
       - checkout
       - test
@@ -70,26 +60,14 @@ jobs:
       - store_test_results:
           path: test_results
 
-  ruby26:
-    executor: ruby26
+  ruby30:
+    executor: ruby30
     steps:
       - checkout
       - test
 
-  ruby25:
-    executor: ruby25
-    steps:
-      - checkout
-      - test
-
-  ruby24:
-    executor: ruby24
-    steps:
-      - checkout
-      - test
-
-  ruby23:
-    executor: ruby23
+  ruby27:
+    executor: ruby27
     steps:
       - checkout
       - test
