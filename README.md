@@ -60,7 +60,7 @@ sounds like.
 You can activate the all group for the chat feature like this:
 
 ```ruby
-$rollout.activate_group(:chat, :all)
+$rollout.activate_group(:chat, :all))
 ```
 
 You might also want to define your own groups. We have one for our caretakers:
