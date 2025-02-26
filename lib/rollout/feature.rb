@@ -108,6 +108,7 @@ class Rollout
     end
 
     def user_in_active_group?(user)
+      return true if @groups.empty?
       @groups.any? do |g|
         @rollout.active_in_group?(g, user)
       end
