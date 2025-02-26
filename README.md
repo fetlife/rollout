@@ -31,7 +31,6 @@ require 'redis'
 $rollout = Rollout.new($redis) # Will use REDIS_URL env var or default redis url
 ```
 
-
 Update data specific to a feature:
 
 ```ruby
@@ -43,6 +42,11 @@ Check whether a feature is active for a particular user:
 ```ruby
 $rollout.active?(:chat, User.first) # => true/false
 ```
+
+A feature is considered active for a user if either of these conditions is met:
+
+1. The user is in the feature's active users list (added via `activate_user`)
+2. The user is in the percentage rollout AND belongs to an active group for that feature
 
 Check whether a feature is active globally:
 
@@ -72,6 +76,8 @@ end
 ```
 
 You can activate multiple groups per feature.
+
+**Note:** With the current behavior, users must be both in the feature's percentage rollout AND in an active group to have the feature enabled, unless they are specifically added to the feature's active users list via `activate_user`.
 
 Deactivate groups like this:
 
@@ -114,6 +120,13 @@ CRC32(user.id) < (2**32 - 1) / 100.0 * percentage
 
 So, for 20%, users 0, 1, 10, 11, 20, 21, etc would be allowed in. Those users
 would remain in as the percentage increases.
+
+**Important:** With the current behavior, a user must be both:
+
+1. Selected by the percentage algorithm above, AND
+2. A member of at least one active group for the feature
+
+Users specifically activated via `activate_user` are always active regardless of percentage or group membership.
 
 Deactivate all percentages like this:
 
@@ -189,23 +202,21 @@ This example would use the "development:feature:chat:groups" key.
 
 ## Frontend / UI
 
-* [rollout-ui](https://github.com/fetlife/rollout-ui)
-* [Rollout-Dashboard](https://github.com/fiverr/rollout_dashboard/)
+- [rollout-ui](https://github.com/fetlife/rollout-ui)
+- [Rollout-Dashboard](https://github.com/fiverr/rollout_dashboard/)
 
 ## Implementations in other languages
 
-*   Python: https://github.com/asenchi/proclaim
-*   PHP: https://github.com/opensoft/rollout
-*   Clojure: https://github.com/yeller/shoutout
-*   Perl: https://metacpan.org/pod/Toggle
-*   Golang: https://github.com/SalesLoft/gorollout
-
+- Python: https://github.com/asenchi/proclaim
+- PHP: https://github.com/opensoft/rollout
+- Clojure: https://github.com/yeller/shoutout
+- Perl: https://metacpan.org/pod/Toggle
+- Golang: https://github.com/SalesLoft/gorollout
 
 ## Contributors
 
-*   James Golick - Creator - https://github.com/jamesgolick
-*   Eric Rafaloff - Maintainer - https://github.com/EricR
-
+- James Golick - Creator - https://github.com/jamesgolick
+- Eric Rafaloff - Maintainer - https://github.com/EricR
 
 ## Copyright
 

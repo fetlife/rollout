@@ -7,6 +7,7 @@ RSpec.describe "Rollout" do
     before do
       rollout.define_group(:fivesonly) { |user| user.id == 5 }
       rollout.activate_group(:chat, :fivesonly)
+      rollout.activate_percentage(:chat, 100)
     end
 
     it "the feature is active for users for which the block evaluates to true" do
@@ -26,6 +27,7 @@ RSpec.describe "Rollout" do
   describe "the default all group" do
     before do
       rollout.activate_group(:chat, :all)
+      rollout.activate_percentage(:chat, 100)
     end
 
     it "evaluates to true no matter what" do
@@ -39,6 +41,7 @@ RSpec.describe "Rollout" do
       rollout.activate_group(:chat, :all)
       rollout.activate_group(:chat, :some)
       rollout.activate_group(:chat, :fivesonly)
+      rollout.activate_percentage(:chat, 100)
       rollout.deactivate_group(:chat, :all)
       rollout.deactivate_group(:chat, "some")
     end
@@ -89,6 +92,7 @@ RSpec.describe "Rollout" do
   describe "activating a specific user" do
     before do
       rollout.activate_user(:chat, double(id: 42))
+      rollout.activate_percentage(:chat, 100)
     end
 
     it "is active for that user" do
@@ -103,6 +107,7 @@ RSpec.describe "Rollout" do
   describe "activating a specific user by ID" do
     before do
       rollout.activate_user(:chat, 42)
+      rollout.activate_percentage(:chat, 100)
     end
 
     it "is active for that user" do
@@ -117,6 +122,7 @@ RSpec.describe "Rollout" do
   describe "activating a specific user with a string id" do
     before do
       rollout.activate_user(:chat, double(id: "user-72"))
+      rollout.activate_percentage(:chat, 100)
     end
 
     it "is active for that user" do
@@ -132,7 +138,10 @@ RSpec.describe "Rollout" do
     context "specified by user objects" do
       let(:users) { [double(id: 1), double(id: 2), double(id: 3)] }
 
-      before { rollout.activate_users(:chat, users) }
+      before { 
+        rollout.activate_users(:chat, users) 
+        rollout.activate_percentage(:chat, 100)
+      }
 
       it "is active for the given users" do
         users.each { |user| expect(rollout).to be_active(:chat, user) }
@@ -146,7 +155,10 @@ RSpec.describe "Rollout" do
     context "specified by user ids" do
       let(:users) { [1, 2, 3] }
 
-      before { rollout.activate_users(:chat, users) }
+      before { 
+        rollout.activate_users(:chat, users) 
+        rollout.activate_percentage(:chat, 100)
+      }
 
       it "is active for the given users" do
         users.each { |user| expect(rollout).to be_active(:chat, user) }
@@ -163,6 +175,7 @@ RSpec.describe "Rollout" do
       rollout.activate_user(:chat, double(id: 42))
       rollout.activate_user(:chat, double(id: 4242))
       rollout.activate_user(:chat, double(id: 24))
+      rollout.activate_percentage(:chat, 100)
       rollout.deactivate_user(:chat, double(id: 42))
       rollout.deactivate_user(:chat, double(id: "4242"))
     end
@@ -192,6 +205,7 @@ RSpec.describe "Rollout" do
 
       before do
         rollout.activate_users(:chat, active_users + inactive_users)
+        rollout.activate_percentage(:chat, 100)
         rollout.deactivate_users(:chat, inactive_users)
       end
 
@@ -210,6 +224,7 @@ RSpec.describe "Rollout" do
 
       before do
         rollout.activate_users(:chat, active_users + inactive_users)
+        rollout.activate_percentage(:chat, 100)
         rollout.deactivate_users(:chat, inactive_users)
       end
 
@@ -250,6 +265,8 @@ RSpec.describe "Rollout" do
   describe "activating a feature for a percentage of users" do
     before do
       rollout.activate_percentage(:chat, 20)
+      rollout.define_group(:all_users) { |user| true }
+      rollout.activate_group(:chat, :all_users)
     end
 
     it "activates the feature for that percentage of the users" do
@@ -260,6 +277,8 @@ RSpec.describe "Rollout" do
   describe "activating a feature for a percentage of users" do
     before do
       rollout.activate_percentage(:chat, 20)
+      rollout.define_group(:all_users) { |user| true }
+      rollout.activate_group(:chat, :all_users)
     end
 
     it "activates the feature for that percentage of the users" do
@@ -270,6 +289,8 @@ RSpec.describe "Rollout" do
   describe "activating a feature for a percentage of users" do
     before do
       rollout.activate_percentage(:chat, 5)
+      rollout.define_group(:all_users) { |user| true }
+      rollout.activate_group(:chat, :all_users)
     end
 
     it "activates the feature for that percentage of the users" do
@@ -280,6 +301,8 @@ RSpec.describe "Rollout" do
   describe "activating a feature for a percentage of users" do
     before do
       rollout.activate_percentage(:chat, 0.1)
+      rollout.define_group(:all_users) { |user| true }
+      rollout.activate_group(:chat, :all_users)
     end
 
     it "activates the feature for that percentage of the users" do
@@ -291,6 +314,9 @@ RSpec.describe "Rollout" do
     before do
       rollout.activate_percentage(:chat, 20)
       rollout.activate_percentage(:beta, 20)
+      rollout.define_group(:all_users) { |user| true }
+      rollout.activate_group(:chat, :all_users)
+      rollout.activate_group(:beta, :all_users)
       @options = rollout.instance_variable_get("@options")
     end
 
@@ -312,6 +338,7 @@ RSpec.describe "Rollout" do
     before do
       rollout.define_group(:admins) { |user| user.id == 5 }
       rollout.activate_group(:chat, "admins")
+      rollout.activate_percentage(:chat, 100)
     end
 
     it "the feature is active for users for which the block evaluates to true" do
@@ -326,10 +353,13 @@ RSpec.describe "Rollout" do
   describe "deactivating the percentage of users" do
     before do
       rollout.activate_percentage(:chat, 100)
+      rollout.define_group(:testers) { |user| user.id == 24 }
+      rollout.activate_group(:chat, :testers)
       rollout.deactivate_percentage(:chat)
     end
 
-    it "becomes inactivate for all users" do
+    it "becomes inactive for users that depend on percentage" do
+      expect(rollout).not_to be_active(:chat, double(id: 25))
       expect(rollout).not_to be_active(:chat, double(id: 24))
     end
   end
@@ -503,6 +533,9 @@ RSpec.describe "Rollout" do
     before do
       rollout.activate(:chat)
       rollout.activate_user(:video, user_double)
+      rollout.activate_percentage(:video, 100)
+      rollout.activate_user(:chat, user_double)
+      rollout.activate_percentage(:chat, 100)
       rollout.deactivate(:vr)
     end
 
@@ -529,6 +562,7 @@ RSpec.describe "Rollout" do
       end
 
       it "maps inactive feature as false" do
+        rollout.deactivate(:video)
         state = rollout.feature_states[:video]
         expect(state).to eq(false)
       end
@@ -541,6 +575,9 @@ RSpec.describe "Rollout" do
     before do
       rollout.activate(:chat)
       rollout.activate_user(:video, user_double)
+      rollout.activate_percentage(:video, 100)
+      rollout.activate_user(:chat, user_double)
+      rollout.activate_percentage(:chat, 100)
       rollout.deactivate(:vr)
     end
 
@@ -568,6 +605,7 @@ RSpec.describe "Rollout" do
       end
 
       it "excludes inactive feature" do
+        rollout.deactivate(:video)
         features = rollout.active_features
         expect(features).to_not include(:video)
       end
@@ -583,6 +621,57 @@ RSpec.describe "Rollout" do
     it "returns false if activated for group" do
       rollout.activate_group(:chat, :all)
       expect(rollout.user_in_active_users?(:chat, "5")).to eq(false)
+    end
+  end
+
+  describe "new active? logic" do
+    before do
+      rollout.define_group(:beta_testers) { |user| user.id == 42 }
+    end
+
+    context "when user is in active users list" do
+      before do
+        rollout.activate_user(:chat, double(id: 24))
+      end
+
+      it "is active even with 0% rollout" do
+        rollout.activate_percentage(:chat, 0)
+        expect(rollout).to be_active(:chat, double(id: 24))
+      end
+
+      it "is active even when not in any active group" do
+        rollout.activate_group(:chat, :beta_testers)
+        expect(rollout).to be_active(:chat, double(id: 24))
+      end
+    end
+
+    context "when user is not in active users list" do
+      before do
+        rollout.deactivate_user(:chat, double(id: 42))
+      end
+
+      it "is active when in percentage and in active group" do
+        rollout.activate_percentage(:chat, 100)
+        rollout.activate_group(:chat, :beta_testers)
+        expect(rollout).to be_active(:chat, double(id: 42))
+      end
+
+      it "is not active when in percentage but not in any active group" do
+        rollout.activate_percentage(:chat, 100)
+        rollout.activate_group(:chat, :some_other_group)
+        expect(rollout).not_to be_active(:chat, double(id: 42))
+      end
+
+      it "is not active when in active group but not in percentage" do
+        rollout.activate_percentage(:beta_feature, 0)
+        rollout.activate_group(:beta_feature, :beta_testers)
+        expect(rollout).not_to be_active(:beta_feature, double(id: 42))
+      end
+
+      it "is not active when not in percentage and not in any active group" do
+        rollout.activate_percentage(:chat, 0)
+        expect(rollout).not_to be_active(:chat, double(id: 42))
+      end
     end
   end
 
@@ -649,6 +738,7 @@ RSpec.describe "Rollout" do
     it 'properly parses data when it contains a |' do
       user = double("User", id: 8)
       rollout.activate_user(:chat, user)
+      rollout.activate_percentage(:chat, 100)
       rollout.set_feature_data(:chat, "|call||text|" => "a|bunch|of|stuff")
       expect(rollout.get(:chat).data).to include("|call||text|" => "a|bunch|of|stuff")
       expect(rollout.active?(:chat, user)).to be true
