@@ -20,5 +20,7 @@ pkg
 *.gem
 gemfiles/*.lock
 .rspec_status
+.bundle/config
+/vendor
 
 ## PROJECT::SPECIFIC
