@@ -8,6 +8,16 @@ on:
 jobs:
   release:
     runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -16,16 +26,21 @@ jobs:
         with:
           bundler-cache: true
       - name: Run tests
-        run: bundle exec spec 
+        run: bundle exec rspec 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref }}
           name: ${{ github.ref_name }}
           generate_release_notes: true
           draft: false
           prerelease: false 
-      - name: Release to RubyGems
-        run: bundle exec rake release
+      - name: Set up RubyGems credentials
         env:
           RUBYGEMS_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
+        run: |
+          mkdir -p ~/.gem
+          echo ":rubygems_api_key: $RUBYGEMS_API_KEY" > ~/.gem/credentials
+          chmod 0600 ~/.gem/credentials
+      - name: Release to RubyGems
+        run: bundle exec rake release
