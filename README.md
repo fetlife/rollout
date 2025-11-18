@@ -3,7 +3,7 @@
 Fast feature flags based on Redis.
 
 [![Gem Version](https://badge.fury.io/rb/rollout.svg)](https://badge.fury.io/rb/rollout)
-[![CircleCI](https://circleci.com/gh/fetlife/rollout.svg?style=svg)](https://circleci.com/gh/fetlife/rollout)
+[![CI](https://github.com/fetlife/rollout/actions/workflows/test.yml/badge.svg)](https://github.com/fetlife/rollout/actions/workflows/test.yml)
 [![Code Climate](https://codeclimate.com/github/FetLife/rollout/badges/gpa.svg)](https://codeclimate.com/github/FetLife/rollout)
 [![Test Coverage](https://codeclimate.com/github/FetLife/rollout/badges/coverage.svg)](https://codeclimate.com/github/FetLife/rollout/coverage)
 
