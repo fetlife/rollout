@@ -77,7 +77,7 @@ class Rollout
       c = self.clone
       c.instance_variable_set('@rollout', nil)
       c = Marshal.load(Marshal.dump(c))
-      c.instance_variable_set('@rollot', @rollout)
+      c.instance_variable_set('@rollout', @rollout)
       c
     end
 
