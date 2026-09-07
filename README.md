@@ -207,6 +207,18 @@ This example would use the "development:feature:chat:groups" key.
 *   Eric Rafaloff - Maintainer - https://github.com/EricR
 
 
+## Testing
+
+The suite flushes Redis database 7 before every example. Use a disposable
+instance, not a shared or production Redis.
+
+```bash
+docker run --rm -p 6379:6379 redis:7-alpine
+bundle exec rspec
+```
+
+Optional connection settings: `REDIS_HOST`, `REDIS_PORT`, `REDIS_DB`.
+
 ## Releasing
 
 1. Bump version: `rake version:patch` (or `minor`/`major`)

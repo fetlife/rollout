@@ -2,6 +2,7 @@
 
 require 'rollout/feature'
 require 'rollout/logging'
+require 'rollout/redis_codec'
 require 'rollout/version'
 require 'zlib'
 require 'set'
@@ -137,8 +138,12 @@ class Rollout
   end
 
   def get(feature)
-    string = @storage.get(key(feature))
-    Feature.new(feature, state: string, rollout: self, options: @options)
+    payload = @storage.get(key(feature))
+    Feature.new(
+      state: RedisCodec.decode(feature, payload),
+      rollout: self,
+      options: @options,
+    )
   end
 
   def set_feature_data(feature, data)
@@ -161,8 +166,12 @@ class Rollout
     @storage
       .mget(*feature_keys)
       .map
-      .with_index do |string, index|
-        Feature.new(features[index], state: string, rollout: self, options: @options)
+      .with_index do |payload, index|
+        Feature.new(
+          state: RedisCodec.decode(features[index], payload),
+          rollout: self,
+          options: @options,
+        )
       end
   end
 
@@ -227,7 +236,7 @@ class Rollout
   end
 
   def save(feature)
-    @storage.set(key(feature.name), feature.serialize)
+    @storage.set(key(feature.name), RedisCodec.encode(feature.to_feature_state))
     @storage.set(features_key, (features | [feature.name.to_sym]).join(','))
   end
 end
