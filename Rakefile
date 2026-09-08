@@ -3,7 +3,21 @@
 require "bundler/gem_tasks"
 require "rspec/core/rake_task"
 
-RSpec::Core::RakeTask.new(:spec)
+RSpec::Core::RakeTask.new(:spec) do |task|
+  task.pattern = "spec/**/*_spec.rb"
+end
+
+namespace :spec do
+  desc "Run Redis adapter tests"
+  task :redis do
+    gemfile = File.expand_path("rollout-redis/Gemfile", __dir__)
+    Dir.chdir("rollout-redis") do
+      Bundler.with_unbundled_env do
+        sh({ "BUNDLE_GEMFILE" => gemfile }, "bundle exec rspec")
+      end
+    end
+  end
+end
 
 task default: :spec
 

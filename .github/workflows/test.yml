@@ -9,11 +9,38 @@ on:
 
 
 jobs:
-  test:
+  core:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         ruby-version: ['3.3', '3.2', '3.1', '3.0', '2.7', '2.6', '2.5', '2.4']
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby-version }}
+          bundler-cache: true
+      - name: Run core tests
+        run: |
+          mkdir -p test_results
+          bundle exec rspec spec --format progress --format RspecJunitFormatter --out test_results/rspec.xml
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: core-test-results-${{ matrix.ruby-version }}
+          path: test_results/rspec.xml
+          retention-days: 30
+
+  redis:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        ruby-version: ['3.3', '3.2', '3.1', '3.0', '2.7', '2.6', '2.5', '2.4']
+    env:
+      BUNDLE_GEMFILE: rollout-redis/Gemfile
     services:
       redis:
         image: redis:7-alpine
@@ -32,7 +59,8 @@ jobs:
         with:
           ruby-version: ${{ matrix.ruby-version }}
           bundler-cache: true
-      - name: Run tests
+      - name: Run Redis adapter tests
+        working-directory: rollout-redis
         run: |
           mkdir -p test_results
           bundle exec rspec --format progress --format RspecJunitFormatter --out test_results/rspec.xml
@@ -40,6 +68,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results-${{ matrix.ruby-version }}
-          path: test_results/rspec.xml
+          name: redis-test-results-${{ matrix.ruby-version }}
+          path: rollout-redis/test_results/rspec.xml
           retention-days: 30

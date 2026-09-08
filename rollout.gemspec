@@ -8,12 +8,14 @@ Gem::Specification.new do |spec|
   spec.version     = Rollout::VERSION
   spec.authors     = ['James Golick']
   spec.email       = ['jamesgolick@gmail.com']
-  spec.description = 'Feature flippers with redis.'
-  spec.summary     = 'Feature flippers with redis.'
+  spec.description = 'Feature flippers.'
+  spec.summary     = 'Feature flippers.'
   spec.homepage    = 'https://github.com/FetLife/rollout'
   spec.license     = 'MIT'
 
-  spec.files         = `git ls-files`.split("\n")
+  spec.files = `git ls-files`.split("\n").reject do |file|
+    file.start_with?('rollout-redis/')
+  end
   spec.test_files    = `git ls-files -- {test,spec,features}/*`.split("\n")
   spec.executables   = `git ls-files -- bin/*`.split("\n").map { |f| File.basename(f) }
   spec.require_paths = ['lib']
@@ -21,7 +23,6 @@ Gem::Specification.new do |spec|
   spec.required_ruby_version = '>= 2.3'
 
   spec.add_dependency 'observer'
-  spec.add_dependency 'redis', '>= 4.0', '< 6'
 
   spec.add_development_dependency 'rake'
   spec.add_development_dependency 'bundler', '>= 1.17'

@@ -1,6 +1,6 @@
 require "spec_helper"
 
-RSpec.describe Rollout::RedisCodec do
+RSpec.describe Rollout::Redis::Codec do
   it "decodes a missing payload as an empty feature" do
     state = described_class.decode(:chat, nil)
 

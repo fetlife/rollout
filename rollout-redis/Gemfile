@@ -1,0 +1,11 @@
+# frozen_string_literal: true
+
+source 'https://rubygems.org'
+
+gemspec
+
+gem 'rollout', path: '..'
+gem 'rake'
+gem 'rspec', '~> 3.13'
+gem 'rspec_junit_formatter', '~> 0.6'
+gem 'simplecov', '0.17'

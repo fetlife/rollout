@@ -1,7 +1,8 @@
 require "spec_helper"
 
+
 RSpec.describe "Rollout" do
-  let(:rollout) { Rollout.new($redis) }
+  let(:rollout) { Rollout.new(backend: redis_backend) }
 
   describe "when a group is activated" do
     before do
@@ -321,7 +322,7 @@ RSpec.describe "Rollout" do
     end
 
     it "changes assignment by feature name when randomize_percentage is on" do
-      randomized = Rollout.new($redis, randomize_percentage: true)
+      randomized = Rollout.new(backend: redis_backend, randomize_percentage: true)
       randomized.activate_percentage(:chat, 20)
       randomized.activate_percentage(:beta, 20)
 
