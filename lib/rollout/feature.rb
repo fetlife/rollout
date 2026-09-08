@@ -10,7 +10,6 @@ class Rollout
     def initialize(state:, rollout:, options: {})
       @rollout = rollout
       @options = options
-      @name = state.name
       assign_state(state)
     end
 
@@ -42,15 +41,7 @@ class Rollout
     end
 
     def clear
-      assign_state(
-        FeatureState.new(
-          name: @name,
-          percentage: 0,
-          users: [],
-          groups: [],
-          data: {},
-        ),
-      )
+      assign_state(FeatureState.new(name: @name, percentage: 0))
     end
 
     def active?(user)
@@ -90,7 +81,7 @@ class Rollout
     def assign_state(state)
       state = state.deep_clone
 
-      @name = state.name
+      @name = state.name.to_sym
       @percentage = state.percentage
       @users = users_from_array(state.users)
       @groups = groups_from_array(state.groups)

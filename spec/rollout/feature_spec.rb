@@ -23,7 +23,7 @@ describe "Rollout::Feature" do
     it "uses the state's name" do
       feature = feature_for(Rollout::FeatureState.new(name: :video, percentage: 0))
 
-      expect(feature.name).to eq "video"
+      expect(feature.name).to eq :video
     end
 
     it "clears feature attributes for an empty state" do

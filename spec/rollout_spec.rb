@@ -536,24 +536,24 @@ RSpec.describe "Rollout" do
 
     context "with user argument" do
       it "maps active feature as true" do
-        state = rollout.feature_states(user_double)["video"]
+        state = rollout.feature_states(user_double)[:video]
         expect(state).to eq(true)
       end
 
       it "maps inactive feature as false" do
-        state = rollout.feature_states["vr"]
+        state = rollout.feature_states[:vr]
         expect(state).to eq(false)
       end
     end
 
     context "with no argument" do
       it "maps active feature as true" do
-        state = rollout.feature_states["chat"]
+        state = rollout.feature_states[:chat]
         expect(state).to eq(true)
       end
 
       it "maps inactive feature as false" do
-        state = rollout.feature_states["video"]
+        state = rollout.feature_states[:video]
         expect(state).to eq(false)
       end
     end
@@ -575,25 +575,25 @@ RSpec.describe "Rollout" do
     context "with user argument" do
       it "includes active feature" do
         features = rollout.active_features(user_double)
-        expect(features).to include("video")
-        expect(features).to include("chat")
+        expect(features).to include(:video)
+        expect(features).to include(:chat)
       end
 
       it "excludes inactive feature" do
         features = rollout.active_features(user_double)
-        expect(features).to_not include("vr")
+        expect(features).to_not include(:vr)
       end
     end
 
     context "with no argument" do
       it "includes active feature" do
         features = rollout.active_features
-        expect(features).to include("chat")
+        expect(features).to include(:chat)
       end
 
       it "excludes inactive feature" do
         features = rollout.active_features
-        expect(features).to_not include("video")
+        expect(features).to_not include(:video)
       end
     end
   end
@@ -621,12 +621,12 @@ RSpec.describe "Rollout" do
 
     it "returns an array of features" do
       features = rollout.multi_get(:chat, :videos, :signup)
-      expect(features[0].name).to eq "chat"
+      expect(features[0].name).to eq :chat
       expect(features[0].groups).to eq [:caretakers]
       expect(features[0].percentage).to eq 10
-      expect(features[1].name).to eq "videos"
+      expect(features[1].name).to eq :videos
       expect(features[1].groups).to eq [:greeters]
-      expect(features[2].name).to eq "signup"
+      expect(features[2].name).to eq :signup
       expect(features[2].percentage).to eq 100
       expect(features.size).to eq 3
     end

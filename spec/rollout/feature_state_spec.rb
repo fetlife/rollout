@@ -78,7 +78,7 @@ RSpec.describe Rollout::FeatureState do
       expect(state.users).to eq %w[42]
       expect(state.groups).to eq %w[employees]
       expect(state.data).to eq("description" => "New navigation")
-      expect(restored.name).to eq "chat"
+      expect(restored.name).to eq :chat
 
       expect(restored.active?(double(id: 1))).to eq feature.active?(double(id: 1))
       expect(restored.active?(double(id: 42))).to eq feature.active?(double(id: 42))

@@ -5,10 +5,12 @@ class Rollout
     attr_reader :name, :percentage, :users, :groups, :data
 
     def initialize(name:, percentage:, users: [], groups: [], data: {})
-      @name = name.to_s
+      raise ArgumentError, "data must be a Hash" unless data.is_a?(Hash)
+
+      @name = name.to_s.dup
       @percentage = percentage.to_f
-      @users = Array(users).map(&:to_s)
-      @groups = Array(groups).map(&:to_s)
+      @users = Array(users).map { |user| user.to_s.dup }
+      @groups = Array(groups).map { |group| group.to_s.dup }
       @data = stringify_keys(data)
     end
 
