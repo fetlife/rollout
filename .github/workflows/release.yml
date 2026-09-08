@@ -29,13 +29,10 @@ jobs:
         run: bundle exec rspec spec
       - name: Setup Redis adapter gems
         uses: ruby/setup-ruby@v1
-        env:
-          BUNDLE_GEMFILE: rollout-redis/Gemfile
         with:
+          working-directory: rollout-redis
           bundler-cache: true
       - name: Run Redis adapter tests
-        env:
-          BUNDLE_GEMFILE: rollout-redis/Gemfile
         working-directory: rollout-redis
         run: bundle exec rspec
       - name: Create GitHub Release
