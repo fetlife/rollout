@@ -56,3 +56,14 @@ consoles.
 $ns = Redis::Namespace.new(Rails.env, redis: $redis)
 $rollout = Rollout.new(backend: Rollout::Redis::Backend.new($ns))
 ```
+
+## 3. Breaking changes
+
+| Area | Breaking change | Required action |
+| --- | --- | --- |
+| Storage configuration | `Rollout.new(redis, options)` now requires `backend:`. | Wrap the existing client in `Rollout::Redis::Backend.new(redis)` and pass options as keywords. |
+| Storage access | `rollout.storage` is removed. `rollout.backend` returns an adapter, not the Redis client. | Keep your own Redis client reference if application code needs direct access. |
+| Logging storage | `logging: { storage: other_redis }` is no longer supported. The Redis backend stores features and history through the same client. | Applications using separate history storage cannot preserve that setup with the current adapter. Removing the option does not migrate existing history. |
+| Custom logging | `Logger#log` and `Logger#update` are removed. Built-in logging is no longer an observer. | Use Rollout mutations and `logging.with_context` rather than calling those methods directly. |
+| Feature construction | `Feature.new(name, rollout:, state: payload)` no longer accepts a name argument or raw Redis payload. | Prefer `rollout.get(name)`. Direct construction requires `Feature.new(state: feature_state, rollout: rollout)`. |
+| Feature serialization | `feature.serialize` is removed. | Use `feature.to_feature_state` for a backend-neutral snapshot. Redis encoding belongs to `Rollout::Redis::Codec`. |
