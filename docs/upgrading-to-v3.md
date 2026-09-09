@@ -67,3 +67,31 @@ $rollout = Rollout.new(backend: Rollout::Redis::Backend.new($ns))
 | Custom logging | `Logger#log` and `Logger#update` are removed. Built-in logging is no longer an observer. | Use Rollout mutations and `logging.with_context` rather than calling those methods directly. |
 | Feature construction | `Feature.new(name, rollout:, state: payload)` no longer accepts a name argument or raw Redis payload. | Prefer `rollout.get(name)`. Direct construction requires `Feature.new(state: feature_state, rollout: rollout, options: rollout.options)`. |
 | Feature serialization | `feature.serialize` is removed. | Use `feature.to_feature_state` for a backend-neutral snapshot. Redis encoding belongs to `Rollout::Redis::Codec`. |
+| History decoding | `Logging::Event.from_raw` is removed. | Decode persisted Redis members with `Rollout::Redis::Codec.decode_event(value, score)`. |
+
+## 4. History and lifecycle
+
+History reads can request a bound. `limit` is the newest N events, returned
+oldest-to-newest. Omit `limit` to read the full retained history. `0` returns
+no events.
+
+```ruby
+rollout.logging.events(:chat, limit: 10)
+rollout.logging.global_events(limit: 10)
+rollout.logging.last_event(:chat)
+```
+
+`last_event` reads one persisted member. It does not load the complete
+history.
+
+| Operation | Feature state | Per-feature history | Global history |
+| --- | --- | --- | --- |
+| `delete`, logging enabled | Removed | Removed | Retained |
+| `delete`, logging disabled | Removed | Retained | Retained |
+| `logging.delete` | Unchanged | Removed | Retained |
+| `clear!` | Removed | Retained | Retained |
+
+`clear!` still resets each feature first, so logging-enabled instances record
+a reset event before the state is deleted. History remains subject to
+`history_length`. The Redis registry key is removed after clearing, including
+when it was already empty.
