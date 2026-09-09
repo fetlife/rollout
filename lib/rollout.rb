@@ -192,14 +192,21 @@ class Rollout
   def with_feature(feature)
     mutated = nil
     before = nil
-    snapshot = count_observers > 0 || logging_capture?
+    capture_logging = logging_capture?
+    notify = count_observers > 0
+    snapshot = notify || capture_logging
 
     @backend.mutate_feature(feature) do |current_state|
-      mutated = Feature.new(state: current_state, rollout: self, options: @options)
+      mutated = Feature.new(
+        state: current_state,
+        rollout: self,
+        options: @options,
+        name: feature,
+      )
       before = mutated.deep_clone if snapshot
       yield mutated
 
-      event = logging_capture? ? logging.event_for(before, mutated) : nil
+      event = capture_logging ? logging.event_for(before, mutated) : nil
       result = { state: mutated.to_feature_state, event: event }
       if event
         result[:history_length] = logging.history_length
@@ -208,7 +215,7 @@ class Rollout
       result
     end
 
-    if count_observers > 0
+    if notify
       changed
       notify_observers(:update, before, mutated)
     end

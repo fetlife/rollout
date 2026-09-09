@@ -134,10 +134,11 @@ class Rollout
       end
 
       def without
+        previous = Thread.current[WITHOUT_THREAD_KEY]
         Thread.current[WITHOUT_THREAD_KEY] = true
         yield
       ensure
-        Thread.current[WITHOUT_THREAD_KEY] = nil
+        Thread.current[WITHOUT_THREAD_KEY] = previous
       end
 
       def logging_enabled?

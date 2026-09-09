@@ -61,4 +61,18 @@ RSpec.describe "Rollout::Logging" do
 
     expect(event).to be_nil
   end
+
+  it "restores nested without state" do
+    nested_enabled = nil
+    outer_enabled = nil
+
+    logger.without do
+      logger.without {}
+      nested_enabled = logger.logging_enabled?
+    end
+    outer_enabled = logger.logging_enabled?
+
+    expect(nested_enabled).to eq false
+    expect(outer_enabled).to eq true
+  end
 end
