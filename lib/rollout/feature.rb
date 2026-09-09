@@ -1,28 +1,27 @@
 # frozen_string_literal: true
 
+require 'rollout/feature_state'
+
 class Rollout
   class Feature
     attr_accessor :groups, :users, :percentage, :data
     attr_reader :name, :options
 
-    def initialize(name, rollout:, state: nil, options: {})
-      @name = name
+    def initialize(state:, rollout:, options: {}, name: nil)
       @rollout = rollout
       @options = options
-
-      if state
-        raw_percentage, raw_users, raw_groups, raw_data = state.split('|', 4)
-        @percentage = raw_percentage.to_f
-        @users = users_from_string(raw_users)
-        @groups = groups_from_string(raw_groups)
-        @data = raw_data.nil? || raw_data.strip.empty? ? {} : JSON.parse(raw_data)
-      else
-        clear
-      end
+      @name = name.nil? ? state.name.to_sym : name
+      assign_state(state)
     end
 
-    def serialize
-      "#{@percentage}|#{@users.to_a.join(',')}|#{@groups.to_a.join(',')}|#{serialize_data}"
+    def to_feature_state
+      FeatureState.new(
+        name: @name,
+        percentage: @percentage,
+        users: Array(@users),
+        groups: Array(@groups),
+        data: @data,
+      )
     end
 
     def add_user(user)
@@ -43,10 +42,7 @@ class Rollout
     end
 
     def clear
-      @groups = groups_from_string('')
-      @users = users_from_string('')
-      @percentage = 0
-      @data = {}
+      assign_state(FeatureState.new(name: @name, percentage: 0))
     end
 
     def active?(user)
@@ -83,6 +79,15 @@ class Rollout
 
     private
 
+    def assign_state(state)
+      state = state.deep_clone
+
+      @percentage = state.percentage
+      @users = users_from_array(state.users)
+      @groups = groups_from_array(state.groups)
+      @data = state.data
+    end
+
     def user_id(user)
       if user.is_a?(Integer) || user.is_a?(String)
         user.to_s
@@ -113,14 +118,8 @@ class Rollout
       end
     end
 
-    def serialize_data
-      return '' unless @data.is_a? Hash
-
-      @data.to_json
-    end
-
-    def users_from_string(raw_users)
-      users = (raw_users || '').split(',').map(&:to_s)
+    def users_from_array(users)
+      users = Array(users).map(&:to_s)
       if @options[:use_sets]
         users.to_set
       else
@@ -128,8 +127,8 @@ class Rollout
       end
     end
 
-    def groups_from_string(raw_groups)
-      groups = (raw_groups || '').split(',').map(&:to_sym)
+    def groups_from_array(groups)
+      groups = Array(groups).map(&:to_sym)
       if @options[:use_sets]
         groups.to_set
       else

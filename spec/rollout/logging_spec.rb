@@ -139,5 +139,77 @@ RSpec.describe 'Rollout::Logging' do
       expect(event).to be_nil
     end
   end
+
+  context 'no-op mutations' do
+    it 'does not write a history event when nothing changes' do
+      rollout.activate_percentage(feature, 25)
+
+      expect do
+        rollout.activate_percentage(feature, 25)
+      end.not_to change { rollout.logging.events(feature).count }
+    end
+  end
+
+  context 'multi-field edits' do
+    it 'records one event for a with_feature block' do
+      rollout.logging.with_context(actor: 'alice') do
+        rollout.with_feature(feature) do |current|
+          current.percentage = 25.0
+          current.groups = [:employees]
+          current.users = ['123']
+          current.data.update(description: 'New navigation')
+        end
+      end
+
+      events = rollout.logging.events(feature)
+      expect(events.count).to eq 1
+      expect(events.first.context).to eq(actor: 'alice')
+      expect(events.first.data[:before].keys).to contain_exactly(:percentage, :groups, :users, :"data.description")
+      expect(events.first.data[:after]).to include(
+        percentage: 25.0,
+        groups: ['employees'],
+        users: ['123'],
+        "data.description": 'New navigation',
+      )
+    end
+  end
+
+  context 'delete versus clear' do
+    it 'removes feature history on delete' do
+      rollout.activate_percentage(feature, 25)
+      expect(rollout.logging.events(feature)).not_to be_empty
+
+      rollout.delete(feature)
+
+      expect(rollout.logging.events(feature)).to eq []
+    end
+
+    it 'keeps feature history on clear!' do
+      rollout.activate_percentage(feature, 25)
+
+      rollout.clear!
+
+      expect(rollout.features).to eq []
+      expect(rollout.logging.events(feature).map { |event| event.data[:after][:percentage] }).to eq [25, 0]
+    end
+  end
+
+  context 'persisted history keys' do
+    let(:logging) { { history_length: 2, global: true } }
+
+    it 'writes truncated per-feature and global sorted sets' do
+      rollout.activate_percentage(feature, 25)
+      rollout.activate_percentage(feature, 50)
+      rollout.activate_percentage(feature, 75)
+
+      feature_key = "feature:#{feature}:logging:events"
+      global_key = "feature:_global_:logging:events"
+
+      expect($redis.zcard(feature_key)).to eq 2
+      expect($redis.zcard(global_key)).to eq 2
+      expect(rollout.logging.events(feature).map { |event| event.data[:after][:percentage] }).to eq [50, 75]
+      expect(rollout.logging.global_events.map { |event| event.data[:after][:percentage] }).to eq [50, 75]
+    end
+  end
 end
 
