@@ -461,6 +461,11 @@ RSpec.describe "Rollout" do
       expect(feature.percentage).to eq(100)
     end
 
+    it "preserves the requested name type" do
+      expect(rollout.get("chat").name).to eq "chat"
+      expect(rollout.get(:chat).name).to eq :chat
+    end
+
     it "returns the feature objects using sets" do
       @options = rollout.instance_variable_get("@options")
       @options[:use_sets] = true
@@ -629,6 +634,10 @@ RSpec.describe "Rollout" do
       expect(features[2].name).to eq :signup
       expect(features[2].percentage).to eq 100
       expect(features.size).to eq 3
+    end
+
+    it "preserves the requested name types" do
+      expect(rollout.multi_get("chat", :videos).map(&:name)).to eq ["chat", :videos]
     end
 
     describe 'when given feature keys is empty' do

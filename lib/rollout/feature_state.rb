@@ -49,8 +49,10 @@ class Rollout
         value.map { |item| dup_value(item) }
       when String
         value.dup
-      else
+      when Integer, Float, TrueClass, FalseClass, NilClass, Symbol
         value
+      else
+        raise ArgumentError, "unsupported data value: #{value.class}"
       end
     end
   end

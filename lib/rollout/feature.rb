@@ -7,9 +7,10 @@ class Rollout
     attr_accessor :groups, :users, :percentage, :data
     attr_reader :name, :options
 
-    def initialize(state:, rollout:, options: {})
+    def initialize(state:, rollout:, options: {}, name: nil)
       @rollout = rollout
       @options = options
+      @name = name.nil? ? state.name.to_sym : name
       assign_state(state)
     end
 
@@ -81,7 +82,6 @@ class Rollout
     def assign_state(state)
       state = state.deep_clone
 
-      @name = state.name.to_sym
       @percentage = state.percentage
       @users = users_from_array(state.users)
       @groups = groups_from_array(state.groups)

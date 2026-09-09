@@ -26,6 +26,19 @@ describe "Rollout::Feature" do
       expect(feature.name).to eq :video
     end
 
+    it "preserves an explicit public name" do
+      feature = Rollout::Feature.new(
+        state: Rollout::FeatureState.new(name: :chat, percentage: 0),
+        rollout: rollout,
+        name: "chat",
+      )
+      feature.percentage = 50
+      feature.clear
+
+      expect(feature.name).to eq "chat"
+      expect(feature.to_feature_state.name).to eq "chat"
+    end
+
     it "clears feature attributes for an empty state" do
       feature = feature_for(Rollout::RedisCodec.decode(:chat, nil))
 

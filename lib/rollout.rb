@@ -143,6 +143,7 @@ class Rollout
       state: RedisCodec.decode(feature, payload),
       rollout: self,
       options: @options,
+      name: feature,
     )
   end
 
@@ -171,6 +172,7 @@ class Rollout
           state: RedisCodec.decode(features[index], payload),
           rollout: self,
           options: @options,
+          name: features[index],
         )
       end
   end

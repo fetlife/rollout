@@ -44,6 +44,38 @@ RSpec.describe Rollout::FeatureState do
     expect(state.data).to eq("labels" => ["a"])
   end
 
+  it "accepts nested JSON-compatible metadata" do
+    state = build_state(
+      data: {
+        "description" => "New navigation",
+        "updated_at" => 1,
+        "enabled" => true,
+        "ratio" => 0.5,
+        "owner" => nil,
+        "labels" => ["a", { "nested" => :ok }],
+      },
+    )
+
+    expect(state.data).to eq(
+      "description" => "New navigation",
+      "updated_at" => 1,
+      "enabled" => true,
+      "ratio" => 0.5,
+      "owner" => nil,
+      "labels" => ["a", { "nested" => :ok }],
+    )
+  end
+
+  it "rejects unsupported metadata values" do
+    expect {
+      build_state(data: { "released_at" => Time.utc(2026, 1, 1) })
+    }.to raise_error(ArgumentError, "unsupported data value: Time")
+
+    expect {
+      build_state(data: { "labels" => ["a", Set.new(["b"])] })
+    }.to raise_error(ArgumentError, "unsupported data value: Set")
+  end
+
   it "does not share nested data or strings with its clone" do
     description = +"hello"
     state = build_state(data: { "description" => description, "labels" => ["a"] })
@@ -91,6 +123,15 @@ RSpec.describe Rollout::FeatureState do
 
       expect(feature).not_to respond_to(:assign_state)
       expect(feature.private_methods).to include(:assign_state)
+    end
+
+    it "rejects unsupported metadata when converting a Feature" do
+      feature = feature_for(build_state)
+      feature.data["released_at"] = Time.utc(2026, 1, 1)
+
+      expect {
+        feature.to_feature_state
+      }.to raise_error(ArgumentError, "unsupported data value: Time")
     end
 
     it "does not share nested data with the source feature" do
