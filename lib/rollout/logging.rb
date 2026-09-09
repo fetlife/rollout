@@ -15,12 +15,6 @@ class Rollout
     class Event
       attr_reader :feature, :name, :data, :context, :created_at
 
-      def self.from_raw(value, score)
-        hash = JSON.parse(value, symbolize_names: true)
-
-        new(**hash.merge(created_at: Time.at(-score.to_f / 1_000_000)))
-      end
-
       def initialize(feature: nil, name:, data:, context: {}, created_at:)
         @feature = feature
         @name = name
@@ -65,15 +59,15 @@ class Rollout
       end
 
       def last_event(feature_name)
-        events(feature_name).last
+        events(feature_name, limit: 1).last
       end
 
-      def events(feature_name)
-        @backend.feature_events(feature_name)
+      def events(feature_name, limit: nil)
+        @backend.feature_events(feature_name, limit: limit)
       end
 
-      def global_events
-        @backend.global_events
+      def global_events(limit: nil)
+        @backend.global_events(limit: limit)
       end
 
       def delete(feature_name)

@@ -60,5 +60,55 @@ RSpec.describe Rollout do
       rollout.add_observer(observer)
       rollout.activate_percentage(:chat, 25)
     end
+
+    it "does not persist when the mutation block raises" do
+      expect {
+        rollout.with_feature(:chat) { raise "nope" }
+      }.to raise_error("nope")
+
+      expect(rollout.exists?(:chat)).to eq false
+    end
+
+    it "records a history event only when logging is enabled and state changes" do
+      backend = RolloutMemoryBackend.new
+      rollout = described_class.new(backend: backend, logging: true)
+
+      rollout.activate_percentage(:chat, 25)
+      expect(backend.feature_events(:chat).count).to eq 1
+
+      rollout.activate_percentage(:chat, 25)
+      expect(backend.feature_events(:chat).count).to eq 1
+    end
+  end
+
+  describe "#clear!" do
+    it "asks the backend to clear remaining registry state" do
+      backend = RolloutMemoryBackend.new
+      expect(backend).to receive(:clear_features).and_call_original
+
+      described_class.new(backend: backend).clear!
+    end
+  end
+
+  describe "#delete" do
+    it "does not delete feature history when logging is disabled" do
+      backend = RolloutMemoryBackend.new
+      logged = described_class.new(backend: backend, logging: true)
+      logged.activate_percentage(:chat, 25)
+
+      described_class.new(backend: backend).delete(:chat)
+
+      expect(logged.exists?(:chat)).to eq false
+      expect(logged.logging.events(:chat)).not_to eq []
+    end
+
+    it "deletes feature history when logging is enabled" do
+      backend = RolloutMemoryBackend.new
+      rollout = described_class.new(backend: backend, logging: true)
+      rollout.activate_percentage(:chat, 25)
+      rollout.delete(:chat)
+
+      expect(rollout.logging.events(:chat)).to eq []
+    end
   end
 end

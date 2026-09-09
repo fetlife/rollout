@@ -71,6 +71,14 @@ RSpec.describe "Rollout Redis history" do
 
       expect(rollout.logging.global_events.map(&:feature)).to eq %w[foo bar]
     end
+
+    it "returns limited global events oldest-to-newest" do
+      rollout.activate_percentage("foo", 25)
+      rollout.activate_percentage("bar", 30)
+      rollout.activate_percentage("baz", 40)
+
+      expect(rollout.logging.global_events(limit: 2).map(&:feature)).to eq %w[bar baz]
+    end
   end
 
   it "does not log inside without" do
@@ -117,6 +125,68 @@ RSpec.describe "Rollout Redis history" do
 
     expect(rollout.features).to eq []
     expect(rollout.logging.events(feature).map { |event| event.data[:after][:percentage] }).to eq [25, 0]
+  end
+
+  it "removes the features registry after clear!" do
+    rollout.activate(:chat)
+    rollout.clear!
+
+    expect($redis.get("feature:__features__")).to be_nil
+  end
+
+  it "removes an already empty features registry" do
+    $redis.set("feature:__features__", "")
+    rollout.clear!
+
+    expect($redis.get("feature:__features__")).to be_nil
+  end
+
+  it "keeps feature history when deleting without logging" do
+    rollout.activate_percentage(feature, 25)
+
+    Rollout.new(backend: redis_backend).delete(feature)
+
+    expect(rollout.exists?(feature)).to be_falsey
+    expect(rollout.logging.events(feature)).not_to eq []
+  end
+
+  it "logging.delete removes feature history only" do
+    rollout.activate_percentage(feature, 25)
+    rollout.logging.delete(feature)
+
+    expect(rollout.logging.events(feature)).to eq []
+    expect(rollout.logging.updated_at(feature)).to be_nil
+    expect(rollout.get(feature).percentage).to eq 25
+  end
+
+  it "backend delete_feature preserves history" do
+    rollout.activate_percentage(feature, 25)
+    rollout.backend.delete_feature(feature)
+
+    expect(rollout.exists?(feature)).to be_falsey
+    expect(rollout.logging.events(feature)).not_to eq []
+  end
+
+  it "returns the newest events oldest-to-newest when limited" do
+    rollout.activate_percentage(feature, 25)
+    rollout.activate_percentage(feature, 50)
+    rollout.activate_percentage(feature, 75)
+
+    expect(rollout.logging.events(feature, limit: 2).map { |event| event.data[:after][:percentage] }).to eq [50, 75]
+    expect(rollout.logging.events(feature, limit: 0)).to eq []
+    expect(rollout.logging.last_event(feature).data[:after][:percentage]).to eq 75
+  end
+
+  it "does not decode older events when reading last_event" do
+    rollout.activate_percentage(feature, 25)
+    $redis.zadd("feature:#{feature}:logging:events", -1, "not-json")
+
+    expect(rollout.logging.last_event(feature).data[:after][:percentage]).to eq 25
+  end
+
+  it "rejects an invalid history limit" do
+    expect { rollout.logging.events(feature, limit: -1) }.to raise_error(ArgumentError)
+    expect { rollout.backend.feature_events(feature, limit: 1.5) }.to raise_error(ArgumentError)
   end
 
   context "persisted history keys" do

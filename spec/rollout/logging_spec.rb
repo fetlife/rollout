@@ -75,4 +75,39 @@ RSpec.describe "Rollout::Logging" do
     expect(nested_enabled).to eq false
     expect(outer_enabled).to eq true
   end
+
+  it "forwards a history limit to the backend" do
+    backend = double("backend")
+    logger = Rollout::Logging::Logger.new(backend: backend)
+    events = [Object.new]
+
+    expect(backend).to receive(:feature_events).with(:chat, limit: 2).and_return(events)
+    expect(logger.events(:chat, limit: 2)).to eq events
+  end
+
+  it "requests one event for last_event" do
+    backend = double("backend")
+    logger = Rollout::Logging::Logger.new(backend: backend)
+    event = Object.new
+
+    expect(backend).to receive(:feature_events).with(:chat, limit: 1).and_return([event])
+    expect(logger.last_event(:chat)).to eq event
+  end
+
+  it "forwards a global history limit to the backend" do
+    backend = double("backend")
+    logger = Rollout::Logging::Logger.new(backend: backend)
+    events = [Object.new]
+
+    expect(backend).to receive(:global_events).with(limit: 2).and_return(events)
+    expect(logger.global_events(limit: 2)).to eq events
+  end
+
+  it "delegates history deletion" do
+    backend = double("backend")
+    logger = Rollout::Logging::Logger.new(backend: backend)
+
+    expect(backend).to receive(:delete_feature_events).with(:chat)
+    logger.delete(:chat)
+  end
 end

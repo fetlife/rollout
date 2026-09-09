@@ -2,6 +2,7 @@
 
 require 'json'
 require 'rollout/feature_state'
+require 'rollout/logging'
 
 class Rollout
   module Redis
@@ -31,6 +32,12 @@ class Rollout
 
       def self.encode(feature_state)
         "#{feature_state.percentage}|#{feature_state.users.join(',')}|#{feature_state.groups.join(',')}|#{feature_state.data.to_json}"
+      end
+
+      def self.decode_event(value, score)
+        hash = JSON.parse(value, symbolize_names: true)
+
+        Logging::Event.new(**hash.merge(created_at: Time.at(-score.to_f / 1_000_000)))
       end
     end
   end

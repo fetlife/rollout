@@ -37,6 +37,9 @@ class RolloutMemoryBackend
     @features.delete(name.to_s)
   end
 
+  def clear_features
+  end
+
   def mutate_feature(name)
     mutation = yield fetch_feature(name)
     save_feature(mutation.fetch(:state))
@@ -45,12 +48,12 @@ class RolloutMemoryBackend
     mutation
   end
 
-  def feature_events(name)
-    @events[name.to_s]
+  def feature_events(name, limit: nil)
+    limited_events(@events[name.to_s], limit)
   end
 
-  def global_events
-    []
+  def global_events(limit: nil)
+    limited_events([], limit)
   end
 
   def feature_updated_at(_name)
@@ -58,6 +61,16 @@ class RolloutMemoryBackend
 
   def delete_feature_events(name)
     @events.delete(name.to_s)
+  end
+
+  private
+
+  def limited_events(events, limit)
+    return events if limit.nil?
+    raise ArgumentError, "limit must be an Integer" unless limit.is_a?(Integer)
+    raise ArgumentError, "limit must be >= 0" if limit < 0
+
+    events.last(limit)
   end
 end
 

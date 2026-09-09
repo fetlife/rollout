@@ -183,6 +183,7 @@ class Rollout
       with_feature(feature, &:clear)
       @backend.delete_feature(feature)
     end
+    @backend.clear_features
   end
 
   def exists?(feature)

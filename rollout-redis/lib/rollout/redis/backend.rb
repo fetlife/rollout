@@ -48,6 +48,10 @@ class Rollout
         @client.del(key(name))
       end
 
+      def clear_features
+        @client.del(FEATURES_KEY)
+      end
+
       def mutate_feature(name)
         mutation = yield fetch_feature(name)
         save_feature(mutation.fetch(:state))
@@ -73,12 +77,12 @@ class Rollout
         @client.zremrangebyrank(global_events_key, history_length, -1)
       end
 
-      def feature_events(name)
-        events_from(events_key(name))
+      def feature_events(name, limit: nil)
+        events_from(events_key(name), limit: limit)
       end
 
-      def global_events
-        events_from(global_events_key)
+      def global_events(limit: nil)
+        events_from(global_events_key, limit: limit)
       end
 
       def feature_updated_at(name)
@@ -104,11 +108,23 @@ class Rollout
         'feature:_global_:logging:events'
       end
 
-      def events_from(storage_key)
+      def events_from(storage_key, limit: nil)
+        stop = event_range_stop(limit)
+        return [] if stop == :empty
+
         @client
-          .zrange(storage_key, 0, -1, with_scores: true)
-          .map { |value| Logging::Event.from_raw(*value) }
+          .zrange(storage_key, 0, stop, with_scores: true)
+          .map { |value| Codec.decode_event(*value) }
           .reverse
+      end
+
+      def event_range_stop(limit)
+        return -1 if limit.nil?
+        raise ArgumentError, "limit must be an Integer" unless limit.is_a?(Integer)
+        raise ArgumentError, "limit must be >= 0" if limit < 0
+        return :empty if limit.zero?
+
+        limit - 1
       end
     end
   end
