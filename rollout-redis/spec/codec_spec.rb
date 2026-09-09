@@ -1,6 +1,6 @@
 require "spec_helper"
 
-RSpec.describe Rollout::RedisCodec do
+RSpec.describe Rollout::Redis::Codec do
   it "decodes a missing payload as an empty feature" do
     state = described_class.decode(:chat, nil)
 
@@ -59,5 +59,26 @@ RSpec.describe Rollout::RedisCodec do
     state = described_class.decode(:chat, payload)
 
     expect(described_class.encode(state)).to eq payload
+  end
+
+  describe ".decode_event" do
+    it "decodes a persisted history member using the sorted-set score" do
+      created_at = Time.at(1_735_689_600)
+      value = JSON.dump(
+        feature: "chat",
+        name: "update",
+        data: { before: { percentage: 0 }, after: { percentage: 25 } },
+        context: { actor: "lester" },
+        created_at: Time.utc(2000, 1, 1),
+      )
+
+      event = described_class.decode_event(value, -(created_at.to_f * 1_000_000))
+
+      expect(event.feature).to eq "chat"
+      expect(event.name).to eq "update"
+      expect(event.data).to eq(before: { percentage: 0 }, after: { percentage: 25 })
+      expect(event.context).to eq(actor: "lester")
+      expect(event.created_at.to_i).to eq created_at.to_i
+    end
   end
 end

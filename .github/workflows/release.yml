@@ -25,8 +25,16 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           bundler-cache: true
-      - name: Run tests
-        run: bundle exec rspec 
+      - name: Run core tests
+        run: bundle exec rspec spec
+      - name: Setup Redis adapter gems
+        uses: ruby/setup-ruby@v1
+        with:
+          working-directory: rollout-redis
+          bundler-cache: true
+      - name: Run Redis adapter tests
+        working-directory: rollout-redis
+        run: bundle exec rspec
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
