@@ -3,7 +3,11 @@ name: Release
 on:
   push:
     tags:
-      - 'v*'
+      - 'rollout/v*'
+      - 'rollout-redis/v*'
+
+permissions:
+  contents: write
 
 jobs:
   release:
@@ -25,6 +29,23 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           bundler-cache: true
+      - name: Select package
+        id: package
+        run: |
+          case "$GITHUB_REF_NAME" in
+            rollout/v*) name=rollout; directory=. ;;
+            rollout-redis/v*) name=rollout-redis; directory=rollout-redis ;;
+            *) echo "Unexpected tag $GITHUB_REF_NAME" >&2; exit 1 ;;
+          esac
+          version="${GITHUB_REF_NAME##*/v}"
+          spec_version=$(ruby -e 'puts Gem::Specification.load(ARGV[0]).version' "$directory/$name.gemspec")
+          if [ "$spec_version" != "$version" ]; then
+            echo "Tag version $version does not match gemspec $spec_version" >&2
+            exit 1
+          fi
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "directory=$directory" >> "$GITHUB_OUTPUT"
       - name: Run core tests
         run: bundle exec rspec spec
       - name: Setup Redis adapter gems
@@ -35,20 +56,25 @@ jobs:
       - name: Run Redis adapter tests
         working-directory: rollout-redis
         run: bundle exec rspec
+      - name: Build selected gem
+        working-directory: ${{ steps.package.outputs.directory }}
+        run: gem build "${{ steps.package.outputs.name }}.gemspec"
+      - name: Publish rollout
+        if: steps.package.outputs.name == 'rollout'
+        env:
+          GEM_HOST_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
+        run: gem push "rollout-${{ steps.package.outputs.version }}.gem"
+      - name: Publish rollout-redis
+        if: steps.package.outputs.name == 'rollout-redis'
+        working-directory: rollout-redis
+        env:
+          GEM_HOST_API_KEY: ${{ secrets.ROLLOUT_REDIS_RUBYGEMS_API_KEY }}
+        run: gem push "rollout-redis-${{ steps.package.outputs.version }}.gem"
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref }}
-          name: ${{ github.ref_name }}
+          name: ${{ steps.package.outputs.name }} ${{ steps.package.outputs.version }}
           generate_release_notes: true
           draft: false
-          prerelease: false 
-      - name: Set up RubyGems credentials
-        env:
-          RUBYGEMS_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
-        run: |
-          mkdir -p ~/.gem
-          echo ":rubygems_api_key: $RUBYGEMS_API_KEY" > ~/.gem/credentials
-          chmod 0600 ~/.gem/credentials
-      - name: Release to RubyGems
-        run: bundle exec rake release
+          prerelease: false
