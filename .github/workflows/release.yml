@@ -68,7 +68,7 @@ jobs:
         if: steps.package.outputs.name == 'rollout-redis'
         working-directory: rollout-redis
         env:
-          GEM_HOST_API_KEY: ${{ secrets.ROLLOUT_REDIS_RUBYGEMS_API_KEY }}
+          GEM_HOST_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
         run: gem push "rollout-redis-${{ steps.package.outputs.version }}.gem"
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
