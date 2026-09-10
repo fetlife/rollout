@@ -1,5 +1,5 @@
 require "spec_helper"
-require File.expand_path("../../../spec/support/backend_contract", __dir__)
+require_relative "../../spec/support/backend_contract"
 
 RSpec.describe Rollout::Redis::Backend do
   it_behaves_like "a rollout feature backend" do
