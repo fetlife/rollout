@@ -28,6 +28,7 @@ jobs:
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
+          ruby-version: '3.3'
           bundler-cache: true
       - name: Select package
         id: package
@@ -51,6 +52,7 @@ jobs:
       - name: Setup Redis adapter gems
         uses: ruby/setup-ruby@v1
         with:
+          ruby-version: '3.3'
           working-directory: rollout-redis
           bundler-cache: true
       - name: Run Redis adapter tests
