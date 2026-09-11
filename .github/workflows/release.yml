@@ -3,52 +3,59 @@ name: Release
 on:
   push:
     tags:
-      - 'v*'
+      - 'rollout/v*'
+      - 'rollout-redis/v*'
+
+permissions:
+  contents: write
+  id-token: write
 
 jobs:
   release:
     runs-on: ubuntu-latest
-    services:
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
-          bundler-cache: true
-      - name: Run core tests
-        run: bundle exec rspec spec
-      - name: Setup Redis adapter gems
-        uses: ruby/setup-ruby@v1
-        with:
-          working-directory: rollout-redis
-          bundler-cache: true
-      - name: Run Redis adapter tests
-        working-directory: rollout-redis
-        run: bundle exec rspec
+          ruby-version: '3.3'
+      - name: Select package
+        id: package
+        run: |
+          case "$GITHUB_REF_NAME" in
+            rollout/v*) name=rollout; directory=. ;;
+            rollout-redis/v*) name=rollout-redis; directory=rollout-redis ;;
+            *) echo "Unexpected tag $GITHUB_REF_NAME" >&2; exit 1 ;;
+          esac
+          version="${GITHUB_REF_NAME##*/v}"
+          spec_version=$(ruby -e 'puts Gem::Specification.load(ARGV[0]).version' "$directory/$name.gemspec")
+          if [ "$spec_version" != "$version" ]; then
+            echo "Tag version $version does not match gemspec $spec_version" >&2
+            exit 1
+          fi
+          previous_tag=$(git tag --list "$name/v*" --sort=-version:refname | awk -v current="$GITHUB_REF_NAME" '$0 != current { print; exit }')
+          previous_tag=${previous_tag:-v2.6.2}
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "directory=$directory" >> "$GITHUB_OUTPUT"
+          echo "previous_tag=$previous_tag" >> "$GITHUB_OUTPUT"
+      - name: Build selected gem
+        working-directory: ${{ steps.package.outputs.directory }}
+        run: gem build "${{ steps.package.outputs.name }}.gemspec"
+      - name: Configure RubyGems credentials
+        uses: rubygems/configure-rubygems-credentials@v2.1.0
+      - name: Publish selected gem
+        working-directory: ${{ steps.package.outputs.directory }}
+        run: gem push "${{ steps.package.outputs.name }}-${{ steps.package.outputs.version }}.gem"
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref }}
-          name: ${{ github.ref_name }}
+          name: ${{ steps.package.outputs.name }} ${{ steps.package.outputs.version }}
           generate_release_notes: true
+          previous_tag: ${{ steps.package.outputs.previous_tag }}
           draft: false
-          prerelease: false 
-      - name: Set up RubyGems credentials
-        env:
-          RUBYGEMS_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
-        run: |
-          mkdir -p ~/.gem
-          echo ":rubygems_api_key: $RUBYGEMS_API_KEY" > ~/.gem/credentials
-          chmod 0600 ~/.gem/credentials
-      - name: Release to RubyGems
-        run: bundle exec rake release
+          prerelease: false

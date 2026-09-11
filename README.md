@@ -234,11 +234,11 @@ Optional connection settings: `REDIS_HOST`, `REDIS_PORT`, `REDIS_DB`.
 
 ## Releasing
 
-1. Bump version: `rake version:patch` (or `minor`/`major`)
-2. Commit and tag: `git commit -am "Bump version" && git tag v0.7.3`
-3. Push: `git push origin master --tags`
+- Update and commit the version in `lib/rollout/version.rb` or `rollout-redis/rollout-redis.gemspec`.
+- Tag the release commit with `rollout/vX.Y.Z` or `rollout-redis/vX.Y.Z`, matching the gem version.
+- Push the tag with `git push origin <tag>`. CI publishes the selected gem and creates its GitHub release.
 
-The GitHub Actions workflow will automatically publish to RubyGems when tags are pushed.
+Use package-prefixed tags, not `vX.Y.Z`.
 
 ## Copyright
 
