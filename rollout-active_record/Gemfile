@@ -1,0 +1,30 @@
+# frozen_string_literal: true
+
+source 'https://rubygems.org'
+
+gemspec
+
+gem 'rollout', path: '..'
+gem 'rake'
+gem 'rspec', '~> 3.13'
+gem 'rspec_junit_formatter', '~> 0.6'
+gem 'simplecov', '0.17'
+
+activerecord_version = ENV['ACTIVERECORD_VERSION']
+if activerecord_version && !activerecord_version.empty?
+  gem 'activerecord', activerecord_version
+end
+
+if activerecord_version.to_s.match?(/7\./) || RUBY_VERSION < '3.0'
+  gem 'sqlite3', '~> 1.7'
+else
+  gem 'sqlite3', '>= 2.0'
+end
+
+install_if -> { ENV['CI'] || ENV['ROLLOUT_AR_ADAPTER'] == 'postgresql' } do
+  gem 'pg', '>= 1.2'
+end
+
+install_if -> { ENV['CI'] || ENV['ROLLOUT_AR_ADAPTER'] == 'mysql2' } do
+  gem 'mysql2', '>= 0.5'
+end

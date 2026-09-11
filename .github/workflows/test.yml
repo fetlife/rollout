@@ -70,3 +70,95 @@ jobs:
           name: redis-test-results-${{ matrix.ruby-version }}
           path: rollout-redis/test_results/rspec.xml
           retention-days: 30
+
+  active_record:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - ruby-version: '3.3'
+            activerecord: '~> 8.1.0'
+            db: sqlite3
+          - ruby-version: '3.3'
+            activerecord: '~> 8.1.0'
+            db: postgresql
+          - ruby-version: '3.3'
+            activerecord: '~> 8.1.0'
+            db: mysql2
+          - ruby-version: '3.3'
+            activerecord: '~> 7.1.0'
+            db: postgresql
+          - ruby-version: '3.3'
+            activerecord: '~> 7.1.0'
+            db: mysql2
+          - ruby-version: '3.2'
+            activerecord: '~> 8.0.0'
+            db: sqlite3
+          - ruby-version: '3.1'
+            activerecord: '~> 7.2.0'
+            db: sqlite3
+          - ruby-version: '2.7'
+            activerecord: '~> 7.1.0'
+            db: sqlite3
+    env:
+      ACTIVERECORD_VERSION: ${{ matrix.activerecord }}
+      ROLLOUT_AR_ADAPTER: ${{ matrix.db }}
+      POSTGRES_HOST: localhost
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: rollout_test
+      MYSQL_HOST: 127.0.0.1
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root
+      MYSQL_DATABASE: rollout_test
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: rollout_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: rollout_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Install database client libraries
+        run: sudo apt-get update && sudo apt-get install -y libpq-dev default-libmysqlclient-dev
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby-version }}
+          working-directory: rollout-active_record
+          bundler-cache: true
+          cache-version: ar-${{ matrix.ruby-version }}-${{ matrix.activerecord }}-${{ matrix.db }}
+      - name: Run Active Record adapter tests
+        working-directory: rollout-active_record
+        run: |
+          mkdir -p test_results
+          bundle exec rspec --format progress --format RspecJunitFormatter --out test_results/rspec.xml
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: active-record-test-results-${{ matrix.ruby-version }}-${{ matrix.db }}-${{ strategy.job-index }}
+          path: rollout-active_record/test_results/rspec.xml
+          retention-days: 30

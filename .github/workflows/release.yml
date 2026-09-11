@@ -5,6 +5,7 @@ on:
     tags:
       - 'rollout/v*'
       - 'rollout-redis/v*'
+      - 'rollout-active_record/v*'
 
 permissions:
   contents: write
@@ -36,6 +37,7 @@ jobs:
           case "$GITHUB_REF_NAME" in
             rollout/v*) name=rollout; directory=. ;;
             rollout-redis/v*) name=rollout-redis; directory=rollout-redis ;;
+            rollout-active_record/v*) name=rollout-active_record; directory=rollout-active_record ;;
             *) echo "Unexpected tag $GITHUB_REF_NAME" >&2; exit 1 ;;
           esac
           version="${GITHUB_REF_NAME##*/v}"
@@ -58,6 +60,16 @@ jobs:
       - name: Run Redis adapter tests
         working-directory: rollout-redis
         run: bundle exec rspec
+      - name: Setup Active Record adapter gems
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          working-directory: rollout-active_record
+          bundler-cache: true
+          cache-version: release-ar
+      - name: Run Active Record adapter tests
+        working-directory: rollout-active_record
+        run: bundle exec rspec
       - name: Build selected gem
         working-directory: ${{ steps.package.outputs.directory }}
         run: gem build "${{ steps.package.outputs.name }}.gemspec"
@@ -72,6 +84,12 @@ jobs:
         env:
           GEM_HOST_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
         run: gem push "rollout-redis-${{ steps.package.outputs.version }}.gem"
+      - name: Publish rollout-active_record
+        if: steps.package.outputs.name == 'rollout-active_record'
+        working-directory: rollout-active_record
+        env:
+          GEM_HOST_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
+        run: gem push "rollout-active_record-${{ steps.package.outputs.version }}.gem"
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:

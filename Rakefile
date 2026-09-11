@@ -16,6 +16,16 @@ namespace :spec do
       end
     end
   end
+
+  desc "Run Active Record adapter tests"
+  task :active_record do
+    gemfile = File.expand_path("rollout-active_record/Gemfile", __dir__)
+    Dir.chdir("rollout-active_record") do
+      Bundler.with_unbundled_env do
+        sh({ "BUNDLE_GEMFILE" => gemfile }, "bundle exec rspec")
+      end
+    end
+  end
 end
 
 task default: :spec
