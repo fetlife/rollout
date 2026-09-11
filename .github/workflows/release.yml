@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
@@ -34,9 +36,12 @@ jobs:
             echo "Tag version $version does not match gemspec $spec_version" >&2
             exit 1
           fi
+          previous_tag=$(git tag --list "$name/v*" --sort=-version:refname | awk -v current="$GITHUB_REF_NAME" '$0 != current { print; exit }')
+          previous_tag=${previous_tag:-v2.6.2}
           echo "name=$name" >> "$GITHUB_OUTPUT"
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "directory=$directory" >> "$GITHUB_OUTPUT"
+          echo "previous_tag=$previous_tag" >> "$GITHUB_OUTPUT"
       - name: Build selected gem
         working-directory: ${{ steps.package.outputs.directory }}
         run: gem build "${{ steps.package.outputs.name }}.gemspec"
@@ -51,5 +56,6 @@ jobs:
           tag_name: ${{ github.ref }}
           name: ${{ steps.package.outputs.name }} ${{ steps.package.outputs.version }}
           generate_release_notes: true
+          previous_tag: ${{ steps.package.outputs.previous_tag }}
           draft: false
           prerelease: false
