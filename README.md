@@ -2,6 +2,9 @@
 
 Fast feature flags.
 
+Upgrading from Rollout 2? Follow the [Rollout 3 upgrade guide](docs/upgrading-to-v3.md)
+before updating your dependencies.
+
 [![Gem Version](https://badge.fury.io/rb/rollout.svg)](https://badge.fury.io/rb/rollout)
 [![CI](https://github.com/fetlife/rollout/actions/workflows/test.yml/badge.svg)](https://github.com/fetlife/rollout/actions/workflows/test.yml)
 [![Code Climate](https://codeclimate.com/github/FetLife/rollout/badges/gpa.svg)](https://codeclimate.com/github/FetLife/rollout)
