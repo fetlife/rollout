@@ -1,4 +1,5 @@
 require "spec_helper"
+require "date"
 
 RSpec.describe Rollout::FeatureState do
   def build_state(overrides = {})
@@ -13,6 +14,10 @@ RSpec.describe Rollout::FeatureState do
 
   def feature_for(state, options: {}, rollout: Object.new)
     Rollout::Feature.new(state: state, rollout: rollout, options: options)
+  end
+
+  def json_value(value)
+    JSON.parse({ "value" => value }.to_json)["value"]
   end
 
   it "normalizes persistence types" do
@@ -42,7 +47,7 @@ RSpec.describe Rollout::FeatureState do
     expect(state.data).to eq("labels" => ["a"])
   end
 
-  it "accepts nested JSON-compatible metadata" do
+  it "canonicalizes nested JSON-compatible metadata" do
     state = build_state(
       data: {
         "description" => "New navigation",
@@ -50,6 +55,7 @@ RSpec.describe Rollout::FeatureState do
         "enabled" => true,
         "ratio" => 0.5,
         "owner" => nil,
+        "kind" => :beta,
         "labels" => ["a", { "nested" => :ok }],
       },
     )
@@ -60,18 +66,56 @@ RSpec.describe Rollout::FeatureState do
       "enabled" => true,
       "ratio" => 0.5,
       "owner" => nil,
-      "labels" => ["a", { "nested" => :ok }],
+      "kind" => "beta",
+      "labels" => ["a", { "nested" => "ok" }],
     )
   end
 
-  it "rejects unsupported metadata values" do
-    expect {
-      build_state(data: { "released_at" => Time.utc(2026, 1, 1) })
-    }.to raise_error(ArgumentError, "unsupported data value: Time")
+  it "canonicalizes Time, Date, and custom JSON values" do
+    custom = Object.new
+    def custom.to_json(*)
+      '"widget"'
+    end
+
+    released_at = Time.utc(2026, 1, 1)
+    day = Date.new(2026, 1, 1)
+    state = build_state(
+      data: {
+        "released_at" => released_at,
+        "day" => day,
+        "item" => custom,
+      },
+    )
+
+    expect(state.data).to eq(
+      "released_at" => json_value(released_at),
+      "day" => json_value(day),
+      "item" => "widget",
+    )
+  end
+
+  it "canonicalizes BigDecimal through JSON" do
+    require "bigdecimal"
+
+    amount = BigDecimal("1.5")
+    state = build_state(data: { "amount" => amount })
+
+    expect(state.data).to eq("amount" => json_value(amount))
+  end
+
+  it "rejects metadata that cannot be serialized as JSON" do
+    cyclic = {}
+    cyclic["self"] = cyclic
 
     expect {
-      build_state(data: { "labels" => ["a", Set.new(["b"])] })
-    }.to raise_error(ArgumentError, "unsupported data value: Set")
+      build_state(data: cyclic)
+    }.to raise_error(JSON::JSONError)
+  end
+
+  it "rejects non-hash metadata" do
+    expect {
+      build_state(data: "nope")
+    }.to raise_error(ArgumentError, "data must be a Hash")
   end
 
   it "does not share nested data or strings with its clone" do
@@ -115,13 +159,18 @@ RSpec.describe Rollout::FeatureState do
       expect(restored.to_hash).to eq feature.to_hash
     end
 
-    it "rejects unsupported metadata when converting a Feature" do
+    it "canonicalizes JSON-serializable metadata when converting a Feature" do
+      released_at = Time.utc(2026, 1, 1)
       feature = feature_for(build_state)
-      feature.data["released_at"] = Time.utc(2026, 1, 1)
+      feature.data["released_at"] = released_at
+      feature.data["kind"] = :beta
 
-      expect {
-        feature.to_feature_state
-      }.to raise_error(ArgumentError, "unsupported data value: Time")
+      expect(feature.to_feature_state.data).to eq(
+        "description" => "New navigation",
+        "updated_at" => 1,
+        "released_at" => json_value(released_at),
+        "kind" => "beta",
+      )
     end
 
     it "does not share nested data with the source feature" do
