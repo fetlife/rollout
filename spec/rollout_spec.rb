@@ -308,6 +308,30 @@ RSpec.describe "Rollout" do
     end
   end
 
+  describe "exact CRC32 percentage assignment" do
+    it "keeps the same users across features when randomize_percentage is off" do
+      rollout.activate_percentage(:chat, 20)
+      rollout.activate_percentage(:beta, 20)
+
+      expect(rollout.active?(:chat, double(id: 2))).to eq true
+      expect(rollout.active?(:chat, double(id: 6))).to eq true
+      expect(rollout.active?(:chat, double(id: 1))).to eq false
+      expect(rollout.active?(:beta, double(id: 2))).to eq true
+      expect(rollout.active?(:beta, double(id: 1))).to eq false
+    end
+
+    it "changes assignment by feature name when randomize_percentage is on" do
+      randomized = Rollout.new($redis, randomize_percentage: true)
+      randomized.activate_percentage(:chat, 20)
+      randomized.activate_percentage(:beta, 20)
+
+      expect(randomized.active?(:chat, double(id: 1))).to eq true
+      expect(randomized.active?(:beta, double(id: 1))).to eq false
+      expect(randomized.active?(:chat, double(id: 5))).to eq false
+      expect(randomized.active?(:beta, double(id: 5))).to eq true
+    end
+  end
+
   describe "activating a feature for a group as a string" do
     before do
       rollout.define_group(:admins) { |user| user.id == 5 }
@@ -435,6 +459,11 @@ RSpec.describe "Rollout" do
       expect(feature.groups).to be_empty
       expect(feature.users).to be_empty
       expect(feature.percentage).to eq(100)
+    end
+
+    it "preserves the requested name type" do
+      expect(rollout.get("chat").name).to eq "chat"
+      expect(rollout.get(:chat).name).to eq :chat
     end
 
     it "returns the feature objects using sets" do
@@ -607,6 +636,10 @@ RSpec.describe "Rollout" do
       expect(features.size).to eq 3
     end
 
+    it "preserves the requested name types" do
+      expect(rollout.multi_get("chat", :videos).map(&:name)).to eq ["chat", :videos]
+    end
+
     describe 'when given feature keys is empty' do
       it 'returns empty array' do
         expect(rollout.multi_get(*[])).to match_array([])
@@ -661,6 +694,102 @@ RSpec.describe "Rollout" do
       expect(rollout.get(:chat).data).to include('description' => 'foo')
       rollout.clear_feature_data(:chat)
       expect(rollout.get(:chat).data).to eq({})
+    end
+  end
+
+  describe "persisted redis format" do
+    it "writes the current feature payload and registry keys" do
+      rollout.activate_percentage(:chat, 20)
+      rollout.activate_user(:chat, 42)
+      rollout.activate_group(:chat, :employees)
+      rollout.set_feature_data(:chat, description: "foo")
+
+      expect($redis.get("feature:chat")).to eq('20.0|42|employees|{"description":"foo"}')
+      expect($redis.get("feature:__features__")).to eq("chat")
+    end
+
+    it "reads an existing payload without rewriting it" do
+      $redis.set("feature:chat", '10.5|7,8|greeters|{"description":"legacy"}')
+      $redis.set("feature:__features__", "chat")
+
+      feature = rollout.get(:chat)
+
+      expect(feature.percentage).to eq 10.5
+      expect(feature.users).to eq %w[7 8]
+      expect(feature.groups).to eq [:greeters]
+      expect(feature.data).to eq("description" => "legacy")
+      expect($redis.get("feature:chat")).to eq('10.5|7,8|greeters|{"description":"legacy"}')
+    end
+  end
+
+  describe "mutation semantics" do
+    it "saves multiple with_feature edits together" do
+      rollout.with_feature(:chat) do |feature|
+        feature.percentage = 25.0
+        feature.groups = [:employees]
+        feature.users = ["123"]
+        feature.data.update(description: "New navigation")
+      end
+
+      feature = rollout.get(:chat)
+      expect(feature.percentage).to eq 25.0
+      expect(feature.groups).to eq [:employees]
+      expect(feature.users).to eq %w[123]
+      expect(feature.data).to eq("description" => "New navigation")
+    end
+
+    it "does not save when the with_feature block raises" do
+      expect do
+        rollout.with_feature(:chat) do |feature|
+          feature.percentage = 100
+          raise "boom"
+        end
+      end.to raise_error("boom")
+
+      expect(rollout.get(:chat).percentage).to eq 0
+      expect(rollout.exists?(:chat)).to eq false
+    end
+
+    it "clears users, groups, percentage, and data on deactivate" do
+      rollout.activate_user(:chat, 42)
+      rollout.activate_group(:chat, :employees)
+      rollout.activate_percentage(:chat, 50)
+      rollout.set_feature_data(:chat, description: "foo")
+
+      rollout.deactivate(:chat)
+
+      expect(rollout.features).to eq [:chat]
+      expect(rollout.get(:chat).to_hash).to eq(
+        percentage: 0,
+        users: [],
+        groups: [],
+        data: {},
+      )
+      expect($redis.get("feature:chat")).to eq("0.0|||{}")
+    end
+
+    it "keeps users, groups, and data on deactivate_percentage" do
+      rollout.activate_user(:chat, 42)
+      rollout.activate_group(:chat, :employees)
+      rollout.activate_percentage(:chat, 50)
+      rollout.set_feature_data(:chat, description: "foo")
+
+      rollout.deactivate_percentage(:chat)
+
+      expect(rollout.get(:chat).percentage).to eq 0
+      expect(rollout.get(:chat).users).to eq %w[42]
+      expect(rollout.get(:chat).groups).to eq [:employees]
+      expect(rollout.get(:chat).data).to eq("description" => "foo")
+    end
+
+    it "removes the feature on delete and leaves a missing feature inactive" do
+      rollout.activate(:chat)
+      rollout.delete(:chat)
+
+      expect(rollout.features).to eq []
+      expect(rollout.exists?(:chat)).to eq false
+      expect(rollout.get(:chat).percentage).to eq 0
+      expect(rollout.active?(:chat)).to eq false
     end
   end
 
