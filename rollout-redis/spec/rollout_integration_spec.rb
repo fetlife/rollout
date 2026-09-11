@@ -687,6 +687,29 @@ RSpec.describe "Rollout" do
       expect(rollout.get(:chat).data).to include("|call||text|" => "a|bunch|of|stuff")
       expect(rollout.active?(:chat, user)).to be true
     end
+
+    it "canonicalizes JSON-serializable metadata" do
+      released_at = Time.utc(2026, 1, 1)
+      rollout.set_feature_data(:chat, released_at: released_at, label: :beta)
+
+      expect(rollout.get(:chat).data).to eq(
+        "description" => "foo",
+        "release_date" => "bar",
+        "released_at" => JSON.parse({ "value" => released_at }.to_json)["value"],
+        "label" => "beta",
+      )
+    end
+
+    it "does not persist metadata that cannot be serialized as JSON" do
+      cyclic = {}
+      cyclic["self"] = cyclic
+
+      expect {
+        rollout.set_feature_data(:chat, cyclic)
+      }.to raise_error(JSON::JSONError)
+
+      expect(rollout.get(:chat).data).to include("description" => "foo", "release_date" => "bar")
+    end
   end
 
   describe "#clear_feature_data" do

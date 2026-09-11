@@ -14,7 +14,10 @@ class RolloutMemoryBackend
   end
 
   def fetch_feature(name)
-    @features[name.to_s] || Rollout::FeatureState.new(name: name, percentage: 0)
+    state = @features[name.to_s]
+    return Rollout::FeatureState.new(name: name, percentage: 0) unless state
+
+    state.deep_clone
   end
 
   def fetch_features(names)
@@ -30,7 +33,7 @@ class RolloutMemoryBackend
   end
 
   def save_feature(state)
-    @features[state.name] = state
+    @features[state.name] = state.deep_clone
   end
 
   def delete_feature(name)

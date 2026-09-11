@@ -79,6 +79,49 @@ RSpec.describe Rollout do
       rollout.activate_percentage(:chat, 25)
       expect(backend.feature_events(:chat).count).to eq 1
     end
+
+    it "canonicalizes metadata assigned during a mutation" do
+      released_at = Time.utc(2026, 1, 1)
+
+      rollout.with_feature(:chat) do |feature|
+        feature.data["released_at"] = released_at
+        feature.data["label"] = :beta
+      end
+
+      expect(rollout.get(:chat).data).to eq(
+        "released_at" => JSON.parse({ "value" => released_at }.to_json)["value"],
+        "label" => "beta",
+      )
+    end
+  end
+
+  describe "#set_feature_data" do
+    def json_value(value)
+      JSON.parse({ "value" => value }.to_json)["value"]
+    end
+
+    it "canonicalizes JSON-serializable metadata" do
+      released_at = Time.utc(2026, 1, 1)
+
+      rollout.set_feature_data(:chat, released_at: released_at, label: :beta)
+
+      expect(rollout.get(:chat).data).to eq(
+        "released_at" => json_value(released_at),
+        "label" => "beta",
+      )
+    end
+
+    it "does not persist metadata that cannot be serialized as JSON" do
+      rollout.set_feature_data(:chat, description: "foo")
+      cyclic = {}
+      cyclic["self"] = cyclic
+
+      expect {
+        rollout.set_feature_data(:chat, cyclic)
+      }.to raise_error(JSON::JSONError)
+
+      expect(rollout.get(:chat).data).to eq("description" => "foo")
+    end
   end
 
   describe "#clear!" do

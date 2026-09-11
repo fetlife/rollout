@@ -9,11 +9,12 @@ not the later Active Record / PostgreSQL migration.
 Add the adapter gem next to `rollout`:
 
 ```ruby
-gem "rollout"
-gem "rollout-redis"
+gem "rollout", "~> 3.0"
+gem "rollout-redis", "~> 0.1"
 ```
 
-Use matching Rollout 3 releases of both gems. If you use
+Use compatible releases of both gems. The Redis adapter is versioned
+independently of core. If you use
 [rollout-ui](https://github.com/fetlife/rollout-ui), wait for a Rollout
 3-compatible UI release before upgrading production.
 
@@ -67,6 +68,7 @@ $rollout = Rollout.new(backend: Rollout::Redis::Backend.new($ns))
 | Custom logging | `Logger#log` and `Logger#update` are removed. Built-in logging is no longer an observer. | Use Rollout mutations and `logging.with_context` rather than calling those methods directly. |
 | Feature construction | `Feature.new(name, rollout:, state: payload)` no longer accepts a name argument or raw Redis payload. | Prefer `rollout.get(name)`. Direct construction requires `Feature.new(state: feature_state, rollout: rollout, options: rollout.options)`. |
 | Feature serialization | `feature.serialize` is removed. | Use `feature.to_feature_state` for a backend-neutral snapshot. Redis encoding belongs to `Rollout::Redis::Codec`. |
+| Feature metadata | Metadata is canonicalized to JSON. Symbol keys and values become strings. Values such as `Time`, `Date`, and `BigDecimal` persist as their JSON representations, not as original Ruby objects. | No data migration is required. JSON-serializable writes continue to work. |
 | History decoding | `Logging::Event.from_raw` is removed. | Decode persisted Redis members with `Rollout::Redis::Codec.decode_event(value, score)`. |
 
 ## 4. History and lifecycle
