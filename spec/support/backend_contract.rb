@@ -51,4 +51,31 @@ RSpec.shared_examples "a rollout feature backend" do
 
     expect(backend.feature_exists?(:chat)).to be_falsey
   end
+
+  it "saves and fetches a complete feature state" do
+    state = Rollout::FeatureState.new(
+      name: :chat,
+      percentage: 10.5,
+      users: ["1"],
+      groups: ["employees"],
+      data: { "description" => "foo", "labels" => ["a"] },
+    )
+
+    backend.save_feature(state)
+
+    expect(backend.fetch_feature(:chat)).to eq state
+    expect(backend.fetch_feature("chat")).to eq state
+  end
+
+  it "persists the state returned by mutate_feature" do
+    backend.mutate_feature(:chat) do |current|
+      {
+        state: Rollout::FeatureState.new(name: current.name, percentage: 50),
+        event: nil,
+      }
+    end
+
+    expect(backend.fetch_feature(:chat).percentage).to eq 50.0
+    expect(backend.feature_exists?(:chat)).to be_truthy
+  end
 end

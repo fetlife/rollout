@@ -15,12 +15,16 @@ before updating your dependencies.
 ```bash
 gem install rollout
 gem install rollout-redis
+gem install rollout-active_record
 ```
 
 ```ruby
 gem "rollout"
 gem "rollout-redis"
 ```
+
+Active Record applications can use `rollout-active_record` instead of
+`rollout-redis`. See the [Active Record adapter README](rollout-active_record/README.md).
 
 ## How it works
 
@@ -232,11 +236,20 @@ bundle exec rake spec:redis
 
 Optional connection settings: `REDIS_HOST`, `REDIS_PORT`, `REDIS_DB`.
 
+Active Record adapter tests default to SQLite and recreate adapter tables.
+PostgreSQL and MySQL are also supported:
+
+```bash
+bundle exec rake spec:active_record
+ROLLOUT_AR_ADAPTER=postgresql bundle exec rake spec:active_record
+ROLLOUT_AR_ADAPTER=mysql2 bundle exec rake spec:active_record
+```
+
 ## Releasing
 
-- Update and commit the version in `lib/rollout/version.rb` or `rollout-redis/rollout-redis.gemspec`.
-- Tag the release commit with `rollout/vX.Y.Z` or `rollout-redis/vX.Y.Z`, matching the gem version.
-- Push the tag with `git push origin <tag>`. CI tests both gems, publishes the selected gem, and creates its GitHub release.
+- Update and commit the version in `lib/rollout/version.rb`, `rollout-redis/rollout-redis.gemspec`, or `rollout-active_record/rollout-active_record.gemspec`.
+- Tag the release commit with `rollout/vX.Y.Z`, `rollout-redis/vX.Y.Z`, or `rollout-active_record/vX.Y.Z`, matching the gem version.
+- Push the tag with `git push origin <tag>`. CI tests the packages, publishes the selected gem, and creates its GitHub release.
 
 Use package-prefixed tags, not `vX.Y.Z`.
 
