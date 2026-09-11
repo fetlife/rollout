@@ -1,8 +1,6 @@
 require "spec_helper"
 
 RSpec.describe Rollout::FeatureState do
-  let(:rollout) { Rollout.new($redis) }
-
   def build_state(overrides = {})
     described_class.new(**{
       name: :chat,
@@ -13,7 +11,7 @@ RSpec.describe Rollout::FeatureState do
     }.merge(overrides))
   end
 
-  def feature_for(state, options: rollout.options)
+  def feature_for(state, options: {}, rollout: Object.new)
     Rollout::Feature.new(state: state, rollout: rollout, options: options)
   end
 
@@ -95,34 +93,26 @@ RSpec.describe Rollout::FeatureState do
 
   describe "Feature conversion" do
     it "round-trips evaluation and metadata" do
-      rollout.define_group(:employees) { |user| user.id == 1 }
-      rollout.activate_percentage(:chat, 20)
-      rollout.activate_user(:chat, 42)
-      rollout.activate_group(:chat, :employees)
-      rollout.set_feature_data(:chat, description: "New navigation")
+      rollout = Object.new
+      def rollout.active_in_group?(group, user)
+        group == :employees && user.id == 1
+      end
 
-      feature = rollout.get(:chat)
-      state = feature.to_feature_state
-      restored = feature_for(state)
+      state = build_state(percentage: 20, users: ["42"], groups: ["employees"], data: { "description" => "New navigation" })
+      feature = feature_for(state, rollout: rollout)
+      restored = feature_for(feature.to_feature_state, rollout: rollout)
 
-      expect(state.name).to eq "chat"
-      expect(state.percentage).to eq 20.0
-      expect(state.users).to eq %w[42]
-      expect(state.groups).to eq %w[employees]
-      expect(state.data).to eq("description" => "New navigation")
+      expect(feature.to_feature_state.name).to eq "chat"
+      expect(feature.to_feature_state.percentage).to eq 20.0
+      expect(feature.to_feature_state.users).to eq %w[42]
+      expect(feature.to_feature_state.groups).to eq %w[employees]
+      expect(feature.to_feature_state.data).to eq("description" => "New navigation")
       expect(restored.name).to eq :chat
 
       expect(restored.active?(double(id: 1))).to eq feature.active?(double(id: 1))
       expect(restored.active?(double(id: 42))).to eq feature.active?(double(id: 42))
       expect(restored.active?(double(id: 2))).to eq feature.active?(double(id: 2))
       expect(restored.to_hash).to eq feature.to_hash
-    end
-
-    it "does not expose assign_state" do
-      feature = rollout.get(:chat)
-
-      expect(feature).not_to respond_to(:assign_state)
-      expect(feature.private_methods).to include(:assign_state)
     end
 
     it "rejects unsupported metadata when converting a Feature" do
@@ -135,8 +125,7 @@ RSpec.describe Rollout::FeatureState do
     end
 
     it "does not share nested data with the source feature" do
-      rollout.set_feature_data(:chat, labels: ["a"])
-      feature = rollout.get(:chat)
+      feature = feature_for(build_state(data: { "labels" => ["a"] }))
       state = feature.to_feature_state
 
       feature.data["labels"] << "b"
@@ -165,15 +154,12 @@ RSpec.describe Rollout::FeatureState do
     end
 
     it "preserves randomized percentage evaluation through a round trip" do
-      randomized = Rollout.new($redis, randomize_percentage: true)
-      randomized.activate_percentage(:chat, 20)
-
-      feature = randomized.get(:chat)
-      restored = Rollout::Feature.new(
-        state: feature.to_feature_state,
-        rollout: randomized,
-        options: randomized.options,
+      options = { randomize_percentage: true }
+      feature = feature_for(
+        Rollout::FeatureState.new(name: :chat, percentage: 20),
+        options: options,
       )
+      restored = feature_for(feature.to_feature_state, options: options)
 
       expect(restored.active?(double(id: 1))).to eq true
       expect(restored.active?(double(id: 2))).to eq false

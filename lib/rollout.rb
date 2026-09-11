@@ -2,7 +2,6 @@
 
 require 'rollout/feature'
 require 'rollout/logging'
-require 'rollout/redis_codec'
 require 'rollout/version'
 require 'zlib'
 require 'set'
@@ -14,14 +13,14 @@ class Rollout
 
   RAND_BASE = (2**32 - 1) / 100.0
 
-  attr_reader :options, :storage
+  attr_reader :options, :backend
 
-  def initialize(storage, opts = {})
-    @storage = storage
-    @options = opts
+  def initialize(backend:, **options)
+    @backend = backend
+    @options = options
     @groups  = { all: ->(_user) { true } }
 
-    extend(Logging) if opts[:logging]
+    extend(Logging) if options[:logging]
   end
 
   def groups
@@ -39,10 +38,7 @@ class Rollout
   end
 
   def delete(feature)
-    features = (@storage.get(features_key) || '').split(',')
-    features.delete(feature.to_s)
-    @storage.set(features_key, features.join(','))
-    @storage.del(key(feature))
+    @backend.delete_feature(feature)
 
     if respond_to?(:logging)
       logging.delete(feature)
@@ -138,9 +134,8 @@ class Rollout
   end
 
   def get(feature)
-    payload = @storage.get(key(feature))
     Feature.new(
-      state: RedisCodec.decode(feature, payload),
+      state: @backend.fetch_feature(feature),
       rollout: self,
       options: @options,
       name: feature,
@@ -162,23 +157,13 @@ class Rollout
   def multi_get(*features)
     return [] if features.empty?
 
-    feature_keys = features.map { |feature| key(feature) }
-
-    @storage
-      .mget(*feature_keys)
-      .map
-      .with_index do |payload, index|
-        Feature.new(
-          state: RedisCodec.decode(features[index], payload),
-          rollout: self,
-          options: @options,
-          name: features[index],
-        )
-      end
+    @backend.fetch_features(features).zip(features).map do |state, name|
+      Feature.new(state: state, rollout: self, options: @options, name: name)
+    end
   end
 
   def features
-    (@storage.get(features_key) || '').split(',').map(&:to_sym)
+    @backend.feature_names.map(&:to_sym)
   end
 
   def feature_states(user = nil)
@@ -196,49 +181,52 @@ class Rollout
   def clear!
     features.each do |feature|
       with_feature(feature, &:clear)
-      @storage.del(key(feature))
+      @backend.delete_feature(feature)
     end
-
-    @storage.del(features_key)
+    @backend.clear_features
   end
 
   def exists?(feature)
-    # since redis-rb v4.2, `#exists?` replaces `#exists` which now returns integer value instead of boolean
-    # https://github.com/redis/redis-rb/pull/918
-    if @storage.respond_to?(:exists?)
-      @storage.exists?(key(feature))
-    else
-      @storage.exists(key(feature))
-    end
+    @backend.feature_exists?(feature)
   end
 
   def with_feature(feature)
-    f = get(feature)
+    mutated = nil
+    before = nil
+    capture_logging = logging_capture?
+    notify = count_observers > 0
+    snapshot = notify || capture_logging
 
-    if count_observers > 0
-      before = f.deep_clone
-      yield(f)
-      save(f)
-      changed
-      notify_observers(:update, before, f)
-    else
-      yield(f)
-      save(f)
+    @backend.mutate_feature(feature) do |current_state|
+      mutated = Feature.new(
+        state: current_state,
+        rollout: self,
+        options: @options,
+        name: feature,
+      )
+      before = mutated.deep_clone if snapshot
+      yield mutated
+
+      event = capture_logging ? logging.event_for(before, mutated) : nil
+      result = { state: mutated.to_feature_state, event: event }
+      if event
+        result[:history_length] = logging.history_length
+        result[:global] = logging.global
+      end
+      result
     end
+
+    if notify
+      changed
+      notify_observers(:update, before, mutated)
+    end
+
+    mutated
   end
 
   private
 
-  def key(name)
-    "feature:#{name}"
-  end
-
-  def features_key
-    'feature:__features__'
-  end
-
-  def save(feature)
-    @storage.set(key(feature.name), RedisCodec.encode(feature.to_feature_state))
-    @storage.set(features_key, (features | [feature.name.to_sym]).join(','))
+  def logging_capture?
+    respond_to?(:logging) && logging.logging_enabled?
   end
 end

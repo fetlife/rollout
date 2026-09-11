@@ -1,13 +1,12 @@
+# frozen_string_literal: true
+
 class Rollout
   module Logging
     def self.extended(rollout)
       options = rollout.options[:logging]
       options = options.is_a?(Hash) ? options.dup : {}
-      options[:storage] ||= rollout.storage
 
-      logger = Logger.new(**options)
-
-      rollout.add_observer(logger, :log)
+      logger = Logger.new(backend: rollout.backend, **options)
       rollout.define_singleton_method(:logging) do
         logger
       end
@@ -15,12 +14,6 @@ class Rollout
 
     class Event
       attr_reader :feature, :name, :data, :context, :created_at
-
-      def self.from_raw(value, score)
-        hash = JSON.parse(value, symbolize_names: true)
-
-        new(**hash.merge(created_at: Time.at(-score.to_f / 1_000_000)))
-      end
 
       def initialize(feature: nil, name:, data:, context: {}, created_at:)
         @feature = feature
@@ -53,45 +46,37 @@ class Rollout
     end
 
     class Logger
-      def initialize(storage: nil, history_length: 50, global: false)
+      attr_reader :history_length, :global
+
+      def initialize(backend:, history_length: 50, global: false)
+        @backend = backend
         @history_length = history_length
-        @storage = storage
         @global = global
       end
 
       def updated_at(feature_name)
-        storage_key = events_storage_key(feature_name)
-        _, score = @storage.zrange(storage_key, 0, 0, with_scores: true).first
-        Time.at(-score.to_f / 1_000_000) if score
+        @backend.feature_updated_at(feature_name)
       end
 
       def last_event(feature_name)
-        storage_key = events_storage_key(feature_name)
-        value = @storage.zrange(storage_key, 0, 0, with_scores: true).first
-        Event.from_raw(*value) if value
+        events(feature_name, limit: 1).last
       end
 
-      def events(feature_name)
-        storage_key = events_storage_key(feature_name)
-        @storage
-          .zrange(storage_key, 0, -1, with_scores: true)
-          .map { |v| Event.from_raw(*v) }
-          .reverse
+      def events(feature_name, limit: nil)
+        @backend.feature_events(feature_name, limit: limit)
       end
 
-      def global_events
-        @storage
-          .zrange(global_events_storage_key, 0, -1, with_scores: true)
-          .map { |v| Event.from_raw(*v) }
-          .reverse
+      def global_events(limit: nil)
+        @backend.global_events(limit: limit)
       end
 
       def delete(feature_name)
-        storage_key = events_storage_key(feature_name)
-        @storage.del(storage_key)
+        @backend.delete_feature_events(feature_name)
       end
 
-      def update(before, after)
+      def event_for(before, after)
+        return unless logging_enabled?
+
         before_hash = before.to_hash
         before_hash.delete(:data).each do |k, v|
           before_hash["data.#{k}"] = v
@@ -116,41 +101,13 @@ class Rollout
 
         return if changed_count == 0
 
-        event = Event.new(
+        Event.new(
           feature: after.name,
           name: :update,
           data: change,
           context: current_context,
           created_at: Time.now,
         )
-
-        storage_key = events_storage_key(after.name)
-
-        @storage.zadd(storage_key, -event.timestamp, event.serialize)
-        @storage.zremrangebyrank(storage_key, @history_length, -1)
-
-        if @global
-          @storage.zadd(global_events_storage_key, -event.timestamp, event.serialize)
-          @storage.zremrangebyrank(global_events_storage_key, @history_length, -1)
-        end
-      end
-
-      def log(event, *args)
-        return unless logging_enabled?
-
-        unless respond_to?(event)
-          raise ArgumentError, "Invalid log event: #{event}"
-        end
-
-        expected_arity = method(event).arity
-        unless args.count == expected_arity
-          raise(
-            ArgumentError,
-            "Invalid number of arguments for event '#{event}': expected #{expected_arity} but got #{args.count}",
-          )
-        end
-
-        public_send(event, *args)
       end
 
       CONTEXT_THREAD_KEY = :rollout_logging_context
@@ -171,28 +128,15 @@ class Rollout
       end
 
       def without
+        previous = Thread.current[WITHOUT_THREAD_KEY]
         Thread.current[WITHOUT_THREAD_KEY] = true
         yield
       ensure
-        Thread.current[WITHOUT_THREAD_KEY] = nil
+        Thread.current[WITHOUT_THREAD_KEY] = previous
       end
 
       def logging_enabled?
         !Thread.current[WITHOUT_THREAD_KEY]
-      end
-
-      private
-
-      def global_events_storage_key
-        "feature:_global_:logging:events"
-      end
-
-      def events_storage_key(feature_name)
-        "feature:#{feature_name}:logging:events"
-      end
-
-      def current_timestamp
-        (Time.now.to_f * 1_000_000).to_i
       end
     end
   end
