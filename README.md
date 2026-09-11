@@ -236,7 +236,7 @@ Optional connection settings: `REDIS_HOST`, `REDIS_PORT`, `REDIS_DB`.
 
 - Update and commit the version in `lib/rollout/version.rb` or `rollout-redis/rollout-redis.gemspec`.
 - Tag the release commit with `rollout/vX.Y.Z` or `rollout-redis/vX.Y.Z`, matching the gem version.
-- Push the tag with `git push origin <tag>`. CI tests both gems, publishes the selected gem, and creates its GitHub release.
+- Push the tag with `git push origin <tag>`. CI publishes the selected gem and creates its GitHub release.
 
 Use package-prefixed tags, not `vX.Y.Z`.
 

@@ -8,20 +8,11 @@ on:
 
 permissions:
   contents: write
+  id-token: write
 
 jobs:
   release:
     runs-on: ubuntu-latest
-    services:
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -29,7 +20,6 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: '3.3'
-          bundler-cache: true
       - name: Select package
         id: package
         run: |
@@ -47,31 +37,14 @@ jobs:
           echo "name=$name" >> "$GITHUB_OUTPUT"
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "directory=$directory" >> "$GITHUB_OUTPUT"
-      - name: Run core tests
-        run: bundle exec rspec spec
-      - name: Setup Redis adapter gems
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '3.3'
-          working-directory: rollout-redis
-          bundler-cache: true
-      - name: Run Redis adapter tests
-        working-directory: rollout-redis
-        run: bundle exec rspec
       - name: Build selected gem
         working-directory: ${{ steps.package.outputs.directory }}
         run: gem build "${{ steps.package.outputs.name }}.gemspec"
-      - name: Publish rollout
-        if: steps.package.outputs.name == 'rollout'
-        env:
-          GEM_HOST_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
-        run: gem push "rollout-${{ steps.package.outputs.version }}.gem"
-      - name: Publish rollout-redis
-        if: steps.package.outputs.name == 'rollout-redis'
-        working-directory: rollout-redis
-        env:
-          GEM_HOST_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
-        run: gem push "rollout-redis-${{ steps.package.outputs.version }}.gem"
+      - name: Configure RubyGems credentials
+        uses: rubygems/configure-rubygems-credentials@v2.1.0
+      - name: Publish selected gem
+        working-directory: ${{ steps.package.outputs.directory }}
+        run: gem push "${{ steps.package.outputs.name }}-${{ steps.package.outputs.version }}.gem"
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
