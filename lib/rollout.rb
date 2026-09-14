@@ -13,10 +13,17 @@ class Rollout
 
   RAND_BASE = (2**32 - 1) / 100.0
 
-  attr_reader :options, :backend
+  attr_reader :options, :adapter
+  alias backend adapter
 
-  def initialize(backend:, **options)
-    @backend = backend
+  def initialize(adapter: nil, backend: nil, **options)
+    if adapter && backend
+      raise ArgumentError, "provide either adapter: or backend:, not both"
+    end
+
+    @adapter = adapter || backend
+    raise ArgumentError, "provide adapter:" unless @adapter
+
     @options = options
     @groups  = { all: ->(_user) { true } }
 
@@ -38,7 +45,7 @@ class Rollout
   end
 
   def delete(feature)
-    @backend.delete_feature(feature)
+    @adapter.delete_feature(feature)
 
     if respond_to?(:logging)
       logging.delete(feature)
@@ -135,7 +142,7 @@ class Rollout
 
   def get(feature)
     Feature.new(
-      state: @backend.fetch_feature(feature),
+      state: @adapter.fetch_feature(feature),
       rollout: self,
       options: @options,
       name: feature,
@@ -157,13 +164,13 @@ class Rollout
   def multi_get(*features)
     return [] if features.empty?
 
-    @backend.fetch_features(features).zip(features).map do |state, name|
+    @adapter.fetch_features(features).zip(features).map do |state, name|
       Feature.new(state: state, rollout: self, options: @options, name: name)
     end
   end
 
   def features
-    @backend.feature_names.map(&:to_sym)
+    @adapter.feature_names.map(&:to_sym)
   end
 
   def feature_states(user = nil)
@@ -181,13 +188,13 @@ class Rollout
   def clear!
     features.each do |feature|
       with_feature(feature, &:clear)
-      @backend.delete_feature(feature)
+      @adapter.delete_feature(feature)
     end
-    @backend.clear_features
+    @adapter.clear_features
   end
 
   def exists?(feature)
-    @backend.feature_exists?(feature)
+    @adapter.feature_exists?(feature)
   end
 
   def with_feature(feature)
@@ -197,7 +204,7 @@ class Rollout
     notify = count_observers > 0
     snapshot = notify || capture_logging
 
-    @backend.mutate_feature(feature) do |current_state|
+    @adapter.mutate_feature(feature) do |current_state|
       mutated = Feature.new(
         state: current_state,
         rollout: self,
