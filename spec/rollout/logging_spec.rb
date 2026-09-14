@@ -15,12 +15,20 @@ RSpec.describe "Rollout::Logging" do
     )
   end
 
-  let(:logger) { Rollout::Logging::Logger.new(backend: Object.new) }
+  let(:logger) { Rollout::Logging::Logger.new(adapter: Object.new) }
 
   it "does not respond to logging unless enabled" do
-    rollout = Rollout.new(backend: Object.new)
+    rollout = Rollout.new(adapter: Object.new)
 
     expect(rollout).not_to respond_to :logging
+  end
+
+  it "accepts backend: as an alias" do
+    adapter = Object.new
+    logger = Rollout::Logging::Logger.new(backend: adapter)
+
+    expect(logger.adapter).to eq adapter
+    expect(logger.backend).to eq adapter
   end
 
   it "builds an event for percentage changes" do

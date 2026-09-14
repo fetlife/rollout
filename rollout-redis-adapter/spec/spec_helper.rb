@@ -15,9 +15,10 @@ $redis = Redis.new(
   db: ENV.fetch('REDIS_DB', '7'),
 )
 
-def redis_backend
-  Rollout::Redis::Backend.new($redis)
+def redis_adapter
+  Rollout::Adapters::RedisAdapter.new($redis)
 end
+alias redis_backend redis_adapter
 
 RSpec.configure do |config|
   config.example_status_persistence_file_path = '.rspec_status'

@@ -1,7 +1,37 @@
 require "spec_helper"
 
 RSpec.describe Rollout do
-  let(:rollout) { described_class.new(backend: RolloutMemoryBackend.new) }
+  let(:rollout) { described_class.new(adapter: RolloutMemoryBackend.new) }
+
+  describe "#initialize" do
+    it "accepts adapter:" do
+      adapter = RolloutMemoryBackend.new
+      rollout = described_class.new(adapter: adapter)
+
+      expect(rollout.adapter).to eq adapter
+      expect(rollout.backend).to eq adapter
+    end
+
+    it "accepts backend: as an alias" do
+      adapter = RolloutMemoryBackend.new
+      rollout = described_class.new(backend: adapter)
+
+      expect(rollout.adapter).to eq adapter
+      expect(rollout.backend).to eq adapter
+    end
+
+    it "rejects adapter: and backend: together" do
+      expect {
+        described_class.new(adapter: Object.new, backend: Object.new)
+      }.to raise_error(ArgumentError, "provide either adapter: or backend:, not both")
+    end
+
+    it "requires adapter: or backend:" do
+      expect {
+        described_class.new
+      }.to raise_error(ArgumentError, "provide adapter:")
+    end
+  end
 
   describe "#get" do
     it "preserves the requested name type" do
