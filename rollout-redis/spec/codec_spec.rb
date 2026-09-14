@@ -61,6 +61,18 @@ RSpec.describe Rollout::Redis::Codec do
     expect(described_class.encode(state)).to eq payload
   end
 
+  it "round-trips symbol metadata as JSON strings" do
+    state = Rollout::FeatureState.new(
+      name: :chat,
+      percentage: 0,
+      data: { label: :beta, nested: [:ok] },
+    )
+    restored = described_class.decode(:chat, described_class.encode(state))
+
+    expect(restored).to eq state
+    expect(restored.data).to eq("label" => "beta", "nested" => ["ok"])
+  end
+
   describe ".decode_event" do
     it "decodes a persisted history member using the sorted-set score" do
       created_at = Time.at(1_735_689_600)

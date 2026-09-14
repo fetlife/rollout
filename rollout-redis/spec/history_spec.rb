@@ -43,6 +43,28 @@ RSpec.describe "Rollout Redis history" do
     expect(event.data).to eq(before: { "data.description": nil }, after: { "data.description": "foo" })
   end
 
+  it "does not log metadata that round-trips to the same JSON" do
+    released_at = Time.utc(2026, 1, 1)
+    rollout.set_feature_data(feature, released_at: released_at, label: "beta")
+
+    expect do
+      rollout.set_feature_data(feature, released_at: released_at, label: :beta)
+    end.not_to change { rollout.logging.events(feature).count }
+  end
+
+  it "logs canonical metadata values" do
+    released_at = Time.utc(2026, 1, 1)
+    rollout.set_feature_data(feature, released_at: released_at, label: :beta)
+
+    expect(rollout.logging.last_event(feature).data).to eq(
+      before: { "data.released_at": nil, "data.label": nil },
+      after: {
+        "data.released_at": JSON.parse({ "value" => released_at }.to_json)["value"],
+        "data.label": "beta",
+      },
+    )
+  end
+
   context "history truncation" do
     let(:logging) { { history_length: 1 } }
 

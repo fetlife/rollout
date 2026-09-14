@@ -1,6 +1,22 @@
+require "date"
+
 RSpec.shared_examples "a rollout feature backend" do
   def empty_state(name)
     Rollout::FeatureState.new(name: name, percentage: 0)
+  end
+
+  def json_metadata
+    {
+      "description" => "New navigation",
+      "updated_at" => 1,
+      "enabled" => true,
+      "ratio" => 0.5,
+      "owner" => nil,
+      "label" => :beta,
+      "released_at" => Time.utc(2026, 1, 1),
+      "day" => Date.new(2026, 1, 1),
+      "labels" => ["a", { "nested" => :ok }],
+    }
   end
 
   it "returns an empty state for a missing feature" do
@@ -30,6 +46,24 @@ RSpec.shared_examples "a rollout feature backend" do
     backend.fetch_feature(:chat).data["labels"] << "b"
 
     expect(backend.fetch_feature(:chat).data).to eq("labels" => ["a"])
+  end
+
+  it "does not share nested data with a saved state" do
+    state = Rollout::FeatureState.new(name: :chat, percentage: 0, data: { "labels" => ["a"] })
+    backend.save_feature(state)
+
+    state.data["labels"] << "b"
+
+    expect(backend.fetch_feature(:chat).data).to eq("labels" => ["a"])
+  end
+
+  it "returns the same canonical metadata after save_feature" do
+    state = Rollout::FeatureState.new(name: :chat, percentage: 0, data: json_metadata)
+    backend.save_feature(state)
+
+    expect(backend.fetch_feature(:chat)).to eq state
+    expect(state.data["label"]).to eq "beta"
+    expect(state.data["labels"]).to eq ["a", { "nested" => "ok" }]
   end
 
   it "tracks existence and names after save and delete" do
