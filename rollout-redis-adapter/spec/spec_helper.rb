@@ -7,7 +7,7 @@ SimpleCov.start
 require 'bundler/setup'
 require 'redis'
 require 'rollout'
-require 'rollout/redis'
+require 'rollout/adapters/redis'
 
 $redis = Redis.new(
   host: ENV.fetch('REDIS_HOST', '127.0.0.1'),
@@ -15,8 +15,8 @@ $redis = Redis.new(
   db: ENV.fetch('REDIS_DB', '7'),
 )
 
-def redis_backend
-  Rollout::Redis::Backend.new($redis)
+def redis_adapter
+  Rollout::Adapters::Redis.new($redis)
 end
 
 RSpec.configure do |config|
