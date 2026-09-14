@@ -14,12 +14,12 @@ before updating your dependencies.
 
 ```bash
 gem install rollout
-gem install rollout-redis
+gem install rollout-redis-adapter
 ```
 
 ```ruby
 gem "rollout"
-gem "rollout-redis"
+gem "rollout-redis-adapter"
 ```
 
 ## How it works
@@ -234,8 +234,8 @@ Optional connection settings: `REDIS_HOST`, `REDIS_PORT`, `REDIS_DB`.
 
 ## Releasing
 
-- Update and commit the version in `lib/rollout/version.rb` or `rollout-redis/rollout-redis.gemspec`.
-- Tag the release commit with `rollout/vX.Y.Z` or `rollout-redis/vX.Y.Z`, matching the gem version.
+- Update and commit the version in `lib/rollout/version.rb` or `rollout-redis-adapter/rollout-redis-adapter.gemspec`.
+- Tag the release commit with `rollout/vX.Y.Z` or `rollout-redis-adapter/vX.Y.Z`, matching the gem version.
 - Push the tag with `git push origin <tag>`. CI publishes the selected gem and creates its GitHub release.
 
 Use package-prefixed tags, not `vX.Y.Z`.

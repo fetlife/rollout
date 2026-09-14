@@ -56,10 +56,10 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby-version }}
-          working-directory: rollout-redis
+          working-directory: rollout-redis-adapter
           bundler-cache: true
       - name: Run Redis adapter tests
-        working-directory: rollout-redis
+        working-directory: rollout-redis-adapter
         run: |
           mkdir -p test_results
           bundle exec rspec --format progress --format RspecJunitFormatter --out test_results/rspec.xml
@@ -68,5 +68,5 @@ jobs:
         uses: actions/upload-artifact@v5
         with:
           name: redis-test-results-${{ matrix.ruby-version }}
-          path: rollout-redis/test_results/rspec.xml
+          path: rollout-redis-adapter/test_results/rspec.xml
           retention-days: 30
