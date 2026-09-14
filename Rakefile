@@ -9,8 +9,8 @@ end
 namespace :spec do
   desc "Run Redis adapter tests"
   task :redis do
-    gemfile = File.expand_path("rollout-redis/Gemfile", __dir__)
-    Dir.chdir("rollout-redis") do
+    gemfile = File.expand_path("rollout-redis-adapter/Gemfile", __dir__)
+    Dir.chdir("rollout-redis-adapter") do
       Bundler.with_unbundled_env do
         sh({ "BUNDLE_GEMFILE" => gemfile }, "bundle exec rspec")
       end

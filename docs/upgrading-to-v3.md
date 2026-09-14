@@ -1,7 +1,7 @@
 # Upgrading to Rollout 3
 
 Rollout 3 keeps feature evaluation in the `rollout` gem and moves Redis
-persistence to `rollout-redis`. Existing Redis keys stay in place. This is
+persistence to `rollout-redis-adapter`. Existing Redis keys stay in place. This is
 not the later Active Record / PostgreSQL migration.
 
 ## 1. Update dependencies
@@ -10,7 +10,7 @@ Add the adapter gem next to `rollout`:
 
 ```ruby
 gem "rollout", "~> 3.0"
-gem "rollout-redis", "~> 0.1"
+gem "rollout-redis-adapter", "~> 0.1"
 ```
 
 Use compatible releases of both gems. The Redis adapter is versioned

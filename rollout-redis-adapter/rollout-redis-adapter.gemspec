@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 Gem::Specification.new do |spec|
-  spec.name        = 'rollout-redis'
+  spec.name        = 'rollout-redis-adapter'
   spec.version     = '0.1.0'
   spec.authors     = ['FetLife']
   spec.email       = ['dev@fetlife.com']
