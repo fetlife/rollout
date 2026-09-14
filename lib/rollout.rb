@@ -207,8 +207,15 @@ class Rollout
       before = mutated.deep_clone if snapshot
       yield mutated
 
+      state = mutated.to_feature_state
+      mutated = Feature.new(
+        state: state,
+        rollout: self,
+        options: @options,
+        name: feature,
+      )
       event = capture_logging ? logging.event_for(before, mutated) : nil
-      result = { state: mutated.to_feature_state, event: event }
+      result = { state: state, event: event }
       if event
         result[:history_length] = logging.history_length
         result[:global] = logging.global

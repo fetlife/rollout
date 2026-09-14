@@ -93,6 +93,35 @@ RSpec.describe Rollout do
         "label" => "beta",
       )
     end
+
+    it "does not record a history event when metadata JSON is unchanged" do
+      backend = RolloutMemoryBackend.new
+      rollout = described_class.new(backend: backend, logging: true)
+      released_at = Time.utc(2026, 1, 1)
+
+      rollout.set_feature_data(:chat, released_at: released_at, label: "beta")
+      expect(backend.feature_events(:chat).count).to eq 1
+
+      rollout.set_feature_data(:chat, released_at: released_at, label: :beta)
+      expect(backend.feature_events(:chat).count).to eq 1
+    end
+
+    it "records canonical metadata in history events" do
+      backend = RolloutMemoryBackend.new
+      rollout = described_class.new(backend: backend, logging: true)
+      released_at = Time.utc(2026, 1, 1)
+
+      rollout.set_feature_data(:chat, released_at: released_at, label: :beta)
+      event = backend.feature_events(:chat).last
+
+      expect(event.data).to eq(
+        before: { "data.released_at" => nil, "data.label" => nil },
+        after: {
+          "data.released_at" => JSON.parse({ "value" => released_at }.to_json)["value"],
+          "data.label" => "beta",
+        },
+      )
+    end
   end
 
   describe "#set_feature_data" do
