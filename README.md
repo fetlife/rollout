@@ -13,13 +13,13 @@ before updating your dependencies.
 ## Install it
 
 ```bash
-gem install rollout
-gem install rollout-redis-adapter
+gem install rollout -v '~> 3.1'
+gem install rollout-redis-adapter -v '~> 0.1'
 ```
 
 ```ruby
-gem "rollout"
-gem "rollout-redis-adapter"
+gem "rollout", "~> 3.1"
+gem "rollout-redis-adapter", "~> 0.1"
 ```
 
 ## How it works
@@ -113,11 +113,12 @@ $rollout.activate_percentage(:chat, 20)
 The algorithm for determining which users get let in is this:
 
 ```ruby
-CRC32(user.id) < (2**32 - 1) / 100.0 * percentage
+Zlib.crc32(user.id.to_s) < (2**32 - 1) / 100.0 * percentage
 ```
 
-So, for 20%, users 0, 1, 10, 11, 20, 21, etc would be allowed in. Those users
-would remain in as the percentage increases.
+The result is deterministic: the same user is always in or out at a given
+percentage, and users already included remain included as the percentage
+increases.
 
 Deactivate all percentages like this:
 
@@ -173,8 +174,9 @@ failure detection code.
 You can inspect the state of your feature using:
 
 ```ruby
->> $rollout.get(:chat)
-=> #<Rollout::Feature:0x00007f99fa4ec528 @data={}, @groups=[:caretakers], @name=:chat, @options={}, @percentage=0.05, @users=["1"]>
+feature = $rollout.get(:chat)
+feature.to_hash
+# => { percentage: 5.0, groups: [:caretakers], users: ["1"], data: {} }
 ```
 
 ## Namespacing
@@ -187,17 +189,31 @@ environments by using the
 [redis-namespace](https://github.com/resque/redis-namespace) gem.
 
 ```ruby
+gem "redis-namespace"
+```
+
+```ruby
+require "redis"
+require "redis/namespace"
+require "rollout"
+require "rollout/adapters/redis"
+
 $ns = Redis::Namespace.new(Rails.env, redis: $redis)
 $rollout = Rollout.new(adapter: Rollout::Adapters::Redis.new($ns))
 $rollout.activate_group(:chat, :all)
 ```
 
-This example would use the "development:feature:chat:groups" key.
+This example stores the chat feature at `development:feature:chat` when
+`Rails.env` is `"development"`.
 
 ## Frontend / UI
 
 * [rollout-ui](https://github.com/fetlife/rollout-ui)
 * [Rollout-Dashboard](https://github.com/fiverr/rollout_dashboard/)
+
+These integrations may not yet support Rollout 3. Use a version compatible with
+the Rollout release you install. If you depend on rollout-ui, wait for a
+Rollout 3-compatible UI release before upgrading production.
 
 ## Implementations in other languages
 
@@ -216,29 +232,51 @@ This example would use the "development:feature:chat:groups" key.
 
 ## Testing
 
+Install dependencies first. Core and the Redis adapter have separate Gemfiles:
+
+```bash
+bundle install
+bundle install --gemfile=rollout-redis-adapter/Gemfile
+```
+
 Core tests do not need Redis:
 
 ```bash
 bundle exec rake spec
 ```
 
-Redis adapter tests flush database 7 before every example. Use a disposable
-instance, not a shared or production Redis.
+Redis adapter tests flush database 7 by default. Use a disposable instance,
+not a shared or production Redis. Start Redis in a separate terminal:
 
 ```bash
 docker run --rm -p 6379:6379 redis:7-alpine
+```
+
+Then run:
+
+```bash
 bundle exec rake spec:redis
 ```
 
-Optional connection settings: `REDIS_HOST`, `REDIS_PORT`, `REDIS_DB`.
+Optional connection settings: `REDIS_HOST`, `REDIS_PORT`, `REDIS_DB`. `REDIS_DB`
+overrides the default database 7 that is flushed before each example.
 
 ## Releasing
 
-- Update and commit the version in `lib/rollout/version.rb` or `rollout-redis-adapter/rollout-redis-adapter.gemspec`.
-- Tag the release commit with `rollout/vX.Y.Z` or `rollout-redis-adapter/vX.Y.Z`, matching the gem version.
-- Push the tag with `git push origin <tag>`. CI publishes the selected gem and creates its GitHub release.
+Each gem has its own version and tag.
 
-Use package-prefixed tags, not `vX.Y.Z`.
+- Configure a RubyGems trusted publisher for the gem you are releasing. Use
+  repository owner `fetlife`, repository `rollout`, workflow filename
+  `release.yml`, and no GitHub environment.
+- Update and commit the version in `lib/rollout/version.rb` or
+  `rollout-redis-adapter/rollout-redis-adapter.gemspec`.
+- Tag the release commit with `rollout/vX.Y.Z` or
+  `rollout-redis-adapter/vX.Y.Z`, matching the gem version.
+- Push the tag with `git push origin <tag>`. CI publishes the selected gem and
+  creates its GitHub release.
+
+Use package-prefixed tags, not `vX.Y.Z`. Publish core first when the adapter
+depends on a new core version.
 
 ## Copyright
 

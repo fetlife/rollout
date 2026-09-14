@@ -9,12 +9,14 @@ not the later Active Record / PostgreSQL migration.
 Add the adapter gem next to `rollout`:
 
 ```ruby
-gem "rollout", "~> 3.0"
+gem "rollout", "~> 3.1"
 gem "rollout-redis-adapter", "~> 0.1"
 ```
 
 Use compatible releases of both gems. The Redis adapter is versioned
-independently of core. If you use
+independently of core. Rollout `3.0.0` used `backend:` and
+`Rollout::Redis::Backend`; `3.1.0` uses `adapter:` and
+`Rollout::Adapters::Redis`. If you use
 [rollout-ui](https://github.com/fetlife/rollout-ui), wait for a Rollout
 3-compatible UI release before upgrading production.
 
