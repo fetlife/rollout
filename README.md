@@ -29,10 +29,10 @@ Initialize a rollout object. I assign it to a global var.
 ```ruby
 require "redis"
 require "rollout"
-require "rollout/adapters/redis_adapter"
+require "rollout/adapters/redis"
 
 $redis = Redis.new
-$rollout = Rollout.new(adapter: Rollout::Adapters::RedisAdapter.new($redis))
+$rollout = Rollout.new(adapter: Rollout::Adapters::Redis.new($redis))
 ```
 
 
@@ -133,7 +133,7 @@ users. It can come specially handy when using Rollout for split tests.
 
 ```ruby
 $rollout = Rollout.new(
-  adapter: Rollout::Adapters::RedisAdapter.new($redis),
+  adapter: Rollout::Adapters::Redis.new($redis),
   randomize_percentage: true,
 )
 ```
@@ -188,7 +188,7 @@ environments by using the
 
 ```ruby
 $ns = Redis::Namespace.new(Rails.env, redis: $redis)
-$rollout = Rollout.new(adapter: Rollout::Adapters::RedisAdapter.new($ns))
+$rollout = Rollout.new(adapter: Rollout::Adapters::Redis.new($ns))
 $rollout.activate_group(:chat, :all)
 ```
 
