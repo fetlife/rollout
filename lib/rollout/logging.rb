@@ -47,16 +47,9 @@ class Rollout
 
     class Logger
       attr_reader :history_length, :global, :adapter
-      alias backend adapter
 
-      def initialize(adapter: nil, backend: nil, history_length: 50, global: false)
-        if adapter && backend
-          raise ArgumentError, "provide either adapter: or backend:, not both"
-        end
-
-        @adapter = adapter || backend
-        raise ArgumentError, "provide adapter:" unless @adapter
-
+      def initialize(adapter:, history_length: 50, global: false)
+        @adapter = adapter
         @history_length = history_length
         @global = global
       end

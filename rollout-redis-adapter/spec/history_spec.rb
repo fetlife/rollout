@@ -1,7 +1,7 @@
 require "spec_helper"
 
 RSpec.describe "Rollout Redis history" do
-  let(:rollout) { Rollout.new(backend: redis_backend, logging: logging) }
+  let(:rollout) { Rollout.new(adapter: redis_adapter, logging: logging) }
   let(:logging) { true }
   let(:feature) { :foo }
 
@@ -166,7 +166,7 @@ RSpec.describe "Rollout Redis history" do
   it "keeps feature history when deleting without logging" do
     rollout.activate_percentage(feature, 25)
 
-    Rollout.new(backend: redis_backend).delete(feature)
+    Rollout.new(adapter: redis_adapter).delete(feature)
 
     expect(rollout.exists?(feature)).to be_falsey
     expect(rollout.logging.events(feature)).not_to eq []
@@ -181,9 +181,9 @@ RSpec.describe "Rollout Redis history" do
     expect(rollout.get(feature).percentage).to eq 25
   end
 
-  it "backend delete_feature preserves history" do
+  it "adapter delete_feature preserves history" do
     rollout.activate_percentage(feature, 25)
-    rollout.backend.delete_feature(feature)
+    rollout.adapter.delete_feature(feature)
 
     expect(rollout.exists?(feature)).to be_falsey
     expect(rollout.logging.events(feature)).not_to eq []
@@ -208,7 +208,7 @@ RSpec.describe "Rollout Redis history" do
 
   it "rejects an invalid history limit" do
     expect { rollout.logging.events(feature, limit: -1) }.to raise_error(ArgumentError)
-    expect { rollout.backend.feature_events(feature, limit: 1.5) }.to raise_error(ArgumentError)
+    expect { rollout.adapter.feature_events(feature, limit: 1.5) }.to raise_error(ArgumentError)
   end
 
   context "persisted history keys" do

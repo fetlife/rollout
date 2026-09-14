@@ -4,32 +4,11 @@ RSpec.describe Rollout do
   let(:rollout) { described_class.new(adapter: RolloutMemoryBackend.new) }
 
   describe "#initialize" do
-    it "accepts adapter:" do
+    it "exposes the adapter" do
       adapter = RolloutMemoryBackend.new
       rollout = described_class.new(adapter: adapter)
 
       expect(rollout.adapter).to eq adapter
-      expect(rollout.backend).to eq adapter
-    end
-
-    it "accepts backend: as an alias" do
-      adapter = RolloutMemoryBackend.new
-      rollout = described_class.new(backend: adapter)
-
-      expect(rollout.adapter).to eq adapter
-      expect(rollout.backend).to eq adapter
-    end
-
-    it "rejects adapter: and backend: together" do
-      expect {
-        described_class.new(adapter: Object.new, backend: Object.new)
-      }.to raise_error(ArgumentError, "provide either adapter: or backend:, not both")
-    end
-
-    it "requires adapter: or backend:" do
-      expect {
-        described_class.new
-      }.to raise_error(ArgumentError, "provide adapter:")
     end
   end
 
@@ -57,7 +36,7 @@ RSpec.describe Rollout do
     end
 
     it "persists a mutation when nested without resets the thread flag" do
-      rollout = described_class.new(backend: RolloutMemoryBackend.new, logging: true)
+      rollout = described_class.new(adapter: RolloutMemoryBackend.new, logging: true)
 
       rollout.logging.without do
         rollout.with_feature(:chat) do |feature|
@@ -101,7 +80,7 @@ RSpec.describe Rollout do
 
     it "records a history event only when logging is enabled and state changes" do
       backend = RolloutMemoryBackend.new
-      rollout = described_class.new(backend: backend, logging: true)
+      rollout = described_class.new(adapter: backend, logging: true)
 
       rollout.activate_percentage(:chat, 25)
       expect(backend.feature_events(:chat).count).to eq 1
@@ -126,7 +105,7 @@ RSpec.describe Rollout do
 
     it "does not record a history event when metadata JSON is unchanged" do
       backend = RolloutMemoryBackend.new
-      rollout = described_class.new(backend: backend, logging: true)
+      rollout = described_class.new(adapter: backend, logging: true)
       released_at = Time.utc(2026, 1, 1)
 
       rollout.set_feature_data(:chat, released_at: released_at, label: "beta")
@@ -138,7 +117,7 @@ RSpec.describe Rollout do
 
     it "records canonical metadata in history events" do
       backend = RolloutMemoryBackend.new
-      rollout = described_class.new(backend: backend, logging: true)
+      rollout = described_class.new(adapter: backend, logging: true)
       released_at = Time.utc(2026, 1, 1)
 
       rollout.set_feature_data(:chat, released_at: released_at, label: :beta)
@@ -188,17 +167,17 @@ RSpec.describe Rollout do
       backend = RolloutMemoryBackend.new
       expect(backend).to receive(:clear_features).and_call_original
 
-      described_class.new(backend: backend).clear!
+      described_class.new(adapter: backend).clear!
     end
   end
 
   describe "#delete" do
     it "does not delete feature history when logging is disabled" do
       backend = RolloutMemoryBackend.new
-      logged = described_class.new(backend: backend, logging: true)
+      logged = described_class.new(adapter: backend, logging: true)
       logged.activate_percentage(:chat, 25)
 
-      described_class.new(backend: backend).delete(:chat)
+      described_class.new(adapter: backend).delete(:chat)
 
       expect(logged.exists?(:chat)).to eq false
       expect(logged.logging.events(:chat)).not_to eq []
@@ -206,7 +185,7 @@ RSpec.describe Rollout do
 
     it "deletes feature history when logging is enabled" do
       backend = RolloutMemoryBackend.new
-      rollout = described_class.new(backend: backend, logging: true)
+      rollout = described_class.new(adapter: backend, logging: true)
       rollout.activate_percentage(:chat, 25)
       rollout.delete(:chat)
 
