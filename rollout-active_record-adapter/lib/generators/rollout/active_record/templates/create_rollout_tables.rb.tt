@@ -1,0 +1,33 @@
+# frozen_string_literal: true
+
+class CreateRolloutTables < ActiveRecord::Migration[<%= ActiveRecord::Migration.current_version %>]
+  def change
+    create_table :rollout_features do |t|
+      t.string :name, null: false
+      t.float :percentage, null: false, default: 0.0
+      t.text :users, null: false
+      t.text :groups, null: false
+      t.text :data, null: false
+      t.timestamps
+    end
+
+    add_index :rollout_features, :name, unique: true
+
+    create_table :rollout_events do |t|
+      t.string :feature_name, null: false
+      t.string :event_name, null: false
+      t.text :data, null: false
+      t.text :context, null: false
+      t.boolean :feature_visible, null: false, default: true
+      t.boolean :global_visible, null: false, default: true
+      t.datetime :occurred_at, null: false, precision: 6
+    end
+
+    add_index :rollout_events,
+      [:feature_name, :feature_visible, :occurred_at],
+      name: "index_rollout_events_for_feature_history"
+    add_index :rollout_events,
+      [:global_visible, :occurred_at],
+      name: "index_rollout_events_for_global_history"
+  end
+end
