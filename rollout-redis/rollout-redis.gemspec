@@ -11,7 +11,7 @@ Gem::Specification.new do |spec|
   spec.license     = 'MIT'
 
   spec.files = Dir.chdir(__dir__) do
-    Dir['lib/**/*.rb']
+    Dir['lib/**/*.rb', 'LICENSE']
   end
   spec.require_paths = ['lib']
 
