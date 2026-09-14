@@ -9,12 +9,14 @@ not the later Active Record / PostgreSQL migration.
 Add the adapter gem next to `rollout`:
 
 ```ruby
-gem "rollout", "~> 3.0"
+gem "rollout", "~> 3.1"
 gem "rollout-redis-adapter", "~> 0.1"
 ```
 
 Use compatible releases of both gems. The Redis adapter is versioned
-independently of core. If you use
+independently of core. Rollout `3.0.0` used `backend:` and
+`Rollout::Redis::Backend`; `3.1.0` uses `adapter:` and
+`Rollout::Adapters::Redis`. If you use
 [rollout-ui](https://github.com/fetlife/rollout-ui), wait for a Rollout
 3-compatible UI release before upgrading production.
 
@@ -37,11 +39,11 @@ $rollout = Rollout.new(
 # After
 require "redis"
 require "rollout"
-require "rollout/redis"
+require "rollout/adapters/redis"
 
 $redis = Redis.new
 $rollout = Rollout.new(
-  backend: Rollout::Redis::Backend.new($redis),
+  adapter: Rollout::Adapters::Redis.new($redis),
   randomize_percentage: true,
   logging: { history_length: 100, global: true },
 )
@@ -55,15 +57,15 @@ consoles.
 
 ```ruby
 $ns = Redis::Namespace.new(Rails.env, redis: $redis)
-$rollout = Rollout.new(backend: Rollout::Redis::Backend.new($ns))
+$rollout = Rollout.new(adapter: Rollout::Adapters::Redis.new($ns))
 ```
 
 ## 3. Breaking changes
 
 | Area | Breaking change | Required action |
 | --- | --- | --- |
-| Storage configuration | `Rollout.new(redis, options)` now requires `backend:`. | Wrap the existing client in `Rollout::Redis::Backend.new(redis)` and pass options as keywords. |
-| Storage access | `rollout.storage` is removed. `rollout.backend` returns an adapter, not the Redis client. | Keep your own Redis client reference if application code needs direct access. |
+| Storage configuration | `Rollout.new(redis, options)` now requires `adapter:`. | Wrap the existing client in `Rollout::Adapters::Redis.new(redis)` and pass options as keywords. |
+| Storage access | `rollout.storage` is removed. `rollout.adapter` returns an adapter, not the Redis client. | Keep your own Redis client reference if application code needs direct access. |
 | Logging storage | `logging: { storage: other_redis }` is no longer supported. The Redis backend stores features and history through the same client. | Applications using separate history storage cannot preserve that setup with the current adapter. Removing the option does not migrate existing history. |
 | Custom logging | `Logger#log` and `Logger#update` are removed. Built-in logging is no longer an observer. | Use Rollout mutations and `logging.with_context` rather than calling those methods directly. |
 | Feature construction | `Feature.new(name, rollout:, state: payload)` no longer accepts a name argument or raw Redis payload. | Prefer `rollout.get(name)`. Direct construction requires `Feature.new(state: feature_state, rollout: rollout, options: rollout.options)`. |

@@ -15,13 +15,14 @@ RSpec.describe "Rollout::Logging" do
     )
   end
 
-  let(:logger) { Rollout::Logging::Logger.new(backend: Object.new) }
+  let(:logger) { Rollout::Logging::Logger.new(adapter: Object.new) }
 
   it "does not respond to logging unless enabled" do
-    rollout = Rollout.new(backend: Object.new)
+    rollout = Rollout.new(adapter: Object.new)
 
     expect(rollout).not_to respond_to :logging
   end
+
 
   it "builds an event for percentage changes" do
     event = logger.event_for(build_feature, build_feature(percentage: 50))
@@ -78,7 +79,7 @@ RSpec.describe "Rollout::Logging" do
 
   it "forwards a history limit to the backend" do
     backend = double("backend")
-    logger = Rollout::Logging::Logger.new(backend: backend)
+    logger = Rollout::Logging::Logger.new(adapter: backend)
     events = [Object.new]
 
     expect(backend).to receive(:feature_events).with(:chat, limit: 2).and_return(events)
@@ -87,7 +88,7 @@ RSpec.describe "Rollout::Logging" do
 
   it "requests one event for last_event" do
     backend = double("backend")
-    logger = Rollout::Logging::Logger.new(backend: backend)
+    logger = Rollout::Logging::Logger.new(adapter: backend)
     event = Object.new
 
     expect(backend).to receive(:feature_events).with(:chat, limit: 1).and_return([event])
@@ -96,7 +97,7 @@ RSpec.describe "Rollout::Logging" do
 
   it "forwards a global history limit to the backend" do
     backend = double("backend")
-    logger = Rollout::Logging::Logger.new(backend: backend)
+    logger = Rollout::Logging::Logger.new(adapter: backend)
     events = [Object.new]
 
     expect(backend).to receive(:global_events).with(limit: 2).and_return(events)
@@ -105,7 +106,7 @@ RSpec.describe "Rollout::Logging" do
 
   it "delegates history deletion" do
     backend = double("backend")
-    logger = Rollout::Logging::Logger.new(backend: backend)
+    logger = Rollout::Logging::Logger.new(adapter: backend)
 
     expect(backend).to receive(:delete_feature_events).with(:chat)
     logger.delete(:chat)

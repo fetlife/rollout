@@ -6,7 +6,7 @@ class Rollout
       options = rollout.options[:logging]
       options = options.is_a?(Hash) ? options.dup : {}
 
-      logger = Logger.new(backend: rollout.backend, **options)
+      logger = Logger.new(adapter: rollout.adapter, **options)
       rollout.define_singleton_method(:logging) do
         logger
       end
@@ -46,16 +46,16 @@ class Rollout
     end
 
     class Logger
-      attr_reader :history_length, :global
+      attr_reader :history_length, :global, :adapter
 
-      def initialize(backend:, history_length: 50, global: false)
-        @backend = backend
+      def initialize(adapter:, history_length: 50, global: false)
+        @adapter = adapter
         @history_length = history_length
         @global = global
       end
 
       def updated_at(feature_name)
-        @backend.feature_updated_at(feature_name)
+        @adapter.feature_updated_at(feature_name)
       end
 
       def last_event(feature_name)
@@ -63,15 +63,15 @@ class Rollout
       end
 
       def events(feature_name, limit: nil)
-        @backend.feature_events(feature_name, limit: limit)
+        @adapter.feature_events(feature_name, limit: limit)
       end
 
       def global_events(limit: nil)
-        @backend.global_events(limit: limit)
+        @adapter.global_events(limit: limit)
       end
 
       def delete(feature_name)
-        @backend.delete_feature_events(feature_name)
+        @adapter.delete_feature_events(feature_name)
       end
 
       def event_for(before, after)
