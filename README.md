@@ -1,6 +1,9 @@
 # rollout
 
-Fast feature flags based on Redis.
+Fast feature flags.
+
+Upgrading from Rollout 2? Follow the [Rollout 3 upgrade guide](docs/upgrading-to-v3.md)
+before updating your dependencies.
 
 [![Gem Version](https://badge.fury.io/rb/rollout.svg)](https://badge.fury.io/rb/rollout)
 [![CI](https://github.com/fetlife/rollout/actions/workflows/test.yml/badge.svg)](https://github.com/fetlife/rollout/actions/workflows/test.yml)
@@ -11,6 +14,12 @@ Fast feature flags based on Redis.
 
 ```bash
 gem install rollout
+gem install rollout-redis
+```
+
+```ruby
+gem "rollout"
+gem "rollout-redis"
 ```
 
 ## How it works
@@ -18,17 +27,12 @@ gem install rollout
 Initialize a rollout object. I assign it to a global var.
 
 ```ruby
-require 'redis'
+require "redis"
+require "rollout"
+require "rollout/redis"
 
 $redis = Redis.new
-$rollout = Rollout.new($redis)
-```
-
-or even simpler
-
-```ruby
-require 'redis'
-$rollout = Rollout.new($redis) # Will use REDIS_URL env var or default redis url
+$rollout = Rollout.new(backend: Rollout::Redis::Backend.new($redis))
 ```
 
 
@@ -128,7 +132,10 @@ In some cases you might want to have a feature activated for a random set of
 users. It can come specially handy when using Rollout for split tests.
 
 ```ruby
-$rollout = Rollout.new($redis, randomize_percentage: true)
+$rollout = Rollout.new(
+  backend: Rollout::Redis::Backend.new($redis),
+  randomize_percentage: true,
+)
 ```
 
 When on `randomize_percentage` will make sure that 50% of users for feature A
@@ -181,7 +188,7 @@ environments by using the
 
 ```ruby
 $ns = Redis::Namespace.new(Rails.env, redis: $redis)
-$rollout = Rollout.new($ns)
+$rollout = Rollout.new(backend: Rollout::Redis::Backend.new($ns))
 $rollout.activate_group(:chat, :all)
 ```
 
@@ -207,13 +214,31 @@ This example would use the "development:feature:chat:groups" key.
 *   Eric Rafaloff - Maintainer - https://github.com/EricR
 
 
+## Testing
+
+Core tests do not need Redis:
+
+```bash
+bundle exec rake spec
+```
+
+Redis adapter tests flush database 7 before every example. Use a disposable
+instance, not a shared or production Redis.
+
+```bash
+docker run --rm -p 6379:6379 redis:7-alpine
+bundle exec rake spec:redis
+```
+
+Optional connection settings: `REDIS_HOST`, `REDIS_PORT`, `REDIS_DB`.
+
 ## Releasing
 
-1. Bump version: `rake version:patch` (or `minor`/`major`)
-2. Commit and tag: `git commit -am "Bump version" && git tag v0.7.3`
-3. Push: `git push origin master --tags`
+- Update and commit the version in `lib/rollout/version.rb` or `rollout-redis/rollout-redis.gemspec`.
+- Tag the release commit with `rollout/vX.Y.Z` or `rollout-redis/vX.Y.Z`, matching the gem version.
+- Push the tag with `git push origin <tag>`. CI publishes the selected gem and creates its GitHub release.
 
-The GitHub Actions workflow will automatically publish to RubyGems when tags are pushed.
+Use package-prefixed tags, not `vX.Y.Z`.
 
 ## Copyright
 

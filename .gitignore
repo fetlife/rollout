@@ -18,7 +18,9 @@ coverage
 rdoc
 pkg
 *.gem
+Gemfile.lock
 gemfiles/*.lock
+test_results
 .rspec_status
 .bundle/config
 /vendor
