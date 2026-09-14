@@ -14,16 +14,9 @@ class Rollout
   RAND_BASE = (2**32 - 1) / 100.0
 
   attr_reader :options, :adapter
-  alias backend adapter
 
-  def initialize(adapter: nil, backend: nil, **options)
-    if adapter && backend
-      raise ArgumentError, "provide either adapter: or backend:, not both"
-    end
-
-    @adapter = adapter || backend
-    raise ArgumentError, "provide adapter:" unless @adapter
-
+  def initialize(adapter:, **options)
+    @adapter = adapter
     @options = options
     @groups  = { all: ->(_user) { true } }
 
