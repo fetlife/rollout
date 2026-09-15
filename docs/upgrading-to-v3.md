@@ -2,8 +2,9 @@
 
 Rollout 3 keeps feature evaluation in the `rollout` gem and moves Redis
 persistence to `rollout-redis-adapter`. Existing Redis keys stay in place. This is
-not a storage migration onto Active Record. For the Active Record adapter,
-see [rollout-active_record-adapter/README.md](../rollout-active_record-adapter/README.md).
+not a storage migration onto Active Record. For the Active Record adapter
+and Redis cutover, see
+[rollout-active_record-adapter/README.md](../rollout-active_record-adapter/README.md).
 
 ## 1. Update dependencies
 

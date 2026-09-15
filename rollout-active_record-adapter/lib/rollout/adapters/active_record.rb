@@ -4,6 +4,7 @@ require 'active_record'
 require 'rollout'
 require 'rollout/active_record/schema'
 require 'rollout/active_record/codec'
+require 'rollout/active_record/migration'
 
 class Rollout
   module Adapters
@@ -51,6 +52,33 @@ class Rollout
 
       def clear_features
         @feature_record.delete_all
+      end
+
+      def occupied?
+        @feature_record.uncached do
+          @feature_record.exists? || @event_record.exists?
+        end
+      end
+
+      def import_features(states, history: [])
+        raise ArgumentError, "states must be an Array" unless states.is_a?(Array)
+        raise ArgumentError, "history must be an Array" unless history.is_a?(Array)
+
+        states.each do |state|
+          next if state.is_a?(::Rollout::FeatureState)
+
+          raise ArgumentError, "states must contain FeatureState objects"
+        end
+
+        @feature_record.transaction(requires_new: true) do
+          if occupied?
+            raise ArgumentError, "destination already has rollout data"
+          end
+
+          states.each { |state| persist_state(nil, state) }
+          history.each { |entry| insert_imported_event(entry) }
+          yield if block_given?
+        end
       end
 
       def mutate_feature(name)
@@ -157,6 +185,19 @@ class Rollout
           context: ::Rollout::ActiveRecord::Codec.dump(event.context),
           feature_visible: true,
           global_visible: global ? true : false,
+          occurred_at: event.created_at,
+        )
+      end
+
+      def insert_imported_event(entry)
+        event = entry.event
+        @event_record.create!(
+          feature_name: event.feature.to_s,
+          event_name: event.name.to_s,
+          data: ::Rollout::ActiveRecord::Codec.dump(event.data),
+          context: ::Rollout::ActiveRecord::Codec.dump(event.context),
+          feature_visible: !!entry.feature_visible,
+          global_visible: !!entry.global_visible,
           occurred_at: event.created_at,
         )
       end

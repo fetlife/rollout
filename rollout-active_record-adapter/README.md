@@ -104,6 +104,49 @@ including on MySQL.
 `delete_feature` removes feature state and leaves history in place.
 `clear_features` deletes remaining feature rows and leaves history in place.
 
+## Migrate from Redis
+
+This is a one-off copy into empty `rollout_features` and `rollout_events`
+tables. Feature state is copied by default. Pass `include_history: true` to
+copy retained Redis history as well. Pause feature-configuration writes for
+the cutover.
+
+```ruby
+redis = Rollout::Adapters::Redis.new($redis)
+active_record = Rollout::Adapters::ActiveRecord.new(
+  base_record_class: ApplicationRecord,
+)
+
+migration = Rollout::ActiveRecord::Migration.new(
+  source: redis,
+  destination: active_record,
+  include_history: true,
+)
+
+result = migration.dry_run
+abort result.summary unless result.success?
+
+result = migration.run
+abort result.summary unless result.success?
+```
+
+Use the same Redis client, database, and namespace the application already
+uses.
+
+1. Create the Active Record tables.
+2. Freeze feature writes (UI, jobs, consoles, scripts).
+3. Dry run, then run. Both Rollout tables must be empty.
+4. Point every process at the Active Record adapter.
+5. Smoke-test feature evaluation, then resume writes.
+
+Keep group definitions and evaluation options such as
+`randomize_percentage` and `id_user_by`. Redis remains available for
+rollback until writes resume.
+
+`export_features` reports registered keys that are missing and feature
+keys that are not in the registry. Clean those up before migrating. An
+occupied destination is left unchanged.
+
 ## Testing this gem
 
 ```bash
@@ -121,6 +164,8 @@ Optional connection settings:
 
 - PostgreSQL: `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`
 - MySQL: `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD`
+- Redis migration examples: `REDIS_HOST`, `REDIS_PORT`, `REDIS_MIGRATION_DB`.
+  Locally those examples skip when Redis is not running. CI requires Redis.
 
 From the repository root:
 
