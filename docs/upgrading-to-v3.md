@@ -39,7 +39,7 @@ $rollout = Rollout.new(
 # After
 require "redis"
 require "rollout"
-require "rollout/adapters/redis"
+require "rollout-redis-adapter"
 
 $redis = Redis.new
 $rollout = Rollout.new(
