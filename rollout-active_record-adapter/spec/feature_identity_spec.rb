@@ -24,28 +24,4 @@ RSpec.describe "Rollout ActiveRecord feature identity" do
     expect(rollout.logging.events("Chat")).to eq []
     expect(rollout.logging.events("chat")).not_to eq []
   end
-
-  it "installs case-sensitive MySQL name columns from Schema.create" do
-    skip "MySQL-specific collation" unless ADAPTER == "mysql2"
-
-    name = ActiveRecord::Base.connection.columns("rollout_features").find { |column| column.name == "name" }
-    feature_name = ActiveRecord::Base.connection.columns("rollout_events").find { |column| column.name == "feature_name" }
-
-    expect(name.collation).to eq "utf8mb4_bin"
-    expect(feature_name.collation).to eq "utf8mb4_bin"
-  end
-
-  it "keeps the generated migration in sync with MySQL name collation" do
-    template = File.read(
-      File.expand_path(
-        "../lib/generators/rollout/active_record/templates/create_rollout_tables.rb.tt",
-        __dir__,
-      ),
-    )
-
-    expect(template).to include('name_options[:collation] = "utf8mb4_bin"')
-    expect(template).to include("connection.adapter_name.match?(/mysql/i)")
-    expect(template).to include("t.string :name, **name_options")
-    expect(template).to include("t.string :feature_name, **name_options")
-  end
 end

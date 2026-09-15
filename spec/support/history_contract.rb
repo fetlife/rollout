@@ -18,6 +18,17 @@ RSpec.shared_examples "a rollout history backend" do
     expect(rollout.logging.updated_at(feature)).to_not be_nil
   end
 
+  it "does not write a history event when a double-precision percentage is unchanged" do
+    percentage = 33.333333333333336
+    rollout.activate_percentage(feature, percentage)
+
+    expect do
+      rollout.activate_percentage(feature, percentage)
+    end.not_to change { rollout.logging.events(feature).count }
+
+    expect(rollout.get(feature).percentage).to eq percentage
+  end
+
   it "persists metadata changes and actor context" do
     rollout.logging.with_context(actor: "alice") do
       rollout.with_feature(feature) do |current|

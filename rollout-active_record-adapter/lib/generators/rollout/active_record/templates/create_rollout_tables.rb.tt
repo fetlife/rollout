@@ -7,7 +7,7 @@ class CreateRolloutTables < ActiveRecord::Migration[<%= ActiveRecord::Migration.
 
     create_table :rollout_features do |t|
       t.string :name, **name_options
-      t.float :percentage, null: false, default: 0.0
+      t.float :percentage, limit: 53, null: false, default: 0.0
       t.text :users, null: false
       t.text :groups, null: false
       t.text :data, null: false
@@ -32,5 +32,8 @@ class CreateRolloutTables < ActiveRecord::Migration[<%= ActiveRecord::Migration.
     add_index :rollout_events,
       [:global_visible, :occurred_at],
       name: "index_rollout_events_for_global_history"
+    add_index :rollout_events,
+      [:feature_visible, :global_visible],
+      name: "index_rollout_events_for_hidden_cleanup"
   end
 end

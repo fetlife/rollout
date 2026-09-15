@@ -8,7 +8,7 @@ class Rollout
 
         connection.create_table(features_table) do |table|
           table.string :name, **name_options
-          table.float :percentage, null: false, default: 0.0
+          table.float :percentage, limit: 53, null: false, default: 0.0
           table.text :users, null: false
           table.text :groups, null: false
           table.text :data, null: false
@@ -34,6 +34,11 @@ class Rollout
           events_table,
           [:global_visible, :occurred_at],
           name: "index_#{events_table}_for_global_history",
+        )
+        connection.add_index(
+          events_table,
+          [:feature_visible, :global_visible],
+          name: "index_#{events_table}_for_hidden_cleanup",
         )
       end
 

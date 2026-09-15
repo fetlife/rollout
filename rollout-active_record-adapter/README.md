@@ -93,8 +93,10 @@ Observers run when the adapter returns, which may be before the outer
 transaction commits.
 
 Existing feature rows are locked for update. Concurrent first writes of the
-same feature can raise a uniqueness error. The adapter does not retry
-conflicts.
+same feature can raise a uniqueness error. Concurrent writes can also
+temporarily exceed the configured global history length until a later
+mutation with global logging enabled prunes the excess. The adapter does
+not retry conflicts.
 
 Feature names are case-sensitive, including on MySQL.
 
