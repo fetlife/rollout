@@ -1,7 +1,11 @@
 require "spec_helper"
-
+require_relative "../../spec/support/rollout_backend_integration"
 
 RSpec.describe "Rollout" do
+  it_behaves_like "a rollout backend integration" do
+    let(:backend) { redis_adapter }
+  end
+
   let(:rollout) { Rollout.new(adapter: redis_adapter) }
 
   describe "when a group is activated" do
@@ -747,21 +751,6 @@ RSpec.describe "Rollout" do
   end
 
   describe "mutation semantics" do
-    it "saves multiple with_feature edits together" do
-      rollout.with_feature(:chat) do |feature|
-        feature.percentage = 25.0
-        feature.groups = [:employees]
-        feature.users = ["123"]
-        feature.data.update(description: "New navigation")
-      end
-
-      feature = rollout.get(:chat)
-      expect(feature.percentage).to eq 25.0
-      expect(feature.groups).to eq [:employees]
-      expect(feature.users).to eq %w[123]
-      expect(feature.data).to eq("description" => "New navigation")
-    end
-
     it "does not save when the with_feature block raises" do
       expect do
         rollout.with_feature(:chat) do |feature|
@@ -774,46 +763,11 @@ RSpec.describe "Rollout" do
       expect(rollout.exists?(:chat)).to eq false
     end
 
-    it "clears users, groups, percentage, and data on deactivate" do
+    it "writes a deactivated redis payload" do
       rollout.activate_user(:chat, 42)
-      rollout.activate_group(:chat, :employees)
-      rollout.activate_percentage(:chat, 50)
-      rollout.set_feature_data(:chat, description: "foo")
-
       rollout.deactivate(:chat)
 
-      expect(rollout.features).to eq [:chat]
-      expect(rollout.get(:chat).to_hash).to eq(
-        percentage: 0,
-        users: [],
-        groups: [],
-        data: {},
-      )
       expect($redis.get("feature:chat")).to eq("0.0|||{}")
-    end
-
-    it "keeps users, groups, and data on deactivate_percentage" do
-      rollout.activate_user(:chat, 42)
-      rollout.activate_group(:chat, :employees)
-      rollout.activate_percentage(:chat, 50)
-      rollout.set_feature_data(:chat, description: "foo")
-
-      rollout.deactivate_percentage(:chat)
-
-      expect(rollout.get(:chat).percentage).to eq 0
-      expect(rollout.get(:chat).users).to eq %w[42]
-      expect(rollout.get(:chat).groups).to eq [:employees]
-      expect(rollout.get(:chat).data).to eq("description" => "foo")
-    end
-
-    it "removes the feature on delete and leaves a missing feature inactive" do
-      rollout.activate(:chat)
-      rollout.delete(:chat)
-
-      expect(rollout.features).to eq []
-      expect(rollout.exists?(:chat)).to eq false
-      expect(rollout.get(:chat).percentage).to eq 0
-      expect(rollout.active?(:chat)).to eq false
     end
   end
 

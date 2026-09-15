@@ -5,6 +5,7 @@ on:
     tags:
       - 'rollout/v*'
       - 'rollout-redis-adapter/v*'
+      - 'rollout-active_record-adapter/v*'
 
 permissions:
   contents: write
@@ -32,6 +33,7 @@ jobs:
           case "$GITHUB_REF_NAME" in
             rollout/v*) name=rollout; directory=. ;;
             rollout-redis-adapter/v*) name=rollout-redis-adapter; directory=rollout-redis-adapter ;;
+            rollout-active_record-adapter/v*) name=rollout-active_record-adapter; directory=rollout-active_record-adapter ;;
             *) echo "Unexpected tag $GITHUB_REF_NAME" >&2; exit 1 ;;
           esac
           version="${GITHUB_REF_NAME##*/v}"

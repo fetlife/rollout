@@ -38,6 +38,13 @@ RSpec.shared_examples "a rollout feature backend" do
     expect(backend.fetch_features([])).to eq []
   end
 
+  it "round-trips a double-precision percentage" do
+    percentage = 33.333333333333336
+    backend.save_feature(Rollout::FeatureState.new(name: :chat, percentage: percentage))
+
+    expect(backend.fetch_feature(:chat).percentage).to eq percentage
+  end
+
   it "does not share nested data with a fetched state" do
     backend.save_feature(
       Rollout::FeatureState.new(name: :chat, percentage: 0, data: { "labels" => ["a"] }),
