@@ -112,9 +112,6 @@ copy retained Redis history as well. Pause feature-configuration writes for
 the cutover.
 
 ```ruby
-require "rollout/adapters/redis"
-require "rollout/adapters/active_record"
-
 redis = Rollout::Adapters::Redis.new($redis)
 active_record = Rollout::Adapters::ActiveRecord.new(
   base_record_class: ApplicationRecord,
