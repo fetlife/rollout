@@ -133,4 +133,43 @@ RSpec.describe "Redis to Active Record migration" do
     expect(copied.logging.events(:legacy).map { |event| event.data[:after][:percentage] }).to eq [50]
     expect(copied.exists?(:legacy)).to eq false
   end
+
+  it "preserves Redis history order for equal timestamps" do
+    created_at = Time.at(1_700_000_000)
+    [
+      ["chat", 10],
+      ["chat", 20],
+      ["signup", 30],
+    ].each do |feature, percentage|
+      source.save_feature(Rollout::FeatureState.new(name: feature, percentage: percentage))
+      source.record_event(
+        Rollout::Logging::Event.new(
+          feature: feature,
+          name: "update",
+          data: { after: { percentage: percentage } },
+          context: {},
+          created_at: created_at,
+        ),
+        history_length: 10,
+        global: true,
+      )
+    end
+
+    redis_chat = source.feature_events("chat")
+    redis_signup = source.feature_events("signup")
+    redis_global = source.global_events
+
+    result = Rollout::ActiveRecord::Migration.new(
+      source: source,
+      destination: destination,
+      include_history: true,
+    ).run
+
+    expect(result).to be_success
+    expect(destination.feature_events("chat").map(&:data)).to eq redis_chat.map(&:data)
+    expect(destination.feature_events("signup").map(&:data)).to eq redis_signup.map(&:data)
+    expect(destination.global_events.map(&:data)).to eq redis_global.map(&:data)
+    expect(destination.feature_events("chat", limit: 1).map(&:data)).to eq redis_chat.last(1).map(&:data)
+    expect(destination.global_events(limit: 1).map(&:data)).to eq redis_global.last(1).map(&:data)
+  end
 end

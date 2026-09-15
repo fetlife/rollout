@@ -141,23 +141,26 @@ class Rollout
             next if name.nil? || name == '_global_'
 
             zrange_pairs(key).each do |member, score|
-              feature_members << [name, member, score]
+              feature_members << [member, score]
             end
           end
         end
 
         seen = {}
-        entries = []
-        feature_members.each do |_name, member, score|
+        rows = []
+        feature_members.each do |member, score|
           seen[member] = true
-          entries << history_entry(member, score, true, !global_members[member].nil?)
+          rows << [member, score, true, !global_members[member].nil?]
         end
         global_members.each do |member, score|
           next if seen[member]
 
-          entries << history_entry(member, score, false, true)
+          rows << [member, score, false, true]
         end
-        sort_history_entries(entries)
+
+        sort_history_rows(rows).map do |member, score, feature_visible, global_visible|
+          history_entry(member, score, feature_visible, global_visible)
+        end
       end
 
       def history_feature_name(key)
@@ -182,10 +185,8 @@ class Rollout
         )
       end
 
-      def sort_history_entries(entries)
-        entries.sort_by do |entry|
-          [entry.event.timestamp, entry.event.feature.to_s, entry.event.serialize]
-        end
+      def sort_history_rows(rows)
+        rows.sort_by { |member, score, _feature_visible, _global_visible| [score, member] }.reverse
       end
 
       def key(name)

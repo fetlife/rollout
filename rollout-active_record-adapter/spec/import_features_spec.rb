@@ -109,4 +109,15 @@ RSpec.describe Rollout::Adapters::ActiveRecord, "#import_features" do
     expect(adapter.feature_names).to eq []
     expect(adapter).not_to be_occupied
   end
+
+  it "rolls back when verification raises ActiveRecord::Rollback inside an outer transaction" do
+    ActiveRecord::Base.transaction do
+      adapter.import_features([chat_state]) do
+        raise ActiveRecord::Rollback
+      end
+    end
+
+    expect(adapter.feature_names).to eq []
+    expect(adapter).not_to be_occupied
+  end
 end

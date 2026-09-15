@@ -70,7 +70,7 @@ class Rollout
           raise ArgumentError, "states must contain FeatureState objects"
         end
 
-        @feature_record.transaction do
+        @feature_record.transaction(requires_new: true) do
           if occupied?
             raise ArgumentError, "destination already has rollout data"
           end

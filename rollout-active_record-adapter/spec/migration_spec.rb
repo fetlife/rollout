@@ -117,6 +117,23 @@ RSpec.describe Rollout::ActiveRecord::Migration do
     expect(destination).not_to be_occupied
   end
 
+  it "rolls back verification failures inside an outer transaction that later commits" do
+    allow(destination).to receive(:fetch_features).and_wrap_original do |method, *args|
+      method.call(*args).map do |state|
+        Rollout::FeatureState.new(name: state.name, percentage: state.percentage + 1)
+      end
+    end
+
+    result = nil
+    ActiveRecord::Base.transaction do
+      result = migration.run
+    end
+
+    expect(result.status).to eq :verification_failed
+    expect(destination_names).to eq []
+    expect(destination).not_to be_occupied
+  end
+
   it "imports retained history when requested" do
     event = Rollout::Logging::Event.new(
       feature: "chat",

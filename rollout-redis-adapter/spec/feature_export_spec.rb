@@ -136,8 +136,56 @@ RSpec.describe Rollout::Adapters::Redis, "#export_features" do
     backend.record_event(second, history_length: 10, global: false)
 
     result = backend.export_features(include_history: true)
+    exported = result.history.map { |entry| entry.event.data[:after][:percentage] }
 
-    expect(result.history.map { |entry| entry.event.data[:after][:percentage] }.sort).to eq [10, 20]
+    expect(exported).to eq backend.feature_events("chat").map { |event| event.data[:after][:percentage] }
+    expect(exported).to eq [20, 10]
+    expect(backend.feature_events("chat", limit: 1).map { |event| event.data[:after][:percentage] }).to eq [10]
     expect(result.history.map { |entry| entry.event.timestamp }.uniq.size).to eq 1
+  end
+
+  it "exports equal-timestamp events in Redis history order" do
+    created_at = Time.at(1_700_000_000)
+    [
+      ["chat", 10],
+      ["chat", 20],
+      ["signup", 30],
+    ].each do |feature, percentage|
+      backend.record_event(
+        Rollout::Logging::Event.new(
+          feature: feature,
+          name: "update",
+          data: { after: { percentage: percentage } },
+          context: {},
+          created_at: created_at,
+        ),
+        history_length: 10,
+        global: true,
+      )
+    end
+
+    result = backend.export_features(include_history: true)
+    percentages = lambda do |events|
+      events.map { |event| [event.feature.to_s, event.data[:after][:percentage]] }
+    end
+    exported = lambda do |entries|
+      percentages.call(entries.map(&:event))
+    end
+
+    expect(exported.call(result.history.select { |entry| entry.event.feature.to_s == "chat" })).to eq(
+      percentages.call(backend.feature_events("chat")),
+    )
+    expect(exported.call(result.history.select { |entry| entry.event.feature.to_s == "signup" })).to eq(
+      percentages.call(backend.feature_events("signup")),
+    )
+    expect(exported.call(result.history.select(&:global_visible))).to eq(
+      percentages.call(backend.global_events),
+    )
+    expect(percentages.call(backend.feature_events("chat", limit: 1))).to eq(
+      percentages.call(backend.feature_events("chat").last(1)),
+    )
+    expect(percentages.call(backend.global_events(limit: 1))).to eq(
+      percentages.call(backend.global_events.last(1)),
+    )
   end
 end
