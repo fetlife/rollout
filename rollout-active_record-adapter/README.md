@@ -31,11 +31,9 @@ bin/rails generate rollout:active_record:install --database=web
 ```
 
 The generator copies a migration into the host application. It does not run
-migrations.
+migrations. Bundler loads the gem; no extra `require` is needed.
 
 ### Standalone Active Record
-
-Create the tables with the same schema the generator installs:
 
 ```ruby
 require "rollout-active_record-adapter"
@@ -45,10 +43,9 @@ Rollout::ActiveRecord::Schema.create(ActiveRecord::Base.connection)
 
 ## Initialize
 
-```ruby
-require "rollout"
-require "rollout-active_record-adapter"
+### Rails
 
+```ruby
 adapter = Rollout::Adapters::ActiveRecord.new(
   base_record_class: ApplicationRecord,
 )
@@ -60,6 +57,15 @@ $rollout = Rollout.new(
     global: true,
   },
 )
+```
+
+### Standalone
+
+```ruby
+require "rollout-active_record-adapter"
+
+adapter = Rollout::Adapters::ActiveRecord.new
+$rollout = Rollout.new(adapter: adapter)
 ```
 
 Standalone applications can omit `base_record_class`; the adapter defaults to
@@ -92,13 +98,8 @@ A successful mutation still commits only if the outer transaction commits.
 Observers run when the adapter returns, which may be before the outer
 transaction commits.
 
-Existing feature rows are locked for update. Concurrent first writes of the
-same feature can raise a uniqueness error. Concurrent writes can also
-temporarily exceed the configured global history length until a later
-mutation with global logging enabled prunes the excess. The adapter does
-not retry conflicts.
-
-Feature names are case-sensitive, including on MySQL.
+Existing feature rows are locked for update. Feature names are case-sensitive,
+including on MySQL.
 
 `delete_feature` removes feature state and leaves history in place.
 `clear_features` deletes remaining feature rows and leaves history in place.
