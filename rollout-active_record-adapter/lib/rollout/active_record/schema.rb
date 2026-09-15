@@ -5,13 +5,14 @@ class Rollout
     module Schema
       def self.create(connection, features_table: "rollout_features", events_table: "rollout_events")
         name_options = name_column_options(connection)
+        payload_options = payload_column_options(connection)
 
         connection.create_table(features_table) do |table|
           table.string :name, **name_options
           table.float :percentage, limit: 53, null: false, default: 0.0
-          table.text :users, null: false
-          table.text :groups, null: false
-          table.text :data, null: false
+          table.text :users, **payload_options
+          table.text :groups, **payload_options
+          table.text :data, **payload_options
           table.timestamps
         end
         connection.add_index(features_table, :name, unique: true)
@@ -19,8 +20,8 @@ class Rollout
         connection.create_table(events_table) do |table|
           table.string :feature_name, **name_options
           table.string :event_name, null: false
-          table.text :data, null: false
-          table.text :context, null: false
+          table.text :data, **payload_options
+          table.text :context, **payload_options
           table.boolean :feature_visible, null: false, default: true
           table.boolean :global_visible, null: false, default: true
           table.datetime :occurred_at, null: false, precision: 6
@@ -50,6 +51,12 @@ class Rollout
       def self.name_column_options(connection)
         options = { null: false }
         options[:collation] = "utf8mb4_bin" if connection.adapter_name.match?(/mysql/i)
+        options
+      end
+
+      def self.payload_column_options(connection)
+        options = { null: false }
+        options[:limit] = 16_777_215 if connection.adapter_name.match?(/mysql/i)
         options
       end
     end

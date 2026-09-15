@@ -8,6 +8,7 @@ RSpec.describe "Rollout ActiveRecord schema" do
   it "creates double-precision percentages, case-sensitive names, and a hidden-event index" do
     assert_installed_schema(connection)
     assert_percentage_round_trip
+    assert_large_payload_round_trip
   end
 
   it "installs the same schema through the generated migration" do
@@ -16,6 +17,7 @@ RSpec.describe "Rollout ActiveRecord schema" do
 
     assert_installed_schema(connection)
     assert_percentage_round_trip
+    assert_large_payload_round_trip
   ensure
     create_rollout_schema
   end
@@ -28,6 +30,12 @@ RSpec.describe "Rollout ActiveRecord schema" do
     if ADAPTER == "mysql2"
       expect(column(connection, "rollout_features", "name").collation).to eq "utf8mb4_bin"
       expect(column(connection, "rollout_events", "feature_name").collation).to eq "utf8mb4_bin"
+      %w[users groups data].each do |name|
+        expect(column(connection, "rollout_features", name).sql_type).to match(/mediumtext/i)
+      end
+      %w[data context].each do |name|
+        expect(column(connection, "rollout_events", name).sql_type).to match(/mediumtext/i)
+      end
     end
 
     expect(connection.indexes("rollout_events").map(&:columns)).to include(
@@ -40,6 +48,29 @@ RSpec.describe "Rollout ActiveRecord schema" do
     adapter.save_feature(Rollout::FeatureState.new(name: :chat, percentage: percentage))
 
     expect(adapter.fetch_feature(:chat).percentage).to eq percentage
+  end
+
+  def assert_large_payload_round_trip
+    adapter = active_record_adapter
+    blob = "x" * 70_000
+    adapter.save_feature(
+      Rollout::FeatureState.new(
+        name: :chat,
+        percentage: 1,
+        users: Array.new(8_000) { |index| "user-#{index}" },
+        data: { "blob" => blob },
+      ),
+    )
+    state = adapter.fetch_feature(:chat)
+    expect(state.users.size).to eq 8_000
+    expect(state.data["blob"].bytesize).to eq 70_000
+
+    rollout = Rollout.new(adapter: adapter, logging: true)
+    rollout.logging.with_context(note: blob) do
+      rollout.activate_percentage(:chat, 2)
+    end
+    event = rollout.logging.last_event(:chat)
+    expect(event.context[:note].bytesize).to eq 70_000
   end
 
   def column(connection, table, name)

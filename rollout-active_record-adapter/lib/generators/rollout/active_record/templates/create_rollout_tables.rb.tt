@@ -4,13 +4,15 @@ class CreateRolloutTables < ActiveRecord::Migration[<%= ActiveRecord::Migration.
   def change
     name_options = { null: false }
     name_options[:collation] = "utf8mb4_bin" if connection.adapter_name.match?(/mysql/i)
+    payload_options = { null: false }
+    payload_options[:limit] = 16_777_215 if connection.adapter_name.match?(/mysql/i)
 
     create_table :rollout_features do |t|
       t.string :name, **name_options
       t.float :percentage, limit: 53, null: false, default: 0.0
-      t.text :users, null: false
-      t.text :groups, null: false
-      t.text :data, null: false
+      t.text :users, **payload_options
+      t.text :groups, **payload_options
+      t.text :data, **payload_options
       t.timestamps
     end
 
@@ -19,8 +21,8 @@ class CreateRolloutTables < ActiveRecord::Migration[<%= ActiveRecord::Migration.
     create_table :rollout_events do |t|
       t.string :feature_name, **name_options
       t.string :event_name, null: false
-      t.text :data, null: false
-      t.text :context, null: false
+      t.text :data, **payload_options
+      t.text :context, **payload_options
       t.boolean :feature_visible, null: false, default: true
       t.boolean :global_visible, null: false, default: true
       t.datetime :occurred_at, null: false, precision: 6

@@ -38,7 +38,7 @@ migrations.
 Create the tables with the same schema the generator installs:
 
 ```ruby
-require "rollout/adapters/active_record"
+require "rollout-active_record-adapter"
 
 Rollout::ActiveRecord::Schema.create(ActiveRecord::Base.connection)
 ```
@@ -47,7 +47,7 @@ Rollout::ActiveRecord::Schema.create(ActiveRecord::Base.connection)
 
 ```ruby
 require "rollout"
-require "rollout/adapters/active_record"
+require "rollout-active_record-adapter"
 
 adapter = Rollout::Adapters::ActiveRecord.new(
   base_record_class: ApplicationRecord,
