@@ -29,7 +29,7 @@ Initialize a rollout object. I assign it to a global var.
 ```ruby
 require "redis"
 require "rollout"
-require "rollout/adapters/redis"
+require "rollout-redis-adapter"
 
 $redis = Redis.new
 $rollout = Rollout.new(adapter: Rollout::Adapters::Redis.new($redis))
@@ -196,7 +196,7 @@ gem "redis-namespace"
 require "redis"
 require "redis/namespace"
 require "rollout"
-require "rollout/adapters/redis"
+require "rollout-redis-adapter"
 
 $ns = Redis::Namespace.new(Rails.env, redis: $redis)
 $rollout = Rollout.new(adapter: Rollout::Adapters::Redis.new($ns))
