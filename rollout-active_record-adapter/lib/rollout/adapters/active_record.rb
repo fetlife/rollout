@@ -57,7 +57,7 @@ class Rollout
         rollback_error = nil
         mutation = nil
 
-        @feature_record.transaction do
+        @feature_record.transaction(requires_new: true) do
           record = locked_feature(name)
           begin
             mutation = yield ::Rollout::ActiveRecord::Codec.feature_state(name, record)
@@ -196,21 +196,15 @@ class Rollout
       end
 
       def events_from(scope, limit:)
-        stop = event_range_stop(limit)
-        return [] if stop == :empty
+        unless limit.nil?
+          raise ArgumentError, "limit must be an Integer" unless limit.is_a?(Integer)
+          raise ArgumentError, "limit must be >= 0" if limit < 0
+          return [] if limit.zero?
+        end
 
         records = scope.order(occurred_at: :desc, id: :desc)
         records = records.limit(limit) unless limit.nil?
         records.to_a.reverse.map { |record| ::Rollout::ActiveRecord::Codec.event(record) }
-      end
-
-      def event_range_stop(limit)
-        return -1 if limit.nil?
-        raise ArgumentError, "limit must be an Integer" unless limit.is_a?(Integer)
-        raise ArgumentError, "limit must be >= 0" if limit < 0
-        return :empty if limit.zero?
-
-        limit - 1
       end
 
       def validate_history_length!(history_length)

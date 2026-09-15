@@ -4,8 +4,10 @@ class Rollout
   module ActiveRecord
     module Schema
       def self.create(connection, features_table: "rollout_features", events_table: "rollout_events")
+        name_options = name_column_options(connection)
+
         connection.create_table(features_table) do |table|
-          table.string :name, null: false
+          table.string :name, **name_options
           table.float :percentage, null: false, default: 0.0
           table.text :users, null: false
           table.text :groups, null: false
@@ -15,7 +17,7 @@ class Rollout
         connection.add_index(features_table, :name, unique: true)
 
         connection.create_table(events_table) do |table|
-          table.string :feature_name, null: false
+          table.string :feature_name, **name_options
           table.string :event_name, null: false
           table.text :data, null: false
           table.text :context, null: false
@@ -38,6 +40,12 @@ class Rollout
       def self.drop(connection, features_table: "rollout_features", events_table: "rollout_events")
         connection.drop_table(events_table, if_exists: true)
         connection.drop_table(features_table, if_exists: true)
+      end
+
+      def self.name_column_options(connection)
+        options = { null: false }
+        options[:collation] = "utf8mb4_bin" if connection.adapter_name.match?(/mysql/i)
+        options
       end
     end
   end

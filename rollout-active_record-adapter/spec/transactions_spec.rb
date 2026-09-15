@@ -31,4 +31,40 @@ RSpec.describe "Rollout ActiveRecord transactions" do
 
     expect(adapter.feature_exists?(:chat)).to be false
   end
+
+  it "rolls back a failed new-feature mutation independently of an outer transaction" do
+    ActiveRecord::Base.transaction do
+      begin
+        Rollout.new(adapter: adapter, logging: { history_length: -1 }).activate_percentage(:chat, 50)
+      rescue ArgumentError
+      end
+    end
+
+    expect(adapter.feature_exists?(:chat)).to be false
+    expect(adapter.feature_events(:chat)).to eq []
+  end
+
+  it "rolls back a failed existing-feature mutation independently of an outer transaction" do
+    Rollout.new(adapter: adapter, logging: true).activate_percentage(:chat, 10)
+
+    ActiveRecord::Base.transaction do
+      begin
+        Rollout.new(adapter: adapter, logging: { history_length: -1 }).activate_percentage(:chat, 50)
+      rescue ArgumentError
+      end
+    end
+
+    expect(adapter.fetch_feature(:chat).percentage).to eq 10.0
+    expect(adapter.feature_events(:chat).map { |event| event.data[:after][:percentage] }).to eq [10]
+  end
+
+  it "rolls back a successful mutation when the outer transaction rolls back" do
+    ActiveRecord::Base.transaction do
+      Rollout.new(adapter: adapter, logging: true).activate_percentage(:chat, 50)
+      raise ActiveRecord::Rollback
+    end
+
+    expect(adapter.feature_exists?(:chat)).to be false
+    expect(adapter.feature_events(:chat)).to eq []
+  end
 end

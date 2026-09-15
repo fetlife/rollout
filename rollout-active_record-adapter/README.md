@@ -86,9 +86,17 @@ Feature mutations persist state and history in one Active Record transaction.
 If the mutation block raises, neither the feature nor its history is saved.
 `ActiveRecord::Rollback` is re-raised so observers do not run.
 
-When a mutation runs inside an open application transaction, it joins that
-transaction. Observers then run when the adapter returns, which may be before
-the outer transaction commits.
+When a mutation runs inside an open application transaction, it uses a
+savepoint (`requires_new: true`). A failed mutation rolls back independently.
+A successful mutation still commits only if the outer transaction commits.
+Observers run when the adapter returns, which may be before the outer
+transaction commits.
+
+Existing feature rows are locked for update. Concurrent first writes of the
+same feature can raise a uniqueness error. The adapter does not retry
+conflicts.
+
+Feature names are case-sensitive, including on MySQL.
 
 `delete_feature` removes feature state and leaves history in place.
 `clear_features` deletes remaining feature rows and leaves history in place.

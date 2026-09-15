@@ -2,8 +2,11 @@
 
 class CreateRolloutTables < ActiveRecord::Migration[<%= ActiveRecord::Migration.current_version %>]
   def change
+    name_options = { null: false }
+    name_options[:collation] = "utf8mb4_bin" if connection.adapter_name.match?(/mysql/i)
+
     create_table :rollout_features do |t|
-      t.string :name, null: false
+      t.string :name, **name_options
       t.float :percentage, null: false, default: 0.0
       t.text :users, null: false
       t.text :groups, null: false
@@ -14,7 +17,7 @@ class CreateRolloutTables < ActiveRecord::Migration[<%= ActiveRecord::Migration.
     add_index :rollout_features, :name, unique: true
 
     create_table :rollout_events do |t|
-      t.string :feature_name, null: false
+      t.string :feature_name, **name_options
       t.string :event_name, null: false
       t.text :data, null: false
       t.text :context, null: false
