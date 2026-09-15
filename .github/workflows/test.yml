@@ -28,7 +28,7 @@ jobs:
           bundle exec rspec spec --format progress --format RspecJunitFormatter --out test_results/rspec.xml
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: core-test-results-${{ matrix.ruby-version }}
           path: test_results/rspec.xml
@@ -65,7 +65,7 @@ jobs:
           bundle exec rspec --format progress --format RspecJunitFormatter --out test_results/rspec.xml
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: redis-test-results-${{ matrix.ruby-version }}
           path: rollout-redis-adapter/test_results/rspec.xml
