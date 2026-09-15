@@ -4,6 +4,7 @@ require 'redis'
 require 'rollout'
 require 'rollout/logging'
 require 'rollout/redis/codec'
+require 'rollout/redis/feature_export'
 
 class Rollout
   module Adapters
@@ -54,6 +55,21 @@ class Rollout
         @client.del(FEATURES_KEY)
       end
 
+      def export_features(include_history: false)
+        registered = feature_names.map(&:to_s).reject { |name| name.empty? }.uniq
+        stored = stored_feature_names
+        missing_names = (registered - stored).sort
+        unregistered_names = (stored - registered).sort
+        present = registered - missing_names
+
+        ::Rollout::Redis::FeatureExport.new(
+          states: fetch_features(present),
+          missing_names: missing_names,
+          unregistered_names: unregistered_names,
+          history: include_history ? export_history : [],
+        )
+      end
+
       def mutate_feature(name)
         mutation = yield fetch_feature(name)
         save_feature(mutation.fetch(:state))
@@ -97,6 +113,80 @@ class Rollout
       end
 
       private
+
+      def stored_feature_names
+        names = []
+        @client.scan_each(match: 'feature:*') do |raw_key|
+          key = raw_key.to_s
+          next if key == FEATURES_KEY
+          next if key.end_with?(':logging:events')
+
+          names << key.sub(/\Afeature:/, '')
+        end
+        names.uniq
+      end
+
+      def export_history
+        feature_members = []
+        global_members = {}
+
+        @client.scan_each(match: 'feature:*:logging:events') do |raw_key|
+          key = raw_key.to_s
+          if key == global_events_key
+            zrange_pairs(key).each do |member, score|
+              global_members[member] = score
+            end
+          else
+            name = history_feature_name(key)
+            next if name.nil? || name == '_global_'
+
+            zrange_pairs(key).each do |member, score|
+              feature_members << [name, member, score]
+            end
+          end
+        end
+
+        seen = {}
+        entries = []
+        feature_members.each do |_name, member, score|
+          seen[member] = true
+          entries << history_entry(member, score, true, !global_members[member].nil?)
+        end
+        global_members.each do |member, score|
+          next if seen[member]
+
+          entries << history_entry(member, score, false, true)
+        end
+        sort_history_entries(entries)
+      end
+
+      def history_feature_name(key)
+        return nil unless key.start_with?('feature:') && key.end_with?(':logging:events')
+
+        key.sub(/\Afeature:/, '').sub(/:logging:events\z/, '')
+      end
+
+      def zrange_pairs(key)
+        pairs = @client.zrange(key, 0, -1, with_scores: true)
+        return [] if pairs.nil? || pairs.empty?
+        return pairs if pairs.first.is_a?(Array)
+
+        pairs.each_slice(2).to_a
+      end
+
+      def history_entry(member, score, feature_visible, global_visible)
+        ::Rollout::Redis::FeatureExport::HistoryEntry.new(
+          event: ::Rollout::Redis::Codec.decode_event(member, score),
+          feature_visible: feature_visible,
+          global_visible: global_visible,
+        )
+      end
+
+      def sort_history_entries(entries)
+        entries.sort_by do |entry|
+          [entry.event.timestamp, entry.event.feature.to_s, entry.event.serialize]
+        end
+      end
 
       def key(name)
         "feature:#{name}"
