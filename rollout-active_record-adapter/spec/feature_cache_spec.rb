@@ -4,7 +4,7 @@ RSpec.describe Rollout::ActiveRecord::FeatureCache do
   let(:clock) { { now: 0.0 } }
 
   def build_cache(**options)
-    described_class.new(ttl: 10, clock: -> { clock[:now] }, **options)
+    described_class.new(ttl_seconds: 10, clock: -> { clock[:now] }, **options)
   end
 
   def state(name, percentage: 0)

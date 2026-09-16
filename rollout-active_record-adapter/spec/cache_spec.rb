@@ -5,10 +5,10 @@ RSpec.describe "Rollout ActiveRecord feature cache" do
   let(:adapter) { cached_adapter }
 
   def cached_adapter
-    active_record_adapter(cache_ttl: 10).tap do |current|
+    active_record_adapter(cache_ttl_seconds: 10).tap do |current|
       current.instance_variable_set(
         :@feature_cache,
-        Rollout::ActiveRecord::FeatureCache.new(ttl: 10, clock: -> { clock[:now] }),
+        Rollout::ActiveRecord::FeatureCache.new(ttl_seconds: 10, clock: -> { clock[:now] }),
       )
     end
   end

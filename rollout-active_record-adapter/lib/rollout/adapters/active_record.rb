@@ -17,14 +17,14 @@ class Rollout
         base_record_class: ::ActiveRecord::Base,
         features_table_name: "rollout_features",
         events_table_name: "rollout_events",
-        cache_ttl: nil
+        cache_ttl_seconds: nil
       )
         @base_record_class = base_record_class
         @features_table_name = features_table_name
         @events_table_name = events_table_name
         @feature_record = build_record_class(@features_table_name)
         @event_record = build_record_class(@events_table_name)
-        @feature_cache = cache_ttl.nil? ? nil : ::Rollout::ActiveRecord::FeatureCache.new(ttl: cache_ttl)
+        @feature_cache = cache_ttl_seconds.nil? ? nil : ::Rollout::ActiveRecord::FeatureCache.new(ttl_seconds: cache_ttl_seconds)
       end
 
       def fetch_feature(name)

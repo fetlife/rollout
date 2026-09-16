@@ -5,15 +5,15 @@ class Rollout
     class FeatureCache
       DEFAULT_MAX_SIZE = 4096
 
-      def initialize(ttl:, clock: nil, max_size: DEFAULT_MAX_SIZE)
-        unless ttl.is_a?(Integer) && ttl > 0
-          raise ArgumentError, "cache_ttl must be an Integer > 0"
+      def initialize(ttl_seconds:, clock: nil, max_size: DEFAULT_MAX_SIZE)
+        unless ttl_seconds.is_a?(Integer) && ttl_seconds > 0
+          raise ArgumentError, "cache_ttl_seconds must be an Integer > 0"
         end
         unless max_size.is_a?(Integer) && max_size > 0
           raise ArgumentError, "max_size must be an Integer > 0"
         end
 
-        @ttl = ttl
+        @ttl_seconds = ttl_seconds
         @max_size = max_size
         @clock = clock || -> { Process.clock_gettime(Process::CLOCK_MONOTONIC) }
         @entries = {}
@@ -74,7 +74,7 @@ class Rollout
           prune_expired_locked
           @entries.shift while @entries.size >= @max_size
         end
-        @entries[key] = { state: clone, expires_at: now + @ttl }
+        @entries[key] = { state: clone, expires_at: now + @ttl_seconds }
       end
 
       def prune_expired_locked
