@@ -5,6 +5,7 @@ require 'rollout'
 require 'rollout/active_record/schema'
 require 'rollout/active_record/codec'
 require 'rollout/active_record/migration'
+require 'rollout/active_record/feature_cache'
 
 class Rollout
   module Adapters
@@ -15,24 +16,40 @@ class Rollout
       def initialize(
         base_record_class: ::ActiveRecord::Base,
         features_table_name: "rollout_features",
-        events_table_name: "rollout_events"
+        events_table_name: "rollout_events",
+        cache_ttl_seconds: nil
       )
         @base_record_class = base_record_class
         @features_table_name = features_table_name
         @events_table_name = events_table_name
         @feature_record = build_record_class(@features_table_name)
         @event_record = build_record_class(@events_table_name)
+        @feature_cache = cache_ttl_seconds.nil? ? nil : ::Rollout::ActiveRecord::FeatureCache.new(ttl_seconds: cache_ttl_seconds)
       end
 
       def fetch_feature(name)
-        ::Rollout::ActiveRecord::Codec.feature_state(name, find_feature(name))
+        if use_feature_cache?
+          context = cache_context
+          cached = @feature_cache.read(name, context: context)
+          return cached if cached
+
+          generation = @feature_cache.generation
+          state = load_feature(name)
+          @feature_cache.fill(generation, [state], context: context)
+          return state
+        end
+
+        load_feature(name)
       end
 
       def fetch_features(names)
         return [] if names.empty?
+        return load_features(names) unless use_feature_cache?
 
-        records = @feature_record.where(name: names.map(&:to_s).uniq).index_by(&:name)
-        names.map { |name| ::Rollout::ActiveRecord::Codec.feature_state(name, records[name.to_s]) }
+        context = cache_context
+        hits, misses = partition_cached_features(names, context)
+        fill_feature_cache(hits, misses, context) unless misses.empty?
+        names.map { |name| hits[name.to_s].deep_clone }
       end
 
       def feature_names
@@ -46,15 +63,18 @@ class Rollout
       def save_feature(state)
         @feature_record.transaction do
           persist_state(locked_feature(state.name), state)
+          invalidate_features_after_commit(state.name)
         end
       end
 
       def delete_feature(name)
         @feature_record.where(name: name.to_s).delete_all
+        invalidate_features_after_commit(name)
       end
 
       def clear_features
         @feature_record.delete_all
+        invalidate_all_features_after_commit
       end
 
       def occupied?
@@ -81,6 +101,7 @@ class Rollout
           states.each { |state| persist_state(nil, state) }
           history.each { |entry| insert_imported_event(entry) }
           yield if block_given?
+          invalidate_all_features_after_commit
         end
       end
 
@@ -97,6 +118,7 @@ class Rollout
             raise
           end
           persist_mutation(record, mutation)
+          invalidate_features_after_commit(name)
         end
 
         raise rollback_error if rollback_error
@@ -135,6 +157,89 @@ class Rollout
       end
 
       private
+
+      def partition_cached_features(names, context)
+        hits = {}
+        misses = []
+        names.map(&:to_s).uniq.each do |name|
+          cached = @feature_cache.read(name, context: context)
+          if cached
+            hits[name] = cached
+          else
+            misses << name
+          end
+        end
+        [hits, misses]
+      end
+
+      def fill_feature_cache(hits, misses, context)
+        generation = @feature_cache.generation
+        load_features(misses).each do |state|
+          hits[state.name] = state
+        end
+        @feature_cache.fill(generation, misses.map { |name| hits[name] }, context: context)
+      end
+
+      def load_feature(name)
+        record = with_query_cache_bypass { find_feature(name) }
+        ::Rollout::ActiveRecord::Codec.feature_state(name, record)
+      end
+
+      def load_features(names)
+        return [] if names.empty?
+
+        unique_names = names.map(&:to_s).uniq
+        records = with_query_cache_bypass do
+          @feature_record.where(name: unique_names).index_by(&:name)
+        end
+        names.map { |name| ::Rollout::ActiveRecord::Codec.feature_state(name, records[name.to_s]) }
+      end
+
+      def with_query_cache_bypass
+        return yield unless @feature_cache
+
+        @feature_record.uncached { yield }
+      end
+
+      def use_feature_cache?
+        @feature_cache && !@feature_record.connection.transaction_open?
+      end
+
+      def cache_context
+        @feature_record.connection_pool.object_id
+      end
+
+      def invalidate_features_after_commit(*names)
+        return unless @feature_cache
+
+        context = cache_context
+        after_outer_commit { @feature_cache.delete(*names, context: context) }
+      end
+
+      def invalidate_all_features_after_commit
+        return unless @feature_cache
+
+        after_outer_commit { @feature_cache.clear }
+      end
+
+      def after_outer_commit(&block)
+        txn = outermost_open_transaction
+        if txn.nil?
+          block.call
+        elsif txn.respond_to?(:after_commit)
+          txn.after_commit(&block)
+        else
+          txn.add_record(AfterCommitCallback.new(&block))
+        end
+      end
+
+      def outermost_open_transaction
+        connection = @feature_record.connection
+        return nil unless connection.transaction_open?
+
+        stack = connection.transaction_manager.instance_variable_get(:@stack)
+        stack&.first
+      end
 
       def build_record_class(table_name)
         Class.new(@base_record_class) do
@@ -254,6 +359,26 @@ class Rollout
       def validate_history_length!(history_length)
         unless history_length.is_a?(Integer) && history_length >= 0
           raise ArgumentError, "history_length must be an Integer >= 0"
+        end
+      end
+
+      class AfterCommitCallback
+        def initialize(&block)
+          @block = block
+        end
+
+        def committed!(*)
+          @block.call
+        end
+
+        def before_committed!
+        end
+
+        def rolledback!(*)
+        end
+
+        def trigger_transactional_callbacks?
+          true
         end
       end
     end

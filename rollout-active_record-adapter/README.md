@@ -84,6 +84,25 @@ Pass an abstract record class that owns the intended connection. The adapter
 defines its own models and does not use application models for features or
 events.
 
+Caching is disabled by default (`cache_ttl_seconds: nil`). Pass
+`cache_ttl_seconds:` to keep an in-process cache of feature state, including
+missing features:
+
+```ruby
+Rollout::Adapters::ActiveRecord.new(
+  base_record_class: ApplicationRecord,
+  cache_ttl_seconds: 10,
+)
+```
+
+The cache belongs to the adapter instance and can serve many requests for as
+long as that instance lives. Separate processes and adapter instances do not
+share it. Cached entries refresh on the next read after `cache_ttl_seconds`;
+reads do not extend expiry. Mutations always use the database. Committed writes
+through the same adapter instance invalidate affected entries. Other processes
+and adapter instances see those writes after the cache TTL expires. Cache reads
+are skipped inside an open database transaction.
+
 Users, groups, metadata, and event payloads are stored as JSON-encoded text.
 
 ## Writes
