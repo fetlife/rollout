@@ -30,6 +30,25 @@ RSpec.describe "Rollout ActiveRecord feature cache" do
     count
   end
 
+  def feature_record
+    adapter.instance_variable_get(:@feature_record)
+  end
+
+  def execute_without_dirtied_query_cache(sql)
+    connection = ActiveRecord::Base.connection
+    if connection.method(:uncached).parameters.include?([:key, :dirties])
+      connection.uncached(dirties: false) { connection.execute(sql) }
+    else
+      enabled = connection.query_cache_enabled
+      connection.disable_query_cache!
+      begin
+        connection.execute(sql)
+      ensure
+        connection.enable_query_cache! if enabled
+      end
+    end
+  end
+
   it "returns cached feature state until the TTL expires" do
     save(10)
     expect(adapter.fetch_feature(:chat).percentage).to eq 10.0
@@ -262,14 +281,29 @@ RSpec.describe "Rollout ActiveRecord feature cache" do
     save(10)
 
     ActiveRecord::Base.cache do
+      expect(feature_record.find_by(name: "chat").percentage).to eq 10.0
       expect(adapter.fetch_feature(:chat).percentage).to eq 10.0
 
-      ActiveRecord::Base.uncached(dirties: false) do
-        ActiveRecord::Base.connection.execute("UPDATE rollout_features SET percentage = 90 WHERE name = 'chat'")
-      end
+      execute_without_dirtied_query_cache("UPDATE rollout_features SET percentage = 90 WHERE name = 'chat'")
+      expect(feature_record.find_by(name: "chat").percentage).to eq 10.0
 
       clock[:now] = 11.0
       expect(adapter.fetch_feature(:chat).percentage).to eq 90.0
+    end
+  end
+
+  it "does not refresh expired fetch_features entries from the Active Record query cache" do
+    save(10)
+
+    ActiveRecord::Base.cache do
+      expect(feature_record.where(name: ["chat"]).first.percentage).to eq 10.0
+      expect(adapter.fetch_features([:chat]).first.percentage).to eq 10.0
+
+      execute_without_dirtied_query_cache("UPDATE rollout_features SET percentage = 90 WHERE name = 'chat'")
+      expect(feature_record.where(name: ["chat"]).first.percentage).to eq 10.0
+
+      clock[:now] = 11.0
+      expect(adapter.fetch_features([:chat]).first.percentage).to eq 90.0
     end
   end
 end
