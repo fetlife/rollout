@@ -48,7 +48,6 @@ Rollout::ActiveRecord::Schema.create(ActiveRecord::Base.connection)
 ```ruby
 adapter = Rollout::Adapters::ActiveRecord.new(
   base_record_class: ApplicationRecord,
-  cache_ttl: 10,
 )
 
 $rollout = Rollout.new(
@@ -78,7 +77,6 @@ Rollout::Adapters::ActiveRecord.new(
   base_record_class: ApplicationRecord,
   features_table_name: "rollout_features",
   events_table_name: "rollout_events",
-  cache_ttl: 10,
 )
 ```
 
@@ -86,11 +84,20 @@ Pass an abstract record class that owns the intended connection. The adapter
 defines its own models and does not use application models for features or
 events.
 
-`cache_ttl` is optional. When set, the adapter keeps an in-process cache of
-feature state, including missing features, and refreshes an entry when it is
-read after the TTL. Mutations always use the database. Other processes see
-writes after the TTL expires, or sooner on the writing process. Cache reads
-are skipped inside an open database transaction.
+Caching is disabled by default (`cache_ttl: nil`). Pass `cache_ttl:` to keep an
+in-process cache of feature state, including missing features:
+
+```ruby
+Rollout::Adapters::ActiveRecord.new(
+  base_record_class: ApplicationRecord,
+  cache_ttl: 10,
+)
+```
+
+Cached entries refresh on the next read after the TTL. Mutations always use
+the database. Other processes see writes after the TTL expires, or sooner on
+the writing process. Cache reads are skipped inside an open database
+transaction.
 
 Users, groups, metadata, and event payloads are stored as JSON-encoded text.
 
