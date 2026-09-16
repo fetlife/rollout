@@ -28,38 +28,27 @@ class Rollout
       end
 
       def fetch_feature(name)
-        if feature_cache_enabled?
-          cached = @feature_cache.read(name)
+        if use_feature_cache?
+          context = cache_context
+          cached = @feature_cache.read(name, context: context)
           return cached if cached
+
+          generation = @feature_cache.generation
+          state = load_feature(name)
+          @feature_cache.fill(generation, [state], context: context)
+          return state
         end
 
-        state = ::Rollout::ActiveRecord::Codec.feature_state(name, find_feature(name))
-        @feature_cache.write(state) if feature_cache_enabled?
-        state
+        load_feature(name)
       end
 
       def fetch_features(names)
         return [] if names.empty?
-        return fetch_features_uncached(names) unless feature_cache_enabled?
+        return load_features(names) unless use_feature_cache?
 
-        hits = {}
-        misses = []
-        names.map(&:to_s).uniq.each do |name|
-          cached = @feature_cache.read(name)
-          if cached
-            hits[name] = cached
-          else
-            misses << name
-          end
-        end
-
-        unless misses.empty?
-          fetch_features_uncached(misses).each do |state|
-            @feature_cache.write(state)
-            hits[state.name] = state
-          end
-        end
-
+        context = cache_context
+        hits, misses = partition_cached_features(names, context)
+        fill_feature_cache(hits, misses, context) unless misses.empty?
         names.map { |name| hits[name.to_s].deep_clone }
       end
 
@@ -169,21 +158,62 @@ class Rollout
 
       private
 
-      def fetch_features_uncached(names)
+      def partition_cached_features(names, context)
+        hits = {}
+        misses = []
+        names.map(&:to_s).uniq.each do |name|
+          cached = @feature_cache.read(name, context: context)
+          if cached
+            hits[name] = cached
+          else
+            misses << name
+          end
+        end
+        [hits, misses]
+      end
+
+      def fill_feature_cache(hits, misses, context)
+        generation = @feature_cache.generation
+        load_features(misses).each do |state|
+          hits[state.name] = state
+        end
+        @feature_cache.fill(generation, misses.map { |name| hits[name] }, context: context)
+      end
+
+      def load_feature(name)
+        record = with_query_cache_bypass { find_feature(name) }
+        ::Rollout::ActiveRecord::Codec.feature_state(name, record)
+      end
+
+      def load_features(names)
         return [] if names.empty?
 
-        records = @feature_record.where(name: names.map(&:to_s).uniq).index_by(&:name)
+        unique_names = names.map(&:to_s).uniq
+        records = with_query_cache_bypass do
+          @feature_record.where(name: unique_names).index_by(&:name)
+        end
         names.map { |name| ::Rollout::ActiveRecord::Codec.feature_state(name, records[name.to_s]) }
       end
 
-      def feature_cache_enabled?
+      def with_query_cache_bypass
+        return yield unless @feature_cache
+
+        @feature_record.uncached { yield }
+      end
+
+      def use_feature_cache?
         @feature_cache && !@feature_record.connection.transaction_open?
+      end
+
+      def cache_context
+        @feature_record.connection_pool.object_id
       end
 
       def invalidate_features_after_commit(*names)
         return unless @feature_cache
 
-        after_outer_commit { @feature_cache.delete(*names) }
+        context = cache_context
+        after_outer_commit { @feature_cache.delete(*names, context: context) }
       end
 
       def invalidate_all_features_after_commit
@@ -193,22 +223,22 @@ class Rollout
       end
 
       def after_outer_commit(&block)
-        txn = root_joinable_transaction
-        if txn
-          txn.add_record(AfterCommitCallback.new(&block))
-        else
+        txn = outermost_open_transaction
+        if txn.nil?
           block.call
+        elsif txn.respond_to?(:after_commit)
+          txn.after_commit(&block)
+        else
+          txn.add_record(AfterCommitCallback.new(&block))
         end
       end
 
-      def root_joinable_transaction
-        txn = @feature_record.connection.current_transaction
-        return nil unless txn.joinable?
+      def outermost_open_transaction
+        connection = @feature_record.connection
+        return nil unless connection.transaction_open?
 
-        while txn.respond_to?(:parent) && txn.parent&.joinable?
-          txn = txn.parent
-        end
-        txn
+        stack = connection.transaction_manager.instance_variable_get(:@stack)
+        stack&.first
       end
 
       def build_record_class(table_name)

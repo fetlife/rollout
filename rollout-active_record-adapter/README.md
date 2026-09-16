@@ -94,10 +94,13 @@ Rollout::Adapters::ActiveRecord.new(
 )
 ```
 
-Cached entries refresh on the next read after the TTL. Mutations always use
-the database. Other processes see writes after the TTL expires, or sooner on
-the writing process. Cache reads are skipped inside an open database
-transaction.
+The cache belongs to the adapter instance and can serve many requests for as
+long as that instance lives. Separate processes and adapter instances do not
+share it. Cached entries refresh on the next read after the TTL; reads do not
+extend expiry. Mutations always use the database. Committed writes through the
+same adapter instance invalidate affected entries. Other processes and adapter
+instances see those writes after the TTL expires. Cache reads are skipped
+inside an open database transaction.
 
 Users, groups, metadata, and event payloads are stored as JSON-encoded text.
 
