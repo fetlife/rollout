@@ -34,19 +34,13 @@ RSpec.describe "Rollout ActiveRecord feature cache" do
     adapter.instance_variable_get(:@feature_record)
   end
 
+  def supports_undirtied_uncached?
+    ActiveRecord::Base.connection.method(:uncached).parameters.include?([:key, :dirties])
+  end
+
   def execute_without_dirtied_query_cache(sql)
     connection = ActiveRecord::Base.connection
-    if connection.method(:uncached).parameters.include?([:key, :dirties])
-      connection.uncached(dirties: false) { connection.execute(sql) }
-    else
-      enabled = connection.query_cache_enabled
-      connection.disable_query_cache!
-      begin
-        connection.execute(sql)
-      ensure
-        connection.enable_query_cache! if enabled
-      end
-    end
+    connection.uncached(dirties: false) { connection.execute(sql) }
   end
 
   it "returns cached feature state until the TTL expires" do
@@ -278,6 +272,8 @@ RSpec.describe "Rollout ActiveRecord feature cache" do
   end
 
   it "does not refresh expired entries from the Active Record query cache" do
+    skip "Active Record 7.1 clears the query cache on every write" unless supports_undirtied_uncached?
+
     save(10)
 
     ActiveRecord::Base.cache do
@@ -293,6 +289,8 @@ RSpec.describe "Rollout ActiveRecord feature cache" do
   end
 
   it "does not refresh expired fetch_features entries from the Active Record query cache" do
+    skip "Active Record 7.1 clears the query cache on every write" unless supports_undirtied_uncached?
+
     save(10)
 
     ActiveRecord::Base.cache do
