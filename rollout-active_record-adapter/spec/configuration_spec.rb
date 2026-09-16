@@ -1,6 +1,11 @@
 require "spec_helper"
 
 RSpec.describe "Rollout ActiveRecord configuration" do
+  it "rejects a non-positive cache_ttl" do
+    expect { active_record_adapter(cache_ttl: 0) }.to raise_error(ArgumentError, "cache_ttl must be an Integer > 0")
+    expect { active_record_adapter(cache_ttl: 1.5) }.to raise_error(ArgumentError, "cache_ttl must be an Integer > 0")
+  end
+
   it "uses a configured abstract base record class" do
     base = Class.new(ActiveRecord::Base)
     base.abstract_class = true

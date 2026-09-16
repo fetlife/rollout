@@ -5,6 +5,7 @@ require 'rollout'
 require 'rollout/active_record/schema'
 require 'rollout/active_record/codec'
 require 'rollout/active_record/migration'
+require 'rollout/active_record/feature_cache'
 
 class Rollout
   module Adapters
@@ -15,24 +16,51 @@ class Rollout
       def initialize(
         base_record_class: ::ActiveRecord::Base,
         features_table_name: "rollout_features",
-        events_table_name: "rollout_events"
+        events_table_name: "rollout_events",
+        cache_ttl: nil
       )
         @base_record_class = base_record_class
         @features_table_name = features_table_name
         @events_table_name = events_table_name
         @feature_record = build_record_class(@features_table_name)
         @event_record = build_record_class(@events_table_name)
+        @feature_cache = cache_ttl.nil? ? nil : ::Rollout::ActiveRecord::FeatureCache.new(ttl: cache_ttl)
       end
 
       def fetch_feature(name)
-        ::Rollout::ActiveRecord::Codec.feature_state(name, find_feature(name))
+        if feature_cache_enabled?
+          cached = @feature_cache.read(name)
+          return cached if cached
+        end
+
+        state = ::Rollout::ActiveRecord::Codec.feature_state(name, find_feature(name))
+        @feature_cache.write(state) if feature_cache_enabled?
+        state
       end
 
       def fetch_features(names)
         return [] if names.empty?
+        return fetch_features_uncached(names) unless feature_cache_enabled?
 
-        records = @feature_record.where(name: names.map(&:to_s).uniq).index_by(&:name)
-        names.map { |name| ::Rollout::ActiveRecord::Codec.feature_state(name, records[name.to_s]) }
+        hits = {}
+        misses = []
+        names.map(&:to_s).uniq.each do |name|
+          cached = @feature_cache.read(name)
+          if cached
+            hits[name] = cached
+          else
+            misses << name
+          end
+        end
+
+        unless misses.empty?
+          fetch_features_uncached(misses).each do |state|
+            @feature_cache.write(state)
+            hits[state.name] = state
+          end
+        end
+
+        names.map { |name| hits[name.to_s].deep_clone }
       end
 
       def feature_names
@@ -46,15 +74,18 @@ class Rollout
       def save_feature(state)
         @feature_record.transaction do
           persist_state(locked_feature(state.name), state)
+          invalidate_features_after_commit(state.name)
         end
       end
 
       def delete_feature(name)
         @feature_record.where(name: name.to_s).delete_all
+        invalidate_features_after_commit(name)
       end
 
       def clear_features
         @feature_record.delete_all
+        invalidate_all_features_after_commit
       end
 
       def occupied?
@@ -81,6 +112,7 @@ class Rollout
           states.each { |state| persist_state(nil, state) }
           history.each { |entry| insert_imported_event(entry) }
           yield if block_given?
+          invalidate_all_features_after_commit
         end
       end
 
@@ -97,6 +129,7 @@ class Rollout
             raise
           end
           persist_mutation(record, mutation)
+          invalidate_features_after_commit(name)
         end
 
         raise rollback_error if rollback_error
@@ -135,6 +168,48 @@ class Rollout
       end
 
       private
+
+      def fetch_features_uncached(names)
+        return [] if names.empty?
+
+        records = @feature_record.where(name: names.map(&:to_s).uniq).index_by(&:name)
+        names.map { |name| ::Rollout::ActiveRecord::Codec.feature_state(name, records[name.to_s]) }
+      end
+
+      def feature_cache_enabled?
+        @feature_cache && !@feature_record.connection.transaction_open?
+      end
+
+      def invalidate_features_after_commit(*names)
+        return unless @feature_cache
+
+        after_outer_commit { @feature_cache.delete(*names) }
+      end
+
+      def invalidate_all_features_after_commit
+        return unless @feature_cache
+
+        after_outer_commit { @feature_cache.clear }
+      end
+
+      def after_outer_commit(&block)
+        txn = root_joinable_transaction
+        if txn
+          txn.add_record(AfterCommitCallback.new(&block))
+        else
+          block.call
+        end
+      end
+
+      def root_joinable_transaction
+        txn = @feature_record.connection.current_transaction
+        return nil unless txn.joinable?
+
+        while txn.respond_to?(:parent) && txn.parent&.joinable?
+          txn = txn.parent
+        end
+        txn
+      end
 
       def build_record_class(table_name)
         Class.new(@base_record_class) do
@@ -254,6 +329,26 @@ class Rollout
       def validate_history_length!(history_length)
         unless history_length.is_a?(Integer) && history_length >= 0
           raise ArgumentError, "history_length must be an Integer >= 0"
+        end
+      end
+
+      class AfterCommitCallback
+        def initialize(&block)
+          @block = block
+        end
+
+        def committed!(*)
+          @block.call
+        end
+
+        def before_committed!
+        end
+
+        def rolledback!(*)
+        end
+
+        def trigger_transactional_callbacks?
+          true
         end
       end
     end
