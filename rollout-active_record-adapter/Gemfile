@@ -5,6 +5,7 @@ source 'https://rubygems.org'
 gemspec
 
 gem 'rollout', path: '..'
+gem 'rollout-redis-adapter', path: '../rollout-redis-adapter'
 gem 'rake'
 gem 'rspec', '~> 3.13'
 gem 'rspec_junit_formatter', '~> 0.6'

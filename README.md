@@ -24,6 +24,8 @@ gem "rollout-redis-adapter", "~> 0.1"
 
 Active Record applications can use `rollout-active_record-adapter` instead of
 `rollout-redis-adapter`. See the [Active Record adapter README](rollout-active_record-adapter/README.md).
+To copy current feature state from Redis, see
+[Migrate from Redis](rollout-active_record-adapter/README.md#migrate-from-redis).
 
 ## How it works
 

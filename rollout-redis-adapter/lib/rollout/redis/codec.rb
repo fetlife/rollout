@@ -37,7 +37,11 @@ class Rollout
       def self.decode_event(value, score)
         hash = JSON.parse(value, symbolize_names: true)
 
-        Logging::Event.new(**hash.merge(created_at: Time.at(-score.to_f / 1_000_000)))
+        Logging::Event.new(**hash.merge(created_at: time_from_score(score)))
+      end
+
+      def self.time_from_score(score)
+        Time.at(Rational(-score.to_i, 1_000_000))
       end
     end
   end

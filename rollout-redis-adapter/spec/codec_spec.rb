@@ -92,5 +92,23 @@ RSpec.describe Rollout::Redis::Codec do
       expect(event.context).to eq(actor: "lester")
       expect(event.created_at.to_i).to eq created_at.to_i
     end
+
+    it "preserves integer microseconds from the sorted-set score" do
+      value = JSON.dump(
+        feature: "chat",
+        name: "update",
+        data: { after: { percentage: 25 } },
+        context: {},
+        created_at: Time.utc(2000, 1, 1),
+      )
+
+      [100, 500].each do |usec|
+        microseconds = 1_700_000_000 * 1_000_000 + usec
+        event = described_class.decode_event(value, -microseconds.to_f)
+
+        expect(event.created_at.usec).to eq usec
+        expect((event.created_at.to_r * 1_000_000).round).to eq microseconds
+      end
+    end
   end
 end
