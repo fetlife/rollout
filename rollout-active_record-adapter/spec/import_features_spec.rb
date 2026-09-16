@@ -63,7 +63,7 @@ RSpec.describe Rollout::Adapters::ActiveRecord, "#import_features" do
 
     expect {
       adapter.import_features([chat_state])
-    }.to raise_error(ArgumentError, "destination already has rollout data")
+    }.to raise_error(Rollout::Adapters::ActiveRecord::DestinationNotEmpty, "destination already has rollout data")
 
     expect(adapter.feature_names).to eq ["existing"]
   end
@@ -77,7 +77,7 @@ RSpec.describe Rollout::Adapters::ActiveRecord, "#import_features" do
 
     expect {
       adapter.import_features([chat_state])
-    }.to raise_error(ArgumentError, "destination already has rollout data")
+    }.to raise_error(Rollout::Adapters::ActiveRecord::DestinationNotEmpty, "destination already has rollout data")
   end
 
   it "rolls back all imported rows when a write fails" do

@@ -172,4 +172,34 @@ RSpec.describe "Redis to Active Record migration" do
     expect(destination.feature_events("chat", limit: 1).map(&:data)).to eq redis_chat.last(1).map(&:data)
     expect(destination.global_events(limit: 1).map(&:data)).to eq redis_global.last(1).map(&:data)
   end
+
+  it "preserves Redis history timestamps at microsecond precision" do
+    source.save_feature(Rollout::FeatureState.new(name: :chat, percentage: 10))
+    [100, 500].each do |usec|
+      source.record_event(
+        Rollout::Logging::Event.new(
+          feature: "chat",
+          name: "update",
+          data: { after: { percentage: usec } },
+          context: {},
+          created_at: Time.at(Rational(1_700_000_000 * 1_000_000 + usec, 1_000_000)),
+        ),
+        history_length: 10,
+        global: true,
+      )
+    end
+
+    result = Rollout::ActiveRecord::Migration.new(
+      source: source,
+      destination: destination,
+      include_history: true,
+    ).run
+
+    expect(result).to be_success
+    expect(destination.feature_events("chat").map { |event| event.created_at.usec }).to eq [100, 500]
+    expect(destination.feature_events("chat").map { |event| (event.created_at.to_r * 1_000_000).round }).to eq [
+      1_700_000_000_000_100,
+      1_700_000_000_000_500,
+    ]
+  end
 end

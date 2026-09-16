@@ -9,6 +9,9 @@ require 'rollout/active_record/migration'
 class Rollout
   module Adapters
     class ActiveRecord
+      class DestinationNotEmpty < ArgumentError
+      end
+
       def initialize(
         base_record_class: ::ActiveRecord::Base,
         features_table_name: "rollout_features",
@@ -72,7 +75,7 @@ class Rollout
 
         @feature_record.transaction(requires_new: true) do
           if occupied?
-            raise ArgumentError, "destination already has rollout data"
+            raise DestinationNotEmpty, "destination already has rollout data"
           end
 
           states.each { |state| persist_state(nil, state) }

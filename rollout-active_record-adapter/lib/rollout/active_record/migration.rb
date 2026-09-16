@@ -58,7 +58,7 @@ class Rollout
           when :destination_conflict
             "Destination already has rollout data"
           when :verification_failed
-            "Imported data did not match the source"
+            verification_failed_summary
           else
             "Migration failed (#{status})"
           end
@@ -67,11 +67,22 @@ class Rollout
         private
 
         def ready_summary(prefix)
+          features = "#{feature_count} feature#{'s' unless feature_count == 1}"
           if history_count > 0
-            "#{prefix} #{feature_count} features and #{history_count} history events"
+            events = "#{history_count} history event#{'s' unless history_count == 1}"
+            "#{prefix} #{features} and #{events}"
           else
-            "#{prefix} #{feature_count} features"
+            "#{prefix} #{features}"
           end
+        end
+
+        def verification_failed_summary
+          message = "Imported data did not match the source"
+          difference = differences.first
+          return message unless difference
+
+          details = [difference.kind, difference.name, difference.field].compact.join(" ")
+          "#{message}: #{details}"
         end
       end
 
@@ -121,9 +132,7 @@ class Rollout
             failed = Result.new(status: :verification_failed, differences: differences, **counts)
             raise ::ActiveRecord::Rollback
           end
-        rescue ArgumentError => error
-          raise unless error.message == "destination already has rollout data"
-
+        rescue ::Rollout::Adapters::ActiveRecord::DestinationNotEmpty
           return Result.new(status: :destination_conflict, **counts)
         end
 
@@ -225,7 +234,7 @@ class Rollout
           name: event.name.to_s,
           data: event.data,
           context: event.context,
-          timestamp: (event.created_at.to_f * 1_000).round,
+          timestamp: (event.created_at.to_r * 1_000_000).round,
         }
       end
     end

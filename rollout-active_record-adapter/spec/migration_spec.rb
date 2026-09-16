@@ -113,6 +113,8 @@ RSpec.describe Rollout::ActiveRecord::Migration do
     result = migration.run
 
     expect(result.status).to eq :verification_failed
+    expect(result.summary).to include("Imported data did not match the source")
+    expect(result.differences).not_to be_empty
     expect(destination_names).to eq []
     expect(destination).not_to be_occupied
   end
@@ -160,10 +162,81 @@ RSpec.describe Rollout::ActiveRecord::Migration do
 
     expect(result).to be_success
     expect(result.history_count).to eq 1
-    expect(result.summary).to eq "Imported 1 features and 1 history events"
+    expect(result.summary).to eq "Imported 1 feature and 1 history event"
     imported = destination.feature_events(:chat).last
     expect(imported.data).to eq(before: { percentage: 0 }, after: { percentage: 10.5 })
     expect(imported.context).to eq(actor: "alice")
     expect(destination.global_events.map(&:feature)).to eq %w[chat]
+  end
+
+  it "preserves history timestamps at microsecond precision" do
+    history = [100, 500].map do |usec|
+      FakeHistory.new(
+        event: Rollout::Logging::Event.new(
+          feature: "chat",
+          name: "update",
+          data: { after: { percentage: usec } },
+          context: {},
+          created_at: Time.at(Rational(1_700_000_000 * 1_000_000 + usec, 1_000_000)),
+        ),
+        feature_visible: true,
+        global_visible: false,
+      )
+    end
+    history_migration = described_class.new(
+      source: FakeSource.new(FakeExport.new(states: [chat], history: history)),
+      destination: destination,
+      include_history: true,
+    )
+
+    result = history_migration.run
+
+    expect(result).to be_success
+    expect(destination.feature_events(:chat).map { |event| event.created_at.usec }).to eq [100, 500]
+    expect(destination.feature_events(:chat).map { |event| (event.created_at.to_r * 1_000_000).round }).to eq [
+      1_700_000_000_000_100,
+      1_700_000_000_000_500,
+    ]
+  end
+
+  it "rolls back features and history when history verification fails" do
+    event = Rollout::Logging::Event.new(
+      feature: "chat",
+      name: "update",
+      data: { after: { percentage: 10.5 } },
+      context: {},
+      created_at: Time.utc(2026, 1, 1, 12),
+    )
+    history_migration = described_class.new(
+      source: FakeSource.new(
+        FakeExport.new(
+          states: [chat],
+          history: [FakeHistory.new(event: event, feature_visible: true, global_visible: true)],
+        ),
+      ),
+      destination: destination,
+      include_history: true,
+    )
+    allow(destination).to receive(:feature_events).and_wrap_original do |method, *args|
+      method.call(*args).map do |imported|
+        Rollout::Logging::Event.new(
+          feature: imported.feature,
+          name: imported.name,
+          data: imported.data,
+          context: imported.context,
+          created_at: imported.created_at + 1,
+        )
+      end
+    end
+
+    result = history_migration.run
+
+    expect(result.status).to eq :verification_failed
+    expect(result.summary).to include("Imported data did not match the source")
+    expect(result.differences.first.kind).to eq :history
+    expect(destination_names).to eq []
+    expect(destination.feature_events(:chat)).to eq []
+    expect(destination.global_events).to eq []
+    expect(destination).not_to be_occupied
   end
 end

@@ -111,7 +111,12 @@ tables. Feature state is copied by default. Pass `include_history: true` to
 copy retained Redis history as well. Pause feature-configuration writes for
 the cutover.
 
+Keep both adapter gems in the bundle until the cutover is complete. Loading
+the Active Record adapter does not load the Redis adapter.
+
 ```ruby
+require "rollout/adapters/redis"
+
 redis = Rollout::Adapters::Redis.new($redis)
 active_record = Rollout::Adapters::ActiveRecord.new(
   base_record_class: ApplicationRecord,
@@ -129,6 +134,11 @@ abort result.summary unless result.success?
 result = migration.run
 abort result.summary unless result.success?
 ```
+
+`dry_run` is a preflight check: it validates the Redis export and that the
+destination tables are empty. It does not insert rows or run verification.
+If `run` fails verification, `result.summary` includes the first mismatch
+and `result.differences` lists all of them.
 
 Use the same Redis client, database, and namespace the application already
 uses.

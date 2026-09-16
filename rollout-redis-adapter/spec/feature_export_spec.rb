@@ -188,4 +188,23 @@ RSpec.describe Rollout::Adapters::Redis, "#export_features" do
       percentages.call(backend.global_events.last(1)),
     )
   end
+
+  it "does not duplicate history when SCAN yields a key twice" do
+    rollout = Rollout.new(adapter: backend, logging: { history_length: 10, global: true })
+    rollout.activate_percentage(:chat, 25)
+
+    allow($redis).to receive(:scan_each).and_wrap_original do |method, *args, **kwargs, &block|
+      method.call(*args, **kwargs) do |key|
+        block.call(key)
+        block.call(key) if key.to_s.end_with?(":logging:events")
+      end
+    end
+
+    result = backend.export_features(include_history: true)
+
+    expect(result.history.size).to eq 1
+    expect(result.history.first.feature_visible).to eq true
+    expect(result.history.first.global_visible).to eq true
+    expect(result.history.first.event.feature).to eq "chat"
+  end
 end

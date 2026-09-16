@@ -105,7 +105,7 @@ class Rollout
 
       def feature_updated_at(name)
         _, score = @client.zrange(events_key(name), 0, 0, with_scores: true).first
-        Time.at(-score.to_f / 1_000_000) if score
+        ::Rollout::Redis::Codec.time_from_score(score) if score
       end
 
       def delete_feature_events(name)
@@ -129,9 +129,13 @@ class Rollout
       def export_history
         feature_members = []
         global_members = {}
+        seen_keys = {}
 
         @client.scan_each(match: 'feature:*:logging:events') do |raw_key|
           key = raw_key.to_s
+          next if seen_keys[key]
+
+          seen_keys[key] = true
           if key == global_events_key
             zrange_pairs(key).each do |member, score|
               global_members[member] = score
