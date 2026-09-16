@@ -1,0 +1,41 @@
+# frozen_string_literal: true
+
+class CreateRolloutTables < ActiveRecord::Migration[<%= ActiveRecord::Migration.current_version %>]
+  def change
+    name_options = { null: false }
+    name_options[:collation] = "utf8mb4_bin" if connection.adapter_name.match?(/mysql/i)
+    payload_options = { null: false }
+    payload_options[:limit] = 16_777_215 if connection.adapter_name.match?(/mysql/i)
+
+    create_table :rollout_features do |t|
+      t.string :name, **name_options
+      t.float :percentage, limit: 53, null: false, default: 0.0
+      t.text :users, **payload_options
+      t.text :groups, **payload_options
+      t.text :data, **payload_options
+      t.timestamps
+    end
+
+    add_index :rollout_features, :name, unique: true
+
+    create_table :rollout_events do |t|
+      t.string :feature_name, **name_options
+      t.string :event_name, null: false
+      t.text :data, **payload_options
+      t.text :context, **payload_options
+      t.boolean :feature_visible, null: false, default: true
+      t.boolean :global_visible, null: false, default: true
+      t.datetime :occurred_at, null: false, precision: 6
+    end
+
+    add_index :rollout_events,
+      [:feature_name, :feature_visible, :occurred_at],
+      name: "index_rollout_events_for_feature_history"
+    add_index :rollout_events,
+      [:global_visible, :occurred_at],
+      name: "index_rollout_events_for_global_history"
+    add_index :rollout_events,
+      [:feature_visible, :global_visible],
+      name: "index_rollout_events_for_hidden_cleanup"
+  end
+end

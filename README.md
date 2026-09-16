@@ -22,6 +22,9 @@ gem "rollout", "~> 3.1"
 gem "rollout-redis-adapter", "~> 0.1"
 ```
 
+Active Record applications can use `rollout-active_record-adapter` instead of
+`rollout-redis-adapter`. See the [Active Record adapter README](rollout-active_record-adapter/README.md).
+
 ## How it works
 
 Initialize a rollout object. I assign it to a global var.
@@ -232,11 +235,12 @@ Rollout 3-compatible UI release before upgrading production.
 
 ## Testing
 
-Install dependencies first. Core and the Redis adapter have separate Gemfiles:
+Install dependencies first. Core and the adapter gems have separate Gemfiles:
 
 ```bash
 bundle install
 bundle install --gemfile=rollout-redis-adapter/Gemfile
+bundle install --gemfile=rollout-active_record-adapter/Gemfile
 ```
 
 Core tests do not need Redis:
@@ -261,6 +265,15 @@ bundle exec rake spec:redis
 Optional connection settings: `REDIS_HOST`, `REDIS_PORT`, `REDIS_DB`. `REDIS_DB`
 overrides the default database 7 that is flushed before each example.
 
+Active Record adapter tests default to SQLite. PostgreSQL and MySQL are also
+supported:
+
+```bash
+bundle exec rake spec:active_record
+ROLLOUT_AR_ADAPTER=postgresql bundle exec rake spec:active_record
+ROLLOUT_AR_ADAPTER=mysql2 bundle exec rake spec:active_record
+```
+
 ## Releasing
 
 Each gem has its own version and tag.
@@ -268,10 +281,12 @@ Each gem has its own version and tag.
 - Configure a RubyGems trusted publisher for the gem you are releasing. Use
   repository owner `fetlife`, repository `rollout`, workflow filename
   `release.yml`, and no GitHub environment.
-- Update and commit the version in `lib/rollout/version.rb` or
-  `rollout-redis-adapter/rollout-redis-adapter.gemspec`.
-- Tag the release commit with `rollout/vX.Y.Z` or
-  `rollout-redis-adapter/vX.Y.Z`, matching the gem version.
+- Update and commit the version in `lib/rollout/version.rb`,
+  `rollout-redis-adapter/rollout-redis-adapter.gemspec`, or
+  `rollout-active_record-adapter/rollout-active_record-adapter.gemspec`.
+- Tag the release commit with `rollout/vX.Y.Z`,
+  `rollout-redis-adapter/vX.Y.Z`, or
+  `rollout-active_record-adapter/vX.Y.Z`, matching the gem version.
 - Push the tag with `git push origin <tag>`. CI publishes the selected gem and
   creates its GitHub release.
 
