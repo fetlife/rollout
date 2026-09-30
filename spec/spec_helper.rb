@@ -78,7 +78,6 @@ class RolloutMemoryBackend
       @global_events << event
       @global_events = @global_events.last(history_length)
     end
-    existed
   end
 
   private

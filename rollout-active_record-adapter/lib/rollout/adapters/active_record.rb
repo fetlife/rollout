@@ -76,18 +76,16 @@ class Rollout
         validate_history_length!(history_length)
 
         @feature_record.transaction(requires_new: true) do
-          record = @feature_record.uncached { @feature_record.lock.find_by(name: name.to_s) }
-          record&.delete
+          existed = @feature_record.where(name: name.to_s).delete_all > 0
           invalidate_features_after_commit(name)
 
           @event_record.where(feature_name: name.to_s, feature_visible: true)
             .update_all(feature_visible: false)
-          if record
+          if existed && event
             insert_event(event, global: true, feature_visible: false)
-            prune_global_events(history_length)
-          else
-            delete_hidden_events
+            hide_excess(@event_record.where(global_visible: true), :global_visible, history_length)
           end
+          delete_hidden_events
         end
       end
 

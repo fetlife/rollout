@@ -89,6 +89,7 @@ RSpec.shared_examples "a rollout history backend" do
     expect(event.context).to eq(actor: "alice")
     expect(logged_rollout.logging.events(feature)).to eq []
     expect(logged_rollout.logging.updated_at(feature)).to be_nil
+    expect(backend.feature_names.map(&:to_s)).not_to include(feature.to_s)
   end
 
   it "does not record deletions of missing features and honors global history length" do
