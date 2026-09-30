@@ -27,6 +27,12 @@ Active Record applications can use `rollout-active_record-adapter` instead of
 To copy current feature state from Redis, see
 [Migrate from Redis](rollout-active_record-adapter/README.md#migrate-from-redis).
 
+For read-only access over an authenticated application HTTP API, use the separate
+[`rollout-cli` gem](rollout-cli/README.md). It provides the `rollout` executable
+without adding CLI dependencies to core. The [API v1 contract](rollout-cli/HTTP_API.md)
+and [companion integration work](docs/rollout-cli-integration.md) describe the
+rollout-ui endpoints and host authentication still required for end-to-end use.
+
 ## How it works
 
 Initialize a rollout object. I assign it to a global var.

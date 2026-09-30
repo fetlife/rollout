@@ -7,6 +7,16 @@ RSpec::Core::RakeTask.new(:spec) do |task|
 end
 
 namespace :spec do
+  desc "Run CLI tests"
+  task :cli do
+    gemfile = File.expand_path("rollout-cli/Gemfile", __dir__)
+    Dir.chdir("rollout-cli") do
+      Bundler.with_unbundled_env do
+        sh({ "BUNDLE_GEMFILE" => gemfile }, "bundle exec rake test")
+      end
+    end
+  end
+
   desc "Run Redis adapter tests"
   task :redis do
     gemfile = File.expand_path("rollout-redis-adapter/Gemfile", __dir__)

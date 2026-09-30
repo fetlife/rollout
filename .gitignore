@@ -24,5 +24,9 @@ test_results
 .rspec_status
 .bundle/config
 /vendor
+**/vendor
 
 ## PROJECT::SPECIFIC
+
+# graft's local graph cache — regenerable, not committed (run `graft build`).
+/graft/
