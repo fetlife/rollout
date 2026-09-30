@@ -15,6 +15,35 @@ RSpec.describe "Rollout ActiveRecord transactions" do
     expect(adapter.feature_events(:chat)).to eq []
   end
 
+  it "rolls back a logged deletion when its global event cannot be persisted" do
+    rollout = Rollout.new(adapter: adapter, logging: { global: true })
+    rollout.activate_percentage(:chat, 50)
+    event_record_class = adapter.instance_variable_get(:@event_record)
+    allow(event_record_class).to receive(:create!).and_raise(ActiveRecord::StatementInvalid, "insert failed")
+
+    expect do
+      rollout.delete(:chat)
+    end.to raise_error(ActiveRecord::StatementInvalid)
+
+    expect(rollout.exists?(:chat)).to be true
+    expect(adapter.feature_events(:chat).map(&:name)).to eq ["update"]
+    expect(adapter.global_events.map(&:name)).to eq ["update"]
+  end
+
+  it "rolls back logged deletion and history when the outer transaction rolls back" do
+    rollout = Rollout.new(adapter: adapter, logging: { global: true })
+    rollout.activate_percentage(:chat, 50)
+
+    ActiveRecord::Base.transaction do
+      rollout.delete(:chat)
+      raise ActiveRecord::Rollback
+    end
+
+    expect(rollout.exists?(:chat)).to be true
+    expect(adapter.feature_events(:chat).map(&:name)).to eq ["update"]
+    expect(adapter.global_events.map(&:name)).to eq ["update"]
+  end
+
   it "re-raises ActiveRecord::Rollback from with_feature and does not notify observers" do
     observer = double("observer")
     expect(observer).not_to receive(:update)

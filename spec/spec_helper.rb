@@ -11,6 +11,7 @@ class RolloutMemoryBackend
   def initialize
     @features = {}
     @events = Hash.new { |hash, key| hash[key] = [] }
+    @global_events = []
   end
 
   def fetch_feature(name)
@@ -47,7 +48,10 @@ class RolloutMemoryBackend
     mutation = yield fetch_feature(name)
     save_feature(mutation.fetch(:state))
     event = mutation[:event]
-    @events[name.to_s] << event if event
+    if event
+      @events[name.to_s] << event
+      @global_events << event if mutation[:global]
+    end
     mutation
   end
 
@@ -56,7 +60,7 @@ class RolloutMemoryBackend
   end
 
   def global_events(limit: nil)
-    limited_events([], limit)
+    limited_events(@global_events, limit)
   end
 
   def feature_updated_at(_name)
@@ -64,6 +68,17 @@ class RolloutMemoryBackend
 
   def delete_feature_events(name)
     @events.delete(name.to_s)
+  end
+
+  def delete_feature_with_history(name, event:, history_length:)
+    existed = feature_exists?(name)
+    delete_feature(name)
+    delete_feature_events(name)
+    if existed && event
+      @global_events << event
+      @global_events = @global_events.last(history_length)
+    end
+    existed
   end
 
   private

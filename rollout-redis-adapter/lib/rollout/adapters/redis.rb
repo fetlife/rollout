@@ -10,6 +10,26 @@ class Rollout
   module Adapters
     class Redis
       FEATURES_KEY = 'feature:__features__'
+      DELETE_FEATURE_WITH_HISTORY_SCRIPT = <<~LUA.freeze
+        local existed = redis.call('DEL', KEYS[1])
+        local history_deleted = redis.call('DEL', KEYS[3])
+
+        local registered = redis.call('GET', KEYS[2]) or ''
+        local retained = {}
+        for name in string.gmatch(registered, '([^,]+)') do
+          if name ~= ARGV[4] then
+            table.insert(retained, name)
+          end
+        end
+        redis.call('SET', KEYS[2], table.concat(retained, ','))
+
+        if existed > 0 and ARGV[1] ~= '' then
+          redis.call('ZADD', KEYS[4], ARGV[2], ARGV[1])
+          redis.call('ZREMRANGEBYRANK', KEYS[4], ARGV[3], -1)
+        end
+
+        return history_deleted
+      LUA
 
       def initialize(client)
         @client = client
@@ -49,6 +69,16 @@ class Rollout
         names.delete(name.to_s)
         @client.set(FEATURES_KEY, names.join(','))
         @client.del(key(name))
+      end
+
+      def delete_feature_with_history(name, event:, history_length:)
+        validate_history_length!(history_length)
+
+        @client.eval(
+          DELETE_FEATURE_WITH_HISTORY_SCRIPT,
+          keys: [key(name), FEATURES_KEY, events_key(name), global_events_key],
+          argv: [event.serialize, -event.timestamp, history_length, name.to_s],
+        )
       end
 
       def clear_features
@@ -222,6 +252,12 @@ class Rollout
         return :empty if limit.zero?
 
         limit - 1
+      end
+
+      def validate_history_length!(history_length)
+        unless history_length.is_a?(Integer) && history_length >= 0
+          raise ArgumentError, "history_length must be an Integer >= 0"
+        end
       end
     end
   end

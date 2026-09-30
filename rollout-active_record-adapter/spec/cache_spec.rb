@@ -105,6 +105,17 @@ RSpec.describe "Rollout ActiveRecord feature cache" do
     expect(adapter.fetch_feature(:chat).percentage).to eq 0.0
   end
 
+  it "invalidates cached state after a logged deletion" do
+    save(10)
+    adapter.fetch_feature(:chat)
+    rollout = Rollout.new(adapter: adapter, logging: { global: true })
+
+    rollout.delete(:chat)
+
+    expect(adapter.fetch_feature(:chat).percentage).to eq 0.0
+    expect(adapter.global_events.map(&:name)).to eq ["delete"]
+  end
+
   it "invalidates after mutate_feature commits" do
     save(10)
     adapter.fetch_feature(:chat)

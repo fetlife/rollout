@@ -92,10 +92,17 @@ history.
 
 | Operation | Feature state | Per-feature history | Global history |
 | --- | --- | --- | --- |
-| `delete`, logging enabled | Removed | Removed | Retained |
+| `delete`, logging enabled | Removed | Removed | Retained; emits a global `delete` event when `global: true` and the adapter supports event-aware deletion |
 | `delete`, logging disabled | Removed | Retained | Retained |
 | `logging.delete` | Unchanged | Removed | Retained |
 | `clear!` | Removed | Retained | Retained |
+
+The deletion event includes the feature name, timestamp, and current logging
+context (for example, an actor supplied with `logging.with_context`). Built-in
+adapters write it only when the feature exists and global logging is enabled;
+it is subject to `history_length` like other global events. Older or custom
+adapters without `delete_feature_with_history` retain the previous deletion
+behavior and do not record a deletion event.
 
 `clear!` still resets each feature first, so logging-enabled instances record
 a reset event before the state is deleted. History remains subject to

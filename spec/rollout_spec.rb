@@ -191,5 +191,51 @@ RSpec.describe Rollout do
 
       expect(rollout.logging.events(:chat)).to eq []
     end
+
+    it "records a global deletion event with the current context" do
+      backend = RolloutMemoryBackend.new
+      rollout = described_class.new(adapter: backend, logging: { global: true })
+      rollout.activate_percentage(:chat, 25)
+
+      rollout.logging.with_context(actor: "alice") { rollout.delete(:chat) }
+
+      event = rollout.logging.global_events.last
+      expect(event.name).to eq :delete
+      expect(event.feature).to eq "chat"
+      expect(event.data).to eq({})
+      expect(event.context).to eq(actor: "alice")
+      expect(event.created_at).to be_a(Time)
+    end
+
+    it "does not record a deletion event when the feature is missing or logging is suppressed" do
+      backend = RolloutMemoryBackend.new
+      rollout = described_class.new(adapter: backend, logging: { global: true })
+      rollout.activate_percentage(:chat, 25)
+      rollout.delete(:chat)
+      event_count = rollout.logging.global_events.count
+
+      rollout.delete(:chat)
+      rollout.activate_percentage(:signup, 25)
+      rollout.logging.without { rollout.delete(:signup) }
+
+      expect(rollout.logging.global_events.count).to eq event_count + 1
+      expect(rollout.logging.global_events.last.name).to eq :update
+      expect(rollout.exists?(:signup)).to eq false
+    end
+
+    it "preserves deletion behavior for adapters without event-aware deletion" do
+      backend_class = Class.new(RolloutMemoryBackend) do
+        undef_method :delete_feature_with_history
+      end
+      backend = backend_class.new
+      rollout = described_class.new(adapter: backend, logging: { global: true })
+      rollout.activate_percentage(:chat, 25)
+
+      expect { rollout.delete(:chat) }.not_to raise_error
+
+      expect(rollout.exists?(:chat)).to eq false
+      expect(rollout.logging.events(:chat)).to eq []
+      expect(rollout.logging.global_events.map(&:name)).to eq [:update]
+    end
   end
 end
