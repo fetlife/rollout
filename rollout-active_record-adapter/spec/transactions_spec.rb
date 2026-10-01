@@ -15,6 +15,20 @@ RSpec.describe "Rollout ActiveRecord transactions" do
     expect(adapter.feature_events(:chat)).to eq []
   end
 
+  it "rolls back logged deletion and history when the outer transaction rolls back" do
+    rollout = Rollout.new(adapter: adapter, logging: { global: true })
+    rollout.activate_percentage(:chat, 50)
+
+    ActiveRecord::Base.transaction do
+      rollout.delete(:chat)
+      raise ActiveRecord::Rollback
+    end
+
+    expect(rollout.exists?(:chat)).to be true
+    expect(adapter.feature_events(:chat).map(&:name)).to eq ["update"]
+    expect(adapter.global_events.map(&:name)).to eq ["update"]
+  end
+
   it "re-raises ActiveRecord::Rollback from with_feature and does not notify observers" do
     observer = double("observer")
     expect(observer).not_to receive(:update)

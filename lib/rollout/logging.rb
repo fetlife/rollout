@@ -74,6 +74,18 @@ class Rollout
         @adapter.delete_feature_events(feature_name)
       end
 
+      def delete_event_for(feature_name)
+        return unless logging_enabled? && global
+
+        Event.new(
+          feature: feature_name.to_s,
+          name: :delete,
+          data: {},
+          context: current_context,
+          created_at: Time.now,
+        )
+      end
+
       def event_for(before, after)
         return unless logging_enabled?
 

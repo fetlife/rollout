@@ -77,6 +77,52 @@ RSpec.shared_examples "a rollout history backend" do
     expect(rollout.logging.events(feature)).to eq []
   end
 
+  it "records a global-only delete event for an existing feature" do
+    logged_rollout = Rollout.new(adapter: backend, logging: { global: true, history_length: 2 })
+    logged_rollout.activate_percentage(feature, 25)
+    logged_rollout.logging.with_context(actor: "alice") { logged_rollout.delete(feature) }
+
+    event = logged_rollout.logging.global_events.last
+    expect(event.name).to eq "delete"
+    expect(event.feature).to eq feature.to_s
+    expect(event.data).to eq({})
+    expect(event.context).to eq(actor: "alice")
+    expect(logged_rollout.logging.events(feature)).to eq []
+    expect(logged_rollout.logging.updated_at(feature)).to be_nil
+    expect(backend.feature_names.map(&:to_s)).not_to include(feature.to_s)
+  end
+
+  it "does not record deletions of missing features and honors global history length" do
+    logged_rollout = Rollout.new(adapter: backend, logging: { global: true, history_length: 1 })
+    logged_rollout.activate_percentage(feature, 25)
+    logged_rollout.delete(feature)
+    expect(logged_rollout.logging.global_events.map(&:name)).to eq ["delete"]
+
+    logged_rollout.delete(feature)
+
+    expect(logged_rollout.logging.global_events.map(&:name)).to eq ["delete"]
+  end
+
+  it "does not add a delete event when global history is disabled" do
+    logged_rollout = Rollout.new(adapter: backend, logging: { global: false })
+    logged_rollout.activate_percentage(feature, 25)
+
+    logged_rollout.delete(feature)
+
+    expect(logged_rollout.logging.global_events).to eq []
+    expect(logged_rollout.logging.events(feature)).to eq []
+  end
+
+  it "does not retain a delete event when history length is zero" do
+    logged_rollout = Rollout.new(adapter: backend, logging: { global: true, history_length: 0 })
+    logged_rollout.activate_percentage(feature, 25)
+
+    logged_rollout.delete(feature)
+
+    expect(logged_rollout.logging.global_events).to eq []
+    expect(logged_rollout.logging.events(feature)).to eq []
+  end
+
   it "keeps feature history on clear!" do
     rollout.activate_percentage(feature, 25)
     rollout.clear!

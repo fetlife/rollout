@@ -38,9 +38,16 @@ class Rollout
   end
 
   def delete(feature)
-    @adapter.delete_feature(feature)
+    return @adapter.delete_feature(feature) unless respond_to?(:logging)
 
-    if respond_to?(:logging)
+    if @adapter.respond_to?(:delete_feature_with_history)
+      @adapter.delete_feature_with_history(
+        feature,
+        event: logging.delete_event_for(feature),
+        history_length: logging.history_length,
+      )
+    else
+      @adapter.delete_feature(feature)
       logging.delete(feature)
     end
   end

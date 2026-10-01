@@ -51,6 +51,12 @@ class Rollout
         @client.del(key(name))
       end
 
+      def delete_feature_with_history(name, event:, history_length:)
+        existed = delete_feature(name) > 0
+        delete_feature_events(name)
+        record_global_event(event, history_length) if existed && event
+      end
+
       def clear_features
         @client.del(FEATURES_KEY)
       end
@@ -89,10 +95,7 @@ class Rollout
         @client.zadd(storage_key, -event.timestamp, event.serialize)
         @client.zremrangebyrank(storage_key, history_length, -1)
 
-        return unless global
-
-        @client.zadd(global_events_key, -event.timestamp, event.serialize)
-        @client.zremrangebyrank(global_events_key, history_length, -1)
+        record_global_event(event, history_length) if global
       end
 
       def feature_events(name, limit: nil)
@@ -113,6 +116,11 @@ class Rollout
       end
 
       private
+
+      def record_global_event(event, history_length)
+        @client.zadd(global_events_key, -event.timestamp, event.serialize)
+        @client.zremrangebyrank(global_events_key, history_length, -1)
+      end
 
       def stored_feature_names
         names = []

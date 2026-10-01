@@ -72,6 +72,23 @@ class Rollout
         invalidate_features_after_commit(name)
       end
 
+      def delete_feature_with_history(name, event:, history_length:)
+        validate_history_length!(history_length)
+
+        @feature_record.transaction(requires_new: true) do
+          existed = @feature_record.where(name: name.to_s).delete_all > 0
+          invalidate_features_after_commit(name)
+
+          @event_record.where(feature_name: name.to_s, feature_visible: true)
+            .update_all(feature_visible: false)
+          if existed && event
+            insert_event(event, global: true, feature_visible: false)
+            hide_excess(@event_record.where(global_visible: true), :global_visible, history_length)
+          end
+          delete_hidden_events
+        end
+      end
+
       def clear_features
         @feature_record.delete_all
         invalidate_all_features_after_commit
@@ -285,13 +302,13 @@ class Rollout
         end
       end
 
-      def insert_event(event, global:)
+      def insert_event(event, global:, feature_visible: true)
         @event_record.create!(
           feature_name: event.feature.to_s,
           event_name: event.name.to_s,
           data: ::Rollout::ActiveRecord::Codec.dump(event.data),
           context: ::Rollout::ActiveRecord::Codec.dump(event.context),
-          feature_visible: true,
+          feature_visible: feature_visible,
           global_visible: global ? true : false,
           occurred_at: event.created_at,
         )

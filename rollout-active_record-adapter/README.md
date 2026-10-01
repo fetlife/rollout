@@ -120,7 +120,10 @@ transaction commits.
 Existing feature rows are locked for update. Feature names are case-sensitive,
 including on MySQL.
 
-`delete_feature` removes feature state and leaves history in place.
+`delete_feature` removes feature state and leaves history in place. A logged
+`Rollout#delete` uses the adapter's atomic delete-with-history operation to
+remove per-feature history and, when global logging is enabled, append a global
+deletion event in the same transaction.
 `clear_features` deletes remaining feature rows and leaves history in place.
 
 ## Migrate from Redis
