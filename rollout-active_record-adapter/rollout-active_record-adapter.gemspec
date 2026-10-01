@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |spec|
   spec.name        = 'rollout-active_record-adapter'
-  spec.version     = '0.1.0'
+  spec.version     = '0.2.0'
   spec.authors     = ['FetLife']
   spec.email       = ['dev@fetlife.com']
   spec.description = 'Active Record adapter for the rollout gem.'
