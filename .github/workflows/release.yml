@@ -10,6 +10,7 @@ on:
 permissions:
   contents: write
   id-token: write
+  pull-requests: read
 
 jobs:
   publish:
@@ -18,6 +19,7 @@ jobs:
       name: ${{ steps.package.outputs.name }}
       version: ${{ steps.package.outputs.version }}
       previous_tag: ${{ steps.package.outputs.previous_tag }}
+      paths: ${{ steps.package.outputs.paths }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -31,9 +33,9 @@ jobs:
         id: package
         run: |
           case "$GITHUB_REF_NAME" in
-            rollout/v*) name=rollout; directory=. ;;
-            rollout-redis-adapter/v*) name=rollout-redis-adapter; directory=rollout-redis-adapter ;;
-            rollout-active_record-adapter/v*) name=rollout-active_record-adapter; directory=rollout-active_record-adapter ;;
+            rollout/v*) name=rollout; directory=.; paths="lib rollout.gemspec" ;;
+            rollout-redis-adapter/v*) name=rollout-redis-adapter; directory=rollout-redis-adapter; paths=rollout-redis-adapter ;;
+            rollout-active_record-adapter/v*) name=rollout-active_record-adapter; directory=rollout-active_record-adapter; paths=rollout-active_record-adapter ;;
             *) echo "Unexpected tag $GITHUB_REF_NAME" >&2; exit 1 ;;
           esac
           version="${GITHUB_REF_NAME##*/v}"
@@ -48,6 +50,7 @@ jobs:
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "directory=$directory" >> "$GITHUB_OUTPUT"
           echo "previous_tag=$previous_tag" >> "$GITHUB_OUTPUT"
+          echo "paths=$paths" >> "$GITHUB_OUTPUT"
       - name: Build selected gem
         working-directory: ${{ steps.package.outputs.directory }}
         run: gem build "${{ steps.package.outputs.name }}.gemspec"
@@ -61,12 +64,35 @@ jobs:
     needs: publish
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      # GitHub's generated notes list every PR in the repo between tags; keep
+      # only PRs that touched the released gem's files.
+      - name: Build release notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PREVIOUS_TAG: ${{ needs.publish.outputs.previous_tag }}
+          PATHS: ${{ needs.publish.outputs.paths }}
+        run: |
+          {
+            echo "## What's Changed"
+            git log --reverse --format=%H "$PREVIOUS_TAG..$GITHUB_REF_NAME" -- $PATHS |
+              while read -r sha; do
+                gh api "repos/$GITHUB_REPOSITORY/commits/$sha/pulls" \
+                  --jq '.[] | "* \(.title) by @\(.user.login) in \(.html_url)"'
+              done |
+              awk '!seen[$0]++'
+            echo
+            echo "**Full Changelog**: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/compare/$PREVIOUS_TAG...$GITHUB_REF_NAME"
+          } > release-notes.md
+          cat release-notes.md
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref }}
           name: ${{ needs.publish.outputs.name }} ${{ needs.publish.outputs.version }}
-          generate_release_notes: true
-          previous_tag: ${{ needs.publish.outputs.previous_tag }}
+          body_path: release-notes.md
           draft: false
           prerelease: false
