@@ -10,7 +10,7 @@ on:
 
 jobs:
   core:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     strategy:
       matrix:
         ruby-version: ['3.3', '3.2', '3.1', '3.0', '2.7', '2.6', '2.5', '2.4']
@@ -35,7 +35,7 @@ jobs:
           retention-days: 30
 
   redis:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     strategy:
       matrix:
         ruby-version: ['3.3', '3.2', '3.1', '3.0', '2.7', '2.6', '2.5', '2.4']
@@ -72,7 +72,7 @@ jobs:
           retention-days: 30
 
   active_record:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     strategy:
       fail-fast: false
       matrix:
