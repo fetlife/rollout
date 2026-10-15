@@ -10,7 +10,8 @@ on:
 
 jobs:
   core:
-    runs-on: ubuntu-latest
+    # setup-ruby has no Ruby 3.1 or older builds for ubuntu-26.04.
+    runs-on: ${{ contains(fromJSON('["3.1", "3.0", "2.7", "2.6", "2.5", "2.4"]'), matrix.ruby-version) && 'ubuntu-24.04' || 'ubuntu-26.04' }}
     strategy:
       matrix:
         ruby-version: ['3.3', '3.2', '3.1', '3.0', '2.7', '2.6', '2.5', '2.4']
@@ -35,7 +36,8 @@ jobs:
           retention-days: 30
 
   redis:
-    runs-on: ubuntu-latest
+    # setup-ruby has no Ruby 3.1 or older builds for ubuntu-26.04.
+    runs-on: ${{ contains(fromJSON('["3.1", "3.0", "2.7", "2.6", "2.5", "2.4"]'), matrix.ruby-version) && 'ubuntu-24.04' || 'ubuntu-26.04' }}
     strategy:
       matrix:
         ruby-version: ['3.3', '3.2', '3.1', '3.0', '2.7', '2.6', '2.5', '2.4']
@@ -72,7 +74,8 @@ jobs:
           retention-days: 30
 
   active_record:
-    runs-on: ubuntu-latest
+    # setup-ruby has no Ruby 3.1 or older builds for ubuntu-26.04.
+    runs-on: ${{ contains(fromJSON('["3.1", "3.0", "2.7", "2.6", "2.5", "2.4"]'), matrix.ruby-version) && 'ubuntu-24.04' || 'ubuntu-26.04' }}
     strategy:
       fail-fast: false
       matrix:

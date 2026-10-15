@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   publish:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     outputs:
       name: ${{ steps.package.outputs.name }}
       version: ${{ steps.package.outputs.version }}
@@ -62,7 +62,7 @@ jobs:
 
   github-release:
     needs: publish
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
