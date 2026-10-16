@@ -10,19 +10,24 @@ on:
 
 jobs:
   core:
-    # setup-ruby has no Ruby 3.1 or older builds for ubuntu-26.04.
-    runs-on: ${{ contains(fromJSON('["3.1", "3.0", "2.7", "2.6", "2.5", "2.4"]'), matrix.ruby-version) && 'ubuntu-24.04' || 'ubuntu-26.04' }}
+    runs-on: ubuntu-26.04
+    # setup-ruby has no Ruby 3.1 or older builds for ubuntu-26.04, so use the official Ruby images.
+    container: ruby:${{ matrix.ruby-version }}
     strategy:
       matrix:
         ruby-version: ['3.3', '3.2', '3.1', '3.0', '2.7', '2.6', '2.5', '2.4']
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
-      - name: Setup Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: ${{ matrix.ruby-version }}
-          bundler-cache: true
+      - name: Install Bundler
+        # The Ruby 2.7 and older images ship Bundler 1.17 or 2.1; install the versions setup-ruby used.
+        run: |
+          case "$RUBY_VERSION" in
+            2.4.*|2.5.*) gem install bundler -v '~> 2.3.0' ;;
+            2.6.*|2.7.*) gem install bundler -v '~> 2.4.0' ;;
+          esac
+      - name: Install gems
+        run: bundle install --jobs 4
       - name: Run core tests
         run: |
           mkdir -p test_results
@@ -36,16 +41,17 @@ jobs:
           retention-days: 30
 
   redis:
-    # setup-ruby has no Ruby 3.1 or older builds for ubuntu-26.04.
-    runs-on: ${{ contains(fromJSON('["3.1", "3.0", "2.7", "2.6", "2.5", "2.4"]'), matrix.ruby-version) && 'ubuntu-24.04' || 'ubuntu-26.04' }}
+    runs-on: ubuntu-26.04
+    # setup-ruby has no Ruby 3.1 or older builds for ubuntu-26.04, so use the official Ruby images.
+    container: ruby:${{ matrix.ruby-version }}
     strategy:
       matrix:
         ruby-version: ['3.3', '3.2', '3.1', '3.0', '2.7', '2.6', '2.5', '2.4']
+    env:
+      REDIS_HOST: redis
     services:
       redis:
         image: redis:7-alpine
-        ports:
-          - 6379:6379
         options: >-
           --health-cmd "redis-cli ping"
           --health-interval 10s
@@ -54,12 +60,16 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
-      - name: Setup Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: ${{ matrix.ruby-version }}
-          working-directory: rollout-redis-adapter
-          bundler-cache: true
+      - name: Install Bundler
+        # The Ruby 2.7 and older images ship Bundler 1.17 or 2.1; install the versions setup-ruby used.
+        run: |
+          case "$RUBY_VERSION" in
+            2.4.*|2.5.*) gem install bundler -v '~> 2.3.0' ;;
+            2.6.*|2.7.*) gem install bundler -v '~> 2.4.0' ;;
+          esac
+      - name: Install gems
+        working-directory: rollout-redis-adapter
+        run: bundle install --jobs 4
       - name: Run Redis adapter tests
         working-directory: rollout-redis-adapter
         run: |
@@ -74,8 +84,9 @@ jobs:
           retention-days: 30
 
   active_record:
-    # setup-ruby has no Ruby 3.1 or older builds for ubuntu-26.04.
-    runs-on: ${{ contains(fromJSON('["3.1", "3.0", "2.7", "2.6", "2.5", "2.4"]'), matrix.ruby-version) && 'ubuntu-24.04' || 'ubuntu-26.04' }}
+    runs-on: ubuntu-26.04
+    # setup-ruby has no Ruby 3.1 or older builds for ubuntu-26.04, so use the official Ruby images.
+    container: ruby:${{ matrix.ruby-version }}
     strategy:
       fail-fast: false
       matrix:
@@ -107,20 +118,18 @@ jobs:
     env:
       ACTIVERECORD_VERSION: ${{ matrix.activerecord }}
       ROLLOUT_AR_ADAPTER: ${{ matrix.db }}
-      POSTGRES_HOST: localhost
+      POSTGRES_HOST: postgres
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: rollout_test
-      MYSQL_HOST: 127.0.0.1
+      MYSQL_HOST: mysql
       MYSQL_USER: root
       MYSQL_PASSWORD: root
       MYSQL_DATABASE: rollout_test
-      REDIS_HOST: 127.0.0.1
+      REDIS_HOST: redis
     services:
       redis:
         image: redis:7-alpine
-        ports:
-          - 6379:6379
         options: >-
           --health-cmd "redis-cli ping"
           --health-interval 10s
@@ -132,8 +141,6 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: rollout_test
-        ports:
-          - 5432:5432
         options: >-
           --health-cmd "pg_isready -U postgres"
           --health-interval 10s
@@ -144,8 +151,6 @@ jobs:
         env:
           MYSQL_ROOT_PASSWORD: root
           MYSQL_DATABASE: rollout_test
-        ports:
-          - 3306:3306
         options: >-
           --health-cmd "mysqladmin ping -h 127.0.0.1 -uroot -proot"
           --health-interval 10s
@@ -154,15 +159,16 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
-      - name: Install database client libraries
-        run: sudo apt-get update && sudo apt-get install -y libpq-dev default-libmysqlclient-dev
-      - name: Setup Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: ${{ matrix.ruby-version }}
-          working-directory: rollout-active_record-adapter
-          bundler-cache: true
-          cache-version: ar-${{ matrix.ruby-version }}-${{ matrix.activerecord }}-${{ matrix.db }}
+      - name: Install Bundler
+        # The Ruby 2.7 and older images ship Bundler 1.17 or 2.1; install the versions setup-ruby used.
+        run: |
+          case "$RUBY_VERSION" in
+            2.4.*|2.5.*) gem install bundler -v '~> 2.3.0' ;;
+            2.6.*|2.7.*) gem install bundler -v '~> 2.4.0' ;;
+          esac
+      - name: Install gems
+        working-directory: rollout-active_record-adapter
+        run: bundle install --jobs 4
       - name: Run Active Record adapter tests
         working-directory: rollout-active_record-adapter
         run: |
