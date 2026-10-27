@@ -184,6 +184,38 @@ feature.to_hash
 # => { percentage: 5.0, groups: [:caretakers], users: ["1"], data: {} }
 ```
 
+## Defining features
+
+Describe each feature in its own YAML file, named after the feature. Rollout
+looks in `config/rollouts`, under `Rails.root` in a Rails app and under the
+current directory otherwise.
+
+```yaml
+# config/rollouts/chat.yml
+description: Let members chat in groups.
+```
+
+```ruby
+Rollout.definitions.keys                 # => [:chat]
+Rollout.definitions[:chat].description   # => "Let members chat in groups."
+```
+
+Definitions only describe features: they don't create or change stored
+features, and features without a file work as before. Rollout reads
+`description`; any other keys are kept in `attributes` for your application.
+
+`Rollout.definitions` reads the folder on every call. A missing folder means no
+definitions. `description` is optional. A file that isn't valid YAML, isn't a
+mapping, or sets `description` to something other than a string raises
+`Rollout::InvalidDefinition`.
+
+Use another folder, or turn definitions off:
+
+```ruby
+Rollout.definitions_path = Rails.root.join("config", "features")
+Rollout.definitions_path = nil
+```
+
 ## Namespacing
 
 Rollout separates its keys from other keys in the data store using the
