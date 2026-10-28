@@ -17,9 +17,11 @@ RSpec.describe "Rollout.definitions" do
     File.write(File.join(@dir, name), content)
   end
 
-  it "loads each YAML file in the folder, named after the file" do
+  it "loads each .yml file directly in the folder, named after the file" do
     write("chat.yml", "description: Group chat.\ncache: user\n")
-    write("notes.txt", "not a definition")
+    write("notes.yaml", "description: Not loaded.\n")
+    FileUtils.mkdir_p(File.join(@dir, "drafts"))
+    write("drafts/inbox.yml", "description: Not loaded.\n")
     Rollout.definitions_path = @dir
 
     chat = Rollout.definitions.fetch(:chat)
@@ -38,6 +40,14 @@ RSpec.describe "Rollout.definitions" do
     Dir.chdir(@dir) do
       expect(Rollout.definitions.keys).to eq [:chat]
     end
+  end
+
+  it "picks up a file added after an earlier call" do
+    Rollout.definitions_path = @dir
+    expect(Rollout.definitions).to eq({})
+
+    write("chat.yml", "description: Group chat.\n")
+    expect(Rollout.definitions.keys).to eq [:chat]
   end
 
   it "takes brackets in the folder's path literally" do

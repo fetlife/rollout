@@ -20,10 +20,10 @@ class Rollout
     def definitions_path
       return @definitions_path if defined?(@definitions_path)
 
-      File.join(definitions_root, 'config', 'rollouts')
+      File.expand_path(File.join('config', 'rollouts'))
     end
 
-    # Reads the folder on every call, like Rails' config_for, so new files show up without a restart.
+    # Reads the folder on every call, so new files show up without a restart.
     def definitions
       folder = definitions_path&.to_s
       return {} unless folder && File.directory?(folder)
@@ -33,12 +33,6 @@ class Rollout
         definition = Definition.load(File.join(folder, file))
         definitions[definition.name] = definition
       end
-    end
-
-    private
-
-    def definitions_root
-      defined?(::Rails) && ::Rails.respond_to?(:root) && ::Rails.root ? ::Rails.root.to_s : Dir.pwd
     end
   end
 

@@ -187,27 +187,52 @@ feature.to_hash
 ## Defining features
 
 Describe each feature in its own YAML file, named after the feature. Rollout
-looks in `config/rollouts`, under `Rails.root` in a Rails app and under the
-current directory otherwise.
+looks in `config/rollouts` under the current directory, which is your app's
+root when you start it from there.
+
+```text
+config/rollouts/
+├── chat.yml
+└── new_inbox.yml
+```
+
+Only `.yml` files directly in that folder are read. Subfolders, `.yaml` files
+and files starting with a dot are ignored. The file name without `.yml` is the
+feature name, the same one you pass to `$rollout.active?`.
 
 ```yaml
 # config/rollouts/chat.yml
 description: Let members chat in groups.
 ```
 
+```yaml
+# config/rollouts/new_inbox.yml
+description: Show conversations as threads.
+owner: messaging
+release_date: "2026-11-15"
+```
+
 ```ruby
-Rollout.definitions.keys                 # => [:chat]
-Rollout.definitions[:chat].description   # => "Let members chat in groups."
+Rollout.definitions.keys                      # => [:chat, :new_inbox]
+Rollout.definitions[:new_inbox].description   # => "Show conversations as threads."
+Rollout.definitions[:new_inbox].path          # => "/app/config/rollouts/new_inbox.yml"
+Rollout.definitions[:new_inbox].attributes
+# => { "description" => "Show conversations as threads.", "owner" => "messaging", "release_date" => "2026-11-15" }
 ```
 
 Definitions only describe features: they don't create or change stored
 features, and features without a file work as before. Rollout reads
-`description`; any other keys are kept in `attributes` for your application.
+`description`. Every key, including your own like `owner`, is kept in
+`attributes` with string keys for your application.
 
 `Rollout.definitions` reads the folder on every call. A missing folder means no
-definitions. `description` is optional. A file that isn't valid YAML, isn't a
-mapping, or sets `description` to something other than a string raises
-`Rollout::InvalidDefinition`.
+definitions. `description` is optional.
+
+Files are read with `YAML.safe_load`, so values can be strings, numbers,
+booleans, `null`, lists and mappings. Quote dates and times
+(`release_date: "2026-10-28"`). A file raises `Rollout::InvalidDefinition` if
+it isn't valid YAML, isn't a mapping, uses anything else (an unquoted date, an
+alias, a `:symbol`), or sets `description` to something other than a string.
 
 Use another folder, or turn definitions off:
 
