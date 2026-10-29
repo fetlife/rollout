@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'rollout/definition'
 require 'rollout/feature'
 require 'rollout/logging'
 require 'rollout/version'
@@ -12,6 +13,28 @@ class Rollout
   include Observable
 
   RAND_BASE = (2**32 - 1) / 100.0
+
+  class << self
+    attr_writer :definitions_path
+
+    def definitions_path
+      return @definitions_path if defined?(@definitions_path)
+
+      File.expand_path(File.join('config', 'rollouts'))
+    end
+
+    # Reads the folder on every call, so new files show up without a restart.
+    def definitions
+      folder = definitions_path&.to_s
+      return {} unless folder && File.directory?(folder)
+
+      # Dir.entries rather than a glob, so brackets or asterisks in the folder's path are taken literally.
+      Dir.entries(folder).grep(/\A[^.].*\.yml\z/).sort.each_with_object({}) do |file, definitions|
+        definition = Definition.load(File.join(folder, file))
+        definitions[definition.name] = definition
+      end
+    end
+  end
 
   attr_reader :options, :adapter
 
